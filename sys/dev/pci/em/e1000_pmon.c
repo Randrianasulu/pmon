@@ -995,7 +995,7 @@ static inline void iounmap(void *addr)
 static inline void pci_disable_device(struct pci_dev *dev) { }
 
 void wmb(void){}
-void mdelay(int ms){}
+void mdelay(int ms){while(ms--)delay(1000);}
 #define udelay delay
 
 #define MODULE_PARM(...)
