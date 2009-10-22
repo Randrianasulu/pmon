@@ -159,7 +159,7 @@ static void setdisplaymode(unsigned long arg)
 	prom_printf("LCD_CLK=0x%x\n",  LCD_CLK_GET32(0));
 #endif
 
-	if(CPU_CLK==200000000)
+	if(CPU_CLK>=200000000 && CPU_CLK<=250000000)
 	LCD_CLK_SET32(0, ((((250000000/1000000/xwinmode[arg].pixclock)-1)<<9)+1)|(LCD_CLK_GET32(0)&(~(0x7f<<9))));
 	else 
 	LCD_CLK_SET32(0, ((((CPU_CLK/1000000/xwinmode[arg].pixclock)-1)<<9)+1)|(LCD_CLK_GET32(0)&(~(0x7f<<9))));
