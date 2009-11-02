@@ -1,4 +1,4 @@
-#define	SMB_BASE_ADDR		0x4300
+int	SMB_BASE_ADDR=0;
 #define	SMB_SDA				0x00
 #define	SMB_STS				0x01
 #define	SMB_STS_SLVSTP		(1 << 7)
@@ -171,6 +171,7 @@ static int i2c_write_smbblock(int addr,int regNo, char *buf,int len) {
 int tgt_i2cread(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count)
 {
 int i;
+if(!SMB_BASE_ADDR)SMB_BASE_ADDR=(_pci_conf_read(_pci_make_tag(0,14,0),0x10))&~3;
 memset(buf,-1,count);
 switch(type)
 {
@@ -190,6 +191,7 @@ return count;
 int tgt_i2cwrite(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count)
 {
 int i;
+if(!SMB_BASE_ADDR)SMB_BASE_ADDR=(_pci_conf_read(_pci_make_tag(0,14,0),0x10))&~3;
 switch(type)
 {
 case I2C_SINGLE:
