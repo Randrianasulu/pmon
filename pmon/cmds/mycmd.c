@@ -131,6 +131,7 @@ static union commondata{
 }mydata,*pmydata;
 
 unsigned int syscall_addrtype=0;
+#define syscall_addrwidth ((syscall_addrtype<0?0:(syscall_addrtype>>4))+1)
 static int __syscall1(int type,long long addr,union commondata *mydata);
 static int __syscall2(int type,long long addr,union commondata *mydata);
 int (*syscall1)(int type,long long addr,union commondata *mydata)=(void *)&__syscall1;
@@ -435,48 +436,6 @@ return 0;
 }
 
 
-static int mydump(char type,unsigned long long addr,unsigned count)
-{
-		int i,j,k;
-		char memdata[16];
-		for(j=0;j<count;j=j+16/type,addr=addr+16)
-		{
-		nr_printf("%08llx: ",addr);
-
-		pmydata=(void *)memdata;
-		for(i=0;type*i<16;i++)
-		{
-		if(syscall1(type,addr+i*type,pmydata)<0){nr_printf("read address %p error\n",addr+i*type);return -1;}
-		pmydata=(void *)((char *)pmydata+type);
-		if(j+i+1>=count)break;
-		}
-		
-		pmydata=(void *)memdata;
-		for(i=0;type*i<16;i++)
-		{
-		switch(type)
-		{
-		case 1:	nr_printf("%02x ",pmydata->data1);break;
-		case 2: nr_printf("%04x ",pmydata->data2);break;
-		case 4: nr_printf("%08x ",pmydata->data4);break;
-		case 8: nr_printf("%08x%08x ",pmydata->data8[1],pmydata->data8[0]);break;
-		}
-		if(j+i+1>=count){int k;for(i=i+1;type*i<16;i++){for(k=0;k<type;k++)nr_printf("  ");nr_printf(" ");}break;}
-		pmydata=(void *)((char *)pmydata+type);
-		}
-		
-		pmydata=(void *)memdata;
-		#define CPMYDATA ((char *)pmydata)
-		for(k=0;k<16;k++)
-		{
-		nr_printf("%c",(CPMYDATA[k]<0x20 || CPMYDATA[k]>0x7e)?'.':CPMYDATA[k]);
-		if(j+(k+1)/type>=count)break;
-		}
-		nr_printf("\n");
-		}
-		return 0;
-}
-
 int mypcs(int ac,char **av)
 {
 	int bus;
@@ -548,6 +507,8 @@ static int dump(int argc,char **argv)
 		char type=4;
 unsigned long long  addr;
 static int count=1;
+		int i,j,k;
+		char memdata[16];
 //		char opts[]="bhwd";
 		if(argc>3){nr_printf("d{b/h/w/d} adress count\n");return -1;}
 
@@ -563,7 +524,43 @@ static int count=1;
 		else addr=lastaddr;
 		if(argc>2)count=nr_strtol(argv[2],0,0);
 		else if(count<=0||count>=1024) count=1;
-		mydump(type,addr,count);
+
+		for(j=0;j<count;j=j+16/type,addr=addr+16/syscall_addrwidth)
+		{
+		nr_printf("%08llx: ",addr);
+
+		pmydata=(void *)memdata;
+		for(i=0;type*i<16;i++)
+		{
+		if(syscall1(type,addr+i*type/syscall_addrwidth,pmydata)<0){nr_printf("read address %p error\n",addr+i*type/syscall_addrwidth);return -1;}
+		pmydata=(void *)((char *)pmydata+type);
+		if(j+i+1>=count)break;
+		}
+		
+		pmydata=(void *)memdata;
+		for(i=0;type*i<16;i++)
+		{
+		switch(type)
+		{
+		case 1:	nr_printf("%02x ",pmydata->data1);break;
+		case 2: nr_printf("%04x ",pmydata->data2);break;
+		case 4: nr_printf("%08x ",pmydata->data4);break;
+		case 8: nr_printf("%08x%08x ",pmydata->data8[1],pmydata->data8[0]);break;
+		}
+		if(j+i+1>=count){int k;for(i=i+1;type*i<16;i++){for(k=0;k<type;k++)nr_printf("  ");nr_printf(" ");}break;}
+		pmydata=(void *)((char *)pmydata+type);
+		}
+		
+		pmydata=(void *)memdata;
+		#define CPMYDATA ((char *)pmydata)
+		for(k=0;k<16;k++)
+		{
+		nr_printf("%c",(CPMYDATA[k]<0x20 || CPMYDATA[k]>0x7e)?'.':CPMYDATA[k]);
+		if(j+(k+1)/type>=count)break;
+		}
+		nr_printf("\n");
+		}
+
 		lastaddr=addr+count*type;
 		return 0;
 }
@@ -641,7 +638,7 @@ static int modify(int argc,char **argv)
 	       	   getdata(argv[i]);
 		   if(syscall2(type,addr,&mydata)<0)
 		   {nr_printf("write address %p error\n",addr);return -1;};
-		   addr=addr+type;
+		   addr=addr+type/syscall_addrwidth;
 		 i++;
 		 }
 		  return 0;
@@ -668,7 +665,7 @@ static int modify(int argc,char **argv)
 		if(syscall2(type,addr,&mydata)<0)
 		{nr_printf("write address %p error\n",addr);return -1;};
 		}
-	addr=addr+type;
+	addr=addr+type/syscall_addrwidth;
 		}	
 		lastaddr=addr;	
 		return 0;
@@ -1584,7 +1581,7 @@ extern int mycp0ins();
 unsigned long *p=mycp0ins;
 if(type!=8)return -1;
 memset(mydata->data8,0,8);
-addr=(addr>>3)&0x1f;
+addr=addr&0x1f;
 #if __mips>=3
 *p=DMFC0(2,addr,cp0s_sel);
 #else
@@ -1605,7 +1602,7 @@ static int __cp0syscall2(int type,unsigned long long addr,union commondata *myda
 extern int mycp0ins1();
 unsigned long *p=mycp0ins1;
 if(type!=8)return -1;
-addr=(addr>>3)&0x1f;
+addr=addr&0x1f;
 #if __mips>=3
 *p=DMTC0(2,addr,cp0s_sel);
 #else
@@ -1623,7 +1620,7 @@ static int mycp0s(int argc,char **argv)
 {
 syscall1=__cp0syscall1;
 syscall2=__cp0syscall2;
-	syscall_addrtype=0;
+	syscall_addrtype=0x70;
 if(argc>1)cp0s_sel=strtoul(argv[1],0,0);
 else cp0s_sel=0;
 return 0;	
