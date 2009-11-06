@@ -304,10 +304,6 @@ int kbd_initialize(void)
 	 * If the test is successful a x55 is placed in the input buffer.
 	 */
 	kbd_write_command_w(KBD_CCMD_SELF_TEST);
-	kbd_write_command_w(KBD_CCMD_SELF_TEST);
-	kbd_write_command_w(KBD_CCMD_SELF_TEST);
-	kbd_write_command_w(KBD_CCMD_SELF_TEST);
-	kbd_write_command_w(KBD_CCMD_SELF_TEST);
 
 	if (kbd_wait_for_input() != 0x55) {
 		printf("Self test cmd failed,ignored!\n");
@@ -338,21 +334,19 @@ int kbd_initialize(void)
 	 *
 	 * Set up to try again if the keyboard asks for RESEND.
 	 */
-	count = 0;
 	do {
-		kbd_clear_input();
-		kbd_write_output_w(KBD_CMD_RESET);
 		kbd_clear_input();
 		kbd_write_output_w(KBD_CMD_RESET);
 		status = kbd_wait_for_input();
 		if (status == KBD_REPLY_ACK)
 			break;
-		if (status != KBD_REPLY_RESEND) {
-			printf("reset failed\n");
-			if (++count > 1)
-				break;
-			//return 2;
-		}
+#ifdef KBD_CHECK_FAST
+		if (status != KBD_REPLY_RESEND)
+			return 2;
+#else
+		if (status != KBD_REPLY_RESEND)
+			break;
+#endif
 	} while (1);
 
 	if (kbd_wait_for_input() != KBD_REPLY_POR) {
@@ -366,19 +360,17 @@ int kbd_initialize(void)
 	 *
 	 * Set up to try again if the keyboard asks for RESEND.
 	 */
-	count = 0;
 #ifndef FCRSOC
+	count = 0;
 	do {
 		kbd_write_output_w(KBD_CMD_DISABLE);
 		status = kbd_wait_for_input();
 		if (status == KBD_REPLY_ACK)
 			break;
-		if (status != KBD_REPLY_RESEND) {
-			printf("disable failed\n");
+		if (status != KBD_REPLY_RESEND)
 			if (++count > 1)
 				break;
 			//return 4;
-		}
 	} while (1);
 #endif
 
