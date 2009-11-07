@@ -39,6 +39,7 @@ void route_init();
 #endif /* NGZIP */
 int cmd_mycfg __P((int, char *[]));
 extern char  *heaptop;
+void * memcpy(void *s1, const void *s2, size_t n);
 
 #include <errno.h>
 unsigned long strtoul(const char *nptr,char **endptr,int base);
@@ -1490,7 +1491,7 @@ return 0;
 static unsigned long flashs_rombase;
 static int rom_read(int type,long long addr,union commondata *mydata)
 {
-memcpy(&mydata->data1,flashs_rombase+addr,type);
+memcpy(&mydata->data1,(long)(flashs_rombase+addr),type);
 return 0;
 }
 
