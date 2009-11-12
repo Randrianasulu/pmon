@@ -138,7 +138,7 @@ int (*syscall1)(int type,long long addr,union commondata *mydata)=(void *)&__sys
 int (*syscall2)(int type,long long addr,union commondata *mydata)=(void *)&__syscall2;
 static char *str2addmsg[]={"32 bit cpu address","64 bit cpu address","64 bit cached phyiscal address","64 bit uncached phyiscal address"};
 #if __mips >= 3
-static unsigned long long
+unsigned long long
 str2addr(const char *nptr,char **endptr,int base)
 {
 unsigned long long result;
