@@ -483,7 +483,7 @@ void
 tgt_devconfig()
 {
 #if NMOD_VGACON > 0
-	int rc=1;
+	int rc=0;
 #if NMOD_FRAMEBUFFER > 0 
 	unsigned long fbaddress,ioaddress;
 	extern struct pci_device *vga_dev;
@@ -545,7 +545,7 @@ tgt_devconfig()
 #endif
     config_init();
     configure();
-#if ((NMOD_VGACON >0) &&(PCI_IDSEL_VIA686B !=0)|| (PCI_IDSEL_CS5536 !=0))
+#if ((NMOD_VGACON >0) &&((PCI_IDSEL_VIA686B !=0)|| (PCI_IDSEL_CS5536 !=0)))
 	if(getenv("nokbd")) rc=1;
 	else rc=kbd_initialize();
 	printf("%s\n",kbd_error_msgs[rc]);
