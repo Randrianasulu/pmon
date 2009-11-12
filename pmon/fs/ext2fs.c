@@ -81,8 +81,14 @@ static int read_super_block(int fd,int index)
 				goto out;
 			}
 			ext2_sb=(struct ext2_super_block *)(diskbuf+1024);
-
+			if(ext2_sb->s_rev_level==0) //old version
+			{
+			EXT2_INODE_SIZE=128;
+			}
+			else
+			{
 			EXT2_INODE_SIZE=ext2_sb->s_inode_size;
+			}
 			INODES_PER_GROUP = ext2_sb->s_inodes_per_group;
 			RAW_BLOCK_SIZE = BLOCK_1KB << ext2_sb->s_log_block_size;
 
@@ -263,15 +269,19 @@ static int ext2_load_linux(int fd,int index, const unsigned char *path)
 				printf("%s%s",s,((de->file_type)&2)?"/ ":" ");
 			}
 			if (!ext2_entrycmp(directoryname, de->name, de->name_len)){ 
-				if(de->file_type==EXT2_FT_REG_FILE)
+				if(de->file_type==EXT2_FT_REG_FILE||de->file_type==EXT2_FT_UNKNOWN)
 				{
 					if (ext2_get_inode(fd,de->inode,&File_inode)) {
 						printf("load EXT2_ROOT_INO error");
 						free(bh);
 						return -1;
 					}
+					#define S_IFREG  0100000
+					if(File_inode->i_mode&S_IFREG)
+					{
 					free(bh);
 					return 0;
+					}
 				}
 				find=1;
 				inode=de->inode;
