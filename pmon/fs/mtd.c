@@ -284,7 +284,17 @@ int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
 	if(size) rmp->part_size=size;
 	else rmp->part_size=mtd->size;
 	if(name)strcpy(rmp->name,name);
-	LIST_INSERT_HEAD(&mtdfiles, rmp, i_next);
+	if(!mtdfiles.lh_first)
+	{
+	rmp->i_next=rmp->i_next;
+	rmp->i_next.le_prev=&rmp->i_next;
+	mtdfiles.lh_first=rmp;
+	}
+	else {
+	*mtdfiles.lh_first->i_next.le_prev=mtdfiles.lh_first;
+	LIST_INSERT_BEFORE(mtdfiles.lh_first, rmp, i_next);
+	*mtdfiles.lh_first->i_next.le_prev=0;
+	}
 	return 0;
 }
 
