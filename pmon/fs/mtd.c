@@ -221,7 +221,7 @@ static int
 	erase.len = (n+p->mtd->erasesize-1)&~(p->mtd->erasesize-1);
 	erase.priv = 0;
 
-	if(erase.addr>=start_addr && erase.addr<start_addr+erase.len)
+	if(erase.addr>=start_addr && erase.addr<start_addr+n)
 	{
 	p->mtd->erase(p->mtd,&erase);
 	}
