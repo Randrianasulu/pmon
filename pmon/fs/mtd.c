@@ -179,6 +179,10 @@ static int
 	if (_file[fd].posn + n > priv->open_size)
 		n = priv->open_size - _file[fd].posn;
 
+	while(p->mtd->block_isbad(p->mtd,_file[fd].posn+priv->open_offset+p->part_offset))
+	{
+	_file[fd].posn += p->mtd->erasesize;
+	}
 	p->mtd->read(p->mtd,_file[fd].posn+priv->open_offset+p->part_offset,n,&n,buf);
 
 	_file[fd].posn += n;
@@ -204,8 +208,12 @@ static int
 	if (_file[fd].posn + n > priv->open_size)
 		n = priv->open_size - _file[fd].posn;
 
-	start_addr= _file[fd].posn+priv->open_offset+p->part_offset;
 	n=(n+p->mtd->writesize-1)&~(p->mtd->writesize-1);
+	while(p->mtd->block_isbad(p->mtd,_file[fd].posn+priv->open_offset+p->part_offset))
+	{
+	_file[fd].posn += p->mtd->erasesize;
+	}
+	start_addr= _file[fd].posn+priv->open_offset+p->part_offset;
 
 	erase.mtd = p->mtd;
 	erase.callback = 0;

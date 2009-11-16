@@ -33,6 +33,33 @@ if ((ctrl & NAND_CTRL_CLE)==NAND_CTRL_CLE)
 		*(volatile unsigned int *)(0xbf000010) = dat;
 }
 
+static void find_good_part(struct mtd_info *fcr_soc_mtd)
+{
+int offs;
+int start=-1;
+char name[20];
+int idx=0;
+for(offs=0;offs< fcr_soc_mtd->size;offs+=fcr_soc_mtd->erasesize)
+{
+if(fcr_soc_mtd->block_isbad(fcr_soc_mtd,offs)&& start>=0)
+{
+	sprintf(name,"g%d",idx++);
+	add_mtd_device(fcr_soc_mtd,start,offs-start,name);
+	start=-1;
+}
+else if(start<0)
+{
+ start=offs;
+}
+
+}
+
+if(start>=0)
+{
+	sprintf(name,"g%d",idx++);
+	add_mtd_device(fcr_soc_mtd,start,offs-start,name);
+}
+}
 
 //Main initialization for yaffs ----- by zhly
 int fcr_soc_foryaffs_init(struct mtd_info *mtd)
@@ -71,7 +98,8 @@ int fcr_soc_foryaffs_init(struct mtd_info *mtd)
 		printk("nand_scan failed!\n");
 		return -1;		
 	}
-	fcr_soc_mtd->size=0x04000000;
+
+	find_good_part(fcr_soc_mtd);
 
 	return 0;
 }
@@ -119,11 +147,9 @@ int fcr_soc_nand_init(void)
 	/* Register the partitions */
 //	add_mtd_partitions(fcr_soc_mtd, partition_info, NUM_PARTITIONS);
 	add_mtd_device(fcr_soc_mtd,0,0,"total flash");
-	add_mtd_device(fcr_soc_mtd,0,0x02000000,"kernel");
-	add_mtd_device(fcr_soc_mtd,0x02000000,0x04000000,"squashfs");
-	add_mtd_device(fcr_soc_mtd,0x02000000+0x04000000,0x04000000,"jffs2");
-	add_mtd_device(fcr_soc_mtd,0x02000000+0x04000000+0x04000000,0x04000000,"yaffs2");
-	add_mtd_device(fcr_soc_mtd,0x02000000+0x04000000+0x04000000+0x04000000,0x02000000,"cramfs");
+
+	find_good_part(fcr_soc_mtd);
+
 
 	/* Return happy */
 	return 0;
