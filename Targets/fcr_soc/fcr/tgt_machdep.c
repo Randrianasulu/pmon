@@ -209,7 +209,7 @@ initmips(unsigned int memsz)
 int init_kbd()
 {
     int ldd;
-    ldd = 5*25*APB_CLK/100000000; //5us/(4/APB_CLK)=5*25
+    ldd = 5*25*(APB_CLK/1000000)/100; //5us/(4/APB_CLK)=5*25
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLL, ldd & 0xff);
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLH, (ldd >> 8) & 0xff);
 	///KSEG1_STORE8(FCR_PS2_BASE+0xa,20); //kbd 100us
@@ -346,6 +346,7 @@ tgt_devinit()
         i2c_write(7,6);
 //        i2c_write(0,7);
 #endif
+//    *(volatile int *)0xbf00000c=0x151f;
 }
 
 
