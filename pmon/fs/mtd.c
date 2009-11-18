@@ -48,6 +48,7 @@
 
 LIST_HEAD(mtdfiles, mtdfile) mtdfiles = LIST_HEAD_INITIALIZER(mtdfiles);
 static int mtdidx=0;
+static struct mtdfile *goodpart0=0;
 
 static int mtdfile_open (int , const char *, int, int);
 static int mtdfile_close (int);
@@ -172,22 +173,27 @@ static int
 {
 	mtdfile        *p;
 	mtdpriv *priv;
+	int maxlen,newpos,retlen,left=n;
 
 	priv = (mtdpriv *)_file[fd].data;
 	p = priv->file;
 
 	if (_file[fd].posn + n > priv->open_size)
 		n = priv->open_size - _file[fd].posn;
+	
 
-	while(p->mtd->block_isbad(p->mtd,_file[fd].posn+priv->open_offset+p->part_offset))
+	while(left)
 	{
-	_file[fd].posn += p->mtd->erasesize;
+	newpos=file_to_mtd_pos(fd,&maxlen);
+	p->mtd->read(p->mtd,newpos,min(left,maxlen),&retlen,buf);
+	if(retlen<=0)break;
+	_file[fd].posn += retlen;
+	buf += retlen;
+	left -=retlen;
 	}
-	p->mtd->read(p->mtd,_file[fd].posn+priv->open_offset+p->part_offset,n,&n,buf);
 
-	_file[fd].posn += n;
       
-	return (n);
+	return (n-left);
 }
 
 
@@ -201,6 +207,7 @@ static int
 	mtdpriv *priv;
 	struct erase_info erase;
 	unsigned int start_addr;
+	int maxlen,newpos,retlen,left=n;
 
 	priv = (mtdpriv *)_file[fd].data;
 	p = priv->file;
@@ -208,27 +215,35 @@ static int
 	if (_file[fd].posn + n > priv->open_size)
 		n = priv->open_size - _file[fd].posn;
 
-	n=(n+p->mtd->writesize-1)&~(p->mtd->writesize-1);
-	while(p->mtd->block_isbad(p->mtd,_file[fd].posn+priv->open_offset+p->part_offset))
+
+	while(left)
 	{
-	_file[fd].posn += p->mtd->erasesize;
-	}
-	start_addr= _file[fd].posn+priv->open_offset+p->part_offset;
+	start_addr=file_to_mtd_pos(fd,&maxlen);
+	maxlen=min(left,maxlen);
+	maxlen=(maxlen+p->mtd->writesize-1)&~(p->mtd->writesize-1);
 
 	erase.mtd = p->mtd;
 	erase.callback = 0;
 	erase.addr = (start_addr+p->mtd->erasesize-1)&~(p->mtd->erasesize-1);
-	erase.len = (n+p->mtd->erasesize-1)&~(p->mtd->erasesize-1);
+	erase.len = (maxlen+p->mtd->erasesize-1)&~(p->mtd->erasesize-1);
 	erase.priv = 0;
 
-	if(erase.addr>=start_addr && erase.addr<start_addr+n)
+	if(erase.addr>=start_addr && erase.addr<start_addr+maxlen)
 	{
 	p->mtd->erase(p->mtd,&erase);
 	}
-	p->mtd->write(p->mtd,start_addr,n,&n,buf);
-	_file[fd].posn += n;
 
-	return (n);
+	p->mtd->write(p->mtd,start_addr,maxlen,&retlen,buf);
+
+	if(retlen<=0)break;
+	_file[fd].posn += retlen;
+	buf += retlen;
+	if(left>retlen) left -=retlen;
+	else left=0;
+
+	}
+
+	return (n-left);
 }
 
 /*************************************************************
@@ -286,7 +301,7 @@ int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
 	if(name)strcpy(rmp->name,name);
 	if(!mtdfiles.lh_first)
 	{
-	rmp->i_next=rmp->i_next;
+	rmp->i_next.le_next=0;
 	rmp->i_next.le_prev=&rmp->i_next;
 	mtdfiles.lh_first=rmp;
 	}
@@ -295,7 +310,43 @@ int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
 	LIST_INSERT_BEFORE(mtdfiles.lh_first, rmp, i_next);
 	*mtdfiles.lh_first->i_next.le_prev=0;
 	}
+/*add into badblock table */
+	if(!strcmp(name,"g0"))
+	{
+		goodpart0=rmp;
+	}
 	return 0;
+}
+
+int file_to_mtd_pos(int fd,int *plen)
+{
+    struct mtdfile *goodpart;
+	mtdfile *p;
+	mtdpriv *priv;
+	int add,file_start,offset,pos;
+
+	priv = (mtdpriv *)_file[fd].data;
+	p = priv->file;
+
+   goodpart=goodpart0;
+   add=goodpart0->part_offset;
+   offset=0;
+   file_start=p->part_offset+priv->open_offset;
+   pos=_file[fd].posn;
+
+ while(goodpart)
+ {
+  if(file_start<goodpart->part_offset)
+  offset += add;
+  if(file_start+pos+offset>=goodpart->part_offset && file_start+pos+offset<goodpart->part_offset+goodpart->part_size)break;
+
+
+  if(goodpart->i_next.le_next)add=goodpart->i_next.le_next->part_offset-goodpart->part_offset-goodpart->part_size;
+  goodpart=goodpart->i_next.le_next;
+ }
+ if(plen)*plen=(goodpart->part_offset+goodpart->part_size)-(file_start+pos+offset);
+
+ return file_start+pos+offset;
 }
 
 int del_mtd_device (struct mtd_info *mtd)
