@@ -3473,7 +3473,7 @@ e1000_read_mac_addr(struct e1000_hw * hw)
         hw->perm_mac_addr[i] = (uint8_t) (eeprom_data & 0x00FF);
         hw->perm_mac_addr[i+1] = (uint8_t) (eeprom_data >> 8);
     }
-    if((hw->mac_type == e1000_82546) &&
+    if((hw->mac_type == e1000_82546 || hw->mac_type == e1000_82546_rev_3) &&
        (E1000_READ_REG(hw, STATUS) & E1000_STATUS_FUNC_1)) {
         if(hw->perm_mac_addr[5] & 0x01)
             hw->perm_mac_addr[5] &= ~(0x01);
