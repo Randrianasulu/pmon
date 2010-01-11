@@ -504,7 +504,8 @@ tgt_devconfig()
 		printf("ERROR !!! VGA device is not found\n"); 
 		rc = -1;
 	}
-	if (rc > 0) {
+	if (rc >= 0) {
+		rc=1;
 		fbaddress  =_pci_conf_read(vga_dev->pa.pa_tag,0x10);
 		ioaddress  =_pci_conf_read(vga_dev->pa.pa_tag,0x18);
 
