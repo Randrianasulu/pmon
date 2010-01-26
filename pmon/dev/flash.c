@@ -137,21 +137,18 @@ fl_autoselect(struct fl_map *map)
 		break;
 
 	case FL_BUS_16:
-#if 0
-		SETWIDE(0xaa);
-		outw(map->fl_map_base + (0x5555 << 2), widedata);
-		SETWIDE(0x55);
-		outw(map->fl_map_base + (0xaaaa << 2), widedata);
-		SETWIDE(FL_AUTOSEL);
-		outw(map->fl_map_base + (0x5555 << 2), widedata);
-#else
-		SETWIDE(0xaa);
-		outw(map->fl_map_base + ConvAddr2(0x00555), widedata);
-		SETWIDE(0x55);
-		outw(map->fl_map_base + ConvAddr2(0x002AA), widedata);
-		SETWIDE(FL_AUTOSEL);
-		outw(map->fl_map_base + ConvAddr2(0x00555), widedata);
-#endif
+	{
+		short oldc=inw(map->fl_map_base);	
+        outw((map->fl_map_base + ConvAddr2(SST_CMDOFFS1)), 0xAA);
+        outw((map->fl_map_base + ConvAddr2(SST_CMDOFFS2)), 0x55);
+        outw((map->fl_map_base + ConvAddr2(SST_CMDOFFS1)), FL_AUTOSEL);
+        if(inw(map->fl_map_base)!=oldc){map->fl_type=TYPE_SST;return;}
+		outw((map->fl_map_base + ConvAddr2(AMD_CMDOFFS1)), 0xAA);
+		outw((map->fl_map_base + ConvAddr2(AMD_CMDOFFS2)), 0x55);
+		outw((map->fl_map_base + ConvAddr2(AMD_CMDOFFS1)), FL_AUTOSEL);
+        if(inw(map->fl_map_base)!=oldc){map->fl_type=TYPE_AMD;return;}
+	    else {map->fl_type=0;printf("unknow flash type\n");	}
+	}
 		break;
 
 	case FL_BUS_32:
