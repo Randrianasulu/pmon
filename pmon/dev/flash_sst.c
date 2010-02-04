@@ -101,6 +101,14 @@ int stat;
 		outb((map->fl_map_base + SST_CMDOFFS2), 0x55);
 		outb((map->fl_map_base + offset), FL_SECT);
 		break;
+	case FL_BUS_16:
+		outw((map->fl_map_base + (SST_CMDOFFS1<< 1)), 0xAA);
+		outw((map->fl_map_base + (SST_CMDOFFS2<<1)), 0x55);
+		outw((map->fl_map_base + (SST_CMDOFFS1<<1)), FL_ERASE);
+		outw((map->fl_map_base + (SST_CMDOFFS1<<1)), 0xAA);
+		outw((map->fl_map_base + (SST_CMDOFFS2<<1)), 0x55);
+		outw(map->fl_map_base + offset, FL_SECT);
+		break;
 	case FL_BUS_64:
 		break;	/* Leave this for now */
 	case FL_BUS_8_ON_64:
@@ -132,6 +140,12 @@ fl_program_sst(map, dev, pa, pd)
 		outb((map->fl_map_base + SST_CMDOFFS2), 0x55);
 		outb((map->fl_map_base + SST_CMDOFFS1), 0xA0);
 		outb((map->fl_map_base + pa), *pd);
+		break;
+	case FL_BUS_16:
+		outw((map->fl_map_base + (SST_CMDOFFS1 << 1)), 0xaa);
+		outw((map->fl_map_base + (SST_CMDOFFS2 << 1)), 0x55);
+		outw((map->fl_map_base + (SST_CMDOFFS1 << 1)), 0xa0);
+		outw(map->fl_map_base + pa, ((int)pd[1]<<8)|pd[0]);
 		break;
 	case FL_BUS_8_ON_64:
 		SETWIDE(0xaa);
@@ -168,6 +182,14 @@ fl_erase_chip_sst(map, dev)
 		outb((map->fl_map_base + SST_CMDOFFS2), 0x55);
 		outb((map->fl_map_base + SST_CMDOFFS1), FL_ERASE_CHIP);
 		break;
+	case FL_BUS_16:
+		outw((map->fl_map_base + (SST_CMDOFFS1<<1)), 0xaa);
+		outw((map->fl_map_base + (SST_CMDOFFS2<<1)), 0x55);
+		outw((map->fl_map_base + (SST_CMDOFFS1<<1)), FL_ERASE);
+		outw((map->fl_map_base + (SST_CMDOFFS1<<1)), 0xaa);
+		outw((map->fl_map_base + (SST_CMDOFFS2<<1)), 0x55);
+		outw((map->fl_map_base + (SST_CMDOFFS1<<1)), FL_ERASE_CHIP);
+		break;
 	case FL_BUS_64:
 		break;	/* Leave this for now */
 	case FL_BUS_8_ON_64:
@@ -190,6 +212,7 @@ fl_reset_sst(map, dev)
 {
 	switch(map->fl_map_bus) {
 	case FL_BUS_8:
+	case FL_BUS_16:
 		outb((map->fl_map_base), FL_RESET);
 		break;
 	case FL_BUS_8_ON_64:
@@ -221,6 +244,7 @@ fl_isbusy_sst(map, dev, what, offset, erase)
 		offset = offset << 3;
 		/* Fallthrough */
 	case FL_BUS_8:
+	case FL_BUS_16:
 		/* Data polling 
 		 *  algorithm is in Figure 6
 		 */
