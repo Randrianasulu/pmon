@@ -45,7 +45,7 @@ select		cmd_mycmd
 select		ramfiles
 select		cmd_newmt
 select		cmd_cache		# Cache enabling
-#select		cmd_call		# Call a function command
+select		cmd_call		# Call a function command
 select		cmd_date		# Time of day command
 select		cmd_env			# Full blown environment command set
 select		cmd_flash		# Flash programming cmds

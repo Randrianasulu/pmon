@@ -126,10 +126,51 @@ sprintf(buf,"d1 0 10");
 do_cmd(buf);
 }
 }
+
+static unsigned char phy_addr=0x13;
+
+static int phys_read(int type,long long addr,union commondata *mydata)
+{
+unsigned char c;
+unsigned char count;
+switch(type)
+{
+case 2:
+mydata->data2=phy_read((unsigned char)phy_addr,(unsigned char)addr);
+break;
+default: return -1;break;
+}
+return 0;
+}
+
+static int phys_write(int type,long long addr,union commondata *mydata)
+{
+char c;
+switch(type)
+{
+case 2:
+phy_write((unsigned char)phy_addr,(unsigned char)addr,mydata->data2);
+break;
+default: return -1;break;
+}
+return 0;
+return -1;
+}
+
+static int cmd_phys(int argc,char **argv)
+{
+	syscall1=phys_read;
+	syscall2=phys_write;
+	syscall_addrtype=0x10;
+if(argc>1)phy_addr=strtoul(argv[1],0,0);
+ return 0;
+}
+
 extern void spi_read_w25x_id();
 static const Cmd Cmds[] =
 {
 	{"MyCmds"},
+	{"phys","phys phyaddr", 0, "read phy", cmd_phys, 0, 99, CMD_REPEAT},
 	{"i2cs","0 for rtc,1 for ics950220", 0, "test i2c", i2cs, 0, 99, CMD_REPEAT},
 	{"fcrtest","", 0, "fcrtest", fcrtest, 0, 99, CMD_REPEAT},
 	{"spi_read_w25x_id","",0,"spi_read_w25x_id",spi_read_w25x_id,0,99,CMD_REPEAT},
