@@ -53,6 +53,7 @@
 #include "mod_usb_storage.h"
 #include "loopdev.h"
 #include "atp.h"
+#include "sdcard.h"
 
 extern int errno;
 
@@ -119,7 +120,6 @@ extern int fdread __P((dev_t dev, void *uio, int flag));
 extern int fdwrite __P((dev_t dev, void *uio, int flag));
 extern int fdclose __P((dev_t dev, int flag, int mode, void *));
 
-
 struct devsw devswitch[] = {
 	{ "console" },
 #if NSD > 0
@@ -145,6 +145,9 @@ struct devsw devswitch[] = {
 #endif
 #if NATP > 0
         { "sata", atp_open, atp_read, atp_write, atp_close},
+#endif
+#if NSDCARD > 0
+	{ "sdcard", loopdevopen, loopdevread, loopdevwrite, loopdevclose},
 #endif
 	/* Add any target specific devices. See "pmon_target.h" */
 #if defined(TGT_DEV_SWITCH)

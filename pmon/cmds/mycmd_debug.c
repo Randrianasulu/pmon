@@ -480,7 +480,7 @@ return 0;
 }
 
 #endif
-
+#if PCI_IDSEL_CS5536 != 0
 #include <target/cs5536.h>
 static int cs5536_gpio(int argc,char **argv)
 {
@@ -548,6 +548,7 @@ static int cs5536_gpio(int argc,char **argv)
 
 	return 0;
 }
+#endif
 
 //----------------------------------
 static const Cmd Cmds[] =
@@ -574,7 +575,9 @@ static const Cmd Cmds[] =
 	{"linit","",0,"linit",linit,1,1,CMD_REPEAT},
 #endif
 	{"mytest","",0,"mytest",mytest,1,1,CMD_REPEAT},
+#if PCI_IDSEL_CS5536 != 0
 	{"cs5536_gpio","reg out:? in:? out_aux1:? out_aux2:? in_aux1:? pu:? val:?",0,"set cs5536 gpio",cs5536_gpio,2,99,CMD_REPEAT},
+#endif
 	{0, 0}
 };
 

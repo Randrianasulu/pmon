@@ -126,6 +126,10 @@ CONFIG_VIDEO_HW_CURSOR:	     - Uses the hardware cursor capability of the
 #define VIDEO_HW_RECTFILL
 //#define CONFIG_VIDEO_LOGO
 //#define CONFIG_VIDEO_BMP_LOGO
+#elif defined(GC300)
+#define CONFIG_VIDEO_SW_CURSOR
+#define VIDEO_HW_BITBLT
+#define VIDEO_HW_RECTFILL
 #endif
 
 /*****************************************************************************/
@@ -367,8 +371,12 @@ static const int video_font_draw_table8[] = {
 	    0xff000000, 0xff0000ff, 0xff00ff00, 0xff00ffff,
 	    0xffff0000, 0xffff00ff, 0xffffff00, 0xffffffff };
 
+static const int video_font_draw_table12[] = {
+	    0x00000000, 0x0fff0000, 0x00000fff, 0x7fff7fff };
+
 static const int video_font_draw_table15[] = {
-	    0x00000000, 0x00007fff, 0x7fff0000, 0x7fff7fff };
+	    0x00000000, 0x7fff0000, 0x00007fff, 0x7fff7fff };
+//zgj	    0x00000000, 0x00007fff, 0x7fff0000, 0x7fff7fff };
 
 static const int video_font_draw_table16[] = {
 	    0x00000000, 0xffff0000, 0x0000ffff, 0xffffffff };
@@ -463,6 +471,25 @@ void video_drawchars_xor (int xx, int yy, unsigned char *s, int count)
 
 				((unsigned int *) dest)[0] ^= BYTESWAP32((video_font_draw_table8[bits >> 4] & eorx) ^ bgx);
 				((unsigned int *) dest)[1] ^= BYTESWAP32((video_font_draw_table8[bits & 15] & eorx) ^ bgx);
+			}
+			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
+			s++;
+		}
+		break;
+
+	case GDF_12BIT_444RGB:
+		while (count--) {
+			c = *s;
+			cdat = video_fontdata + c * VIDEO_FONT_HEIGHT;
+			for (rows = VIDEO_FONT_HEIGHT, dest = dest0;
+			     rows--;
+			     dest += VIDEO_LINE_LEN){
+				unsigned char bits = *cdat++;
+
+				((unsigned int *) dest)[0] ^= SHORTSWAP32 ((video_font_draw_table12 [bits >> 6] & eorx) ^ bgx);
+				((unsigned int *) dest)[1] ^= SHORTSWAP32 ((video_font_draw_table12 [bits >> 4 & 3] & eorx) ^ bgx);
+				((unsigned int *) dest)[2] ^= SHORTSWAP32 ((video_font_draw_table12 [bits >> 2 & 3] & eorx) ^ bgx);
+				((unsigned int *) dest)[3] ^= SHORTSWAP32 ((video_font_draw_table12 [bits & 3] & eorx) ^ bgx);
 			}
 			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
 			s++;
@@ -627,6 +654,25 @@ void video_drawchars (int xx, int yy, unsigned char *s, int count)
 
 				((unsigned int *) dest)[0] = BYTESWAP32((video_font_draw_table8[bits >> 4] & eorx) ^ bgx);
 				((unsigned int *) dest)[1] = BYTESWAP32((video_font_draw_table8[bits & 15] & eorx) ^ bgx);
+			}
+			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
+			s++;
+		}
+		break;
+
+	case GDF_12BIT_444RGB:
+		while (count--) {
+			c = *s;
+			cdat = video_fontdata + c * VIDEO_FONT_HEIGHT;
+			for (rows = VIDEO_FONT_HEIGHT, dest = dest0;
+			     rows--;
+			     dest += VIDEO_LINE_LEN){
+				unsigned char bits = *cdat++;
+
+				((unsigned int *) dest)[0] = SHORTSWAP32 ((video_font_draw_table15 [bits >> 6] & eorx) ^ bgx);
+				((unsigned int *) dest)[1] = SHORTSWAP32 ((video_font_draw_table15 [bits >> 4 & 3] & eorx) ^ bgx);
+				((unsigned int *) dest)[2] = SHORTSWAP32 ((video_font_draw_table15 [bits >> 2 & 3] & eorx) ^ bgx);
+				((unsigned int *) dest)[3] = SHORTSWAP32 ((video_font_draw_table15 [bits & 3] & eorx) ^ bgx);
 			}
 			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
 			s++;
@@ -842,6 +888,11 @@ void sisfb_copyarea(int sx,int sy,int dx,int dy,int width,int height);
 	sisfb_copyarea(0,VIDEO_LOGO_HEIGHT + VIDEO_FONT_HEIGHT,0,VIDEO_LOGO_HEIGHT,VIDEO_VISIBLE_COLS,VIDEO_VISIBLE_ROWS - VIDEO_LOGO_HEIGHT - VIDEO_FONT_HEIGHT);
 }
 #endif
+
+#if (defined(GC300))
+gc300_hw_bitblt(pGD->gdfBytesPP,pGD->winSizeX,pGD->winSizeY, VIDEO_FONT_HEIGHT );
+#endif
+
 #else
 
 #if defined(MEM_PRINTTO_VIDEO)
@@ -874,6 +925,9 @@ void sisfb_copyarea(int sx,int sy,int dx,int dy,int width,int height);
 			   VIDEO_FONT_HEIGHT,	/* frame height */
 			   CONSOLE_BG_COL	/* fill color */
 		);
+
+#elif (defined(GC300))
+    gc300_hw_rectfill(pGD->gdfBytesPP,pGD->winSizeX,pGD->winSizeY, VIDEO_FONT_HEIGHT);
 
 #elif (defined(SMI502)||defined(SMI712))
     AutodeFillRectModify(CONSOLE_BG_COL);
@@ -989,6 +1043,11 @@ void video_puts (const char *s)
 
 #define FILL_15BIT_555RGB(r,g,b) {			\
 	*(unsigned short *)fb = SWAP16((unsigned short)(((r>>3)<<10) | ((g>>3)<<5) | (b>>3))); \
+	fb += 2;					\
+}
+
+#define FILL_12BIT_444RGB(r,g,b) {			\
+	*(unsigned short *)fb = SWAP16((unsigned short)(((r>>4)<<8) | ((g>>4)<<4) | (b>>4))); \
 	fb += 2;					\
 }
 
@@ -1144,6 +1203,18 @@ int video_display_bitmap (ulong bmp_image, int x, int y)
 				fb -= (VIDEO_VISIBLE_COLS + width) * VIDEO_PIXEL_SIZE;
 			}
 			break;
+		case GDF_12BIT_444RGB:
+			while (ycount--) {
+				WATCHDOG_RESET ();
+				xcount = width;
+				while (xcount--) {
+					cte = bmp->color_table[*bmap++];
+					FILL_12BIT_444RGB (cte.red, cte.green, cte.blue);
+				}
+				bmap += padded_line;
+				fb -= (VIDEO_VISIBLE_COLS + width) * VIDEO_PIXEL_SIZE;
+			}
+			break;
 		case GDF_15BIT_555RGB:
 			while (ycount--) {
 				WATCHDOG_RESET ();
@@ -1204,6 +1275,18 @@ int video_display_bitmap (ulong bmp_image, int x, int y)
 				xcount = width;
 				while (xcount--) {
 					FILL_8BIT_332RGB (bmap[2], bmap[1], bmap[0]);
+					bmap += 3;
+				}
+				bmap += padded_line;
+				fb -= (VIDEO_VISIBLE_COLS + width) * VIDEO_PIXEL_SIZE;
+			}
+			break;
+		case GDF_12BIT_444RGB:
+			while (ycount--) {
+				WATCHDOG_RESET ();
+				xcount = width;
+				while (xcount--) {
+					FILL_12BIT_444RGB (bmap[2], bmap[1], bmap[0]);
 					bmap += 3;
 				}
 				bmap += padded_line;
@@ -1335,6 +1418,10 @@ void logo_plot (void *screen, int width, int x, int y)
 			case GDF__8BIT_332RGB:
 				*dest = ((r >> 5) << 5) | ((g >> 5) << 2) | (b >> 6);
 				break;
+			case GDF_12BIT_444RGB:
+				*(unsigned short *) dest =
+					SWAP16 ((unsigned short) (((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4)));
+				break;
 			case GDF_15BIT_555RGB:
 				*(unsigned short *) dest =
 					SWAP16 ((unsigned short) (((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)));
@@ -1442,22 +1529,7 @@ void video_set_background(unsigned char r, unsigned char g, unsigned char b)
 	}
 }
 static int record = 1;
-//80*24
-#if defined(X640x480)
-char console_buffer[2][31][81]={32};//80*30->640x480
-#elif defined(X800x480)
-char console_buffer[2][37][101]={32};
-#elif defined(X800x600)
-char console_buffer[2][37][101]={32};
-#elif defined(X1024x768)
-char console_buffer[2][49][129]={32};//128*48->1024x768
-#elif defined(X1280x1024)
-char console_buffer[2][65][161]={32};//128*48->1024x768
-#elif defined(X320x240)
-char console_buffer[2][16][41]={32};//40*15->320x240
-#else
-char console_buffer[2][31][81]={32};//80*30->640x480
-#endif
+char console_buffer[2][FB_YSIZE/VIDEO_FONT_HEIGHT+1][FB_XSIZE/VIDEO_FONT_WIDTH+1]={32};
 
 void video_console_print(int console_col, int console_row, unsigned char *s)
 {
@@ -1618,6 +1690,12 @@ int fb_init (unsigned long fbbase,unsigned long iobase)
 #elif defined(CONFIG_VIDEO_8BPP)
 	pGD->gdfBytesPP= 1;
 	pGD->gdfIndex  = GDF__8BIT_332RGB;
+#elif defined(CONFIG_VIDEO_12BPP)
+        pGD->gdfBytesPP= 2;
+        pGD->gdfIndex  = GDF_12BIT_444RGB;
+#elif defined(CONFIG_VIDEO_15BPP)
+        pGD->gdfBytesPP= 2;
+        pGD->gdfIndex  = GDF_15BIT_555RGB;
 #elif defined(CONFIG_VIDEO_16BPP)
         pGD->gdfBytesPP= 2;
         pGD->gdfIndex  = GDF_16BIT_565RGB;
@@ -1670,6 +1748,18 @@ int fb_init (unsigned long fbbase,unsigned long iobase)
 			color8 = ((CONSOLE_BG_COL & 0xe0) |
 					((CONSOLE_BG_COL >> 3) & 0x1c) | CONSOLE_BG_COL >> 6);
 			bgx = (color8 << 24) | (color8 << 16) | (color8 << 8) | color8;
+			break;
+		case GDF_12BIT_444RGB:
+			fgx = (((CONSOLE_FG_COL >> 4) << 28) |
+			        ((CONSOLE_FG_COL >> 4) << 24) | ((CONSOLE_FG_COL >> 4) << 20) |
+					((CONSOLE_FG_COL >> 4) << 16) | ((CONSOLE_FG_COL >> 4) << 12) |
+					((CONSOLE_FG_COL >> 4) << 8) | ((CONSOLE_FG_COL >> 4) << 4) |
+					(CONSOLE_FG_COL >> 4));
+			bgx = (((CONSOLE_BG_COL >> 4) << 28) |
+                    ((CONSOLE_BG_COL >> 4) << 24) | ((CONSOLE_BG_COL >> 4) << 20) |
+					((CONSOLE_BG_COL >> 4) << 16) | ((CONSOLE_BG_COL >> 4) << 12) |
+					((CONSOLE_BG_COL >> 4) << 8) | ((CONSOLE_BG_COL >> 4) << 4) |
+					(CONSOLE_BG_COL >> 4));
 			break;
 		case GDF_15BIT_555RGB:
 			fgx = (((CONSOLE_FG_COL >> 3) << 26) |

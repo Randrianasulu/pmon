@@ -49,6 +49,7 @@
 #define GDF__1BIT               6
 #define GDF__2BIT               7
 #define GDF__4BIT               8
+#define GDF_12BIT_444RGB        9
 
 /******************************************************************************/
 /* Export Graphic Driver Control                                              */
