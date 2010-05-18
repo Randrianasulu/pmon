@@ -57,7 +57,6 @@
 #include "pcivar.h"
 #include "pcireg.h"
 
-#define PCIVERBOSE 5
 #ifdef PCIVERBOSE
 #include "pcidevs.h"
 #endif
