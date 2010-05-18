@@ -466,12 +466,13 @@ autoload(char *s)
 		printf("Press any other key to abort.\n");
 		ioctl (STDIN, CBREAK, &sav);
 		lastt = 0;
-		do {
+		ioctl (STDIN, FIONREAD, &cnt);
+		while (dly != 0 && cnt == 0)
+		{
 			delay(1000000);
 			printf ("\b\b%02d", --dly);
-			//printf (".", --dly);
 			ioctl (STDIN, FIONREAD, &cnt);
-		} while (dly != 0 && cnt == 0);
+		} 
 
 		if(cnt > 0 && strchr("\n\r", getchar())) {
 			cnt = 0;
