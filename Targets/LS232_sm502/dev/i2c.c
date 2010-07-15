@@ -1,144 +1,210 @@
+#include <pmon.h>
 #include <target/i2c.h>
 
-int i2c_init(int v)
+
+
+//----------------------------------------------------
+
+
+
+
+
+unsigned char i2c_rec_s(unsigned char *addr,int addrlen,unsigned char reg,unsigned char* buf ,int count)
+{
+int i;
+int j;
+	unsigned char value;
+	for(i=0;i<count;i++)
+	{
+		for(j=0;j<addrlen;j++)
+		{
+		/*write slave_addr*/
+  * LS232_I2C_TXR = addr[j];
+  * LS232_I2C_CR  = (j == 0)? (CR_START|CR_WRITE):CR_WRITE; /* start on first addr */
+   while(*LS232_I2C_SR & SR_TIP);
+
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+		}
+
+  * LS232_I2C_TXR = reg;
+  * LS232_I2C_CR  = CR_WRITE;
+   while(*LS232_I2C_SR & SR_TIP);
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+
+		/*write slave_addr*/
+  * LS232_I2C_TXR = addr[0]|1;
+  * LS232_I2C_CR  = CR_START|CR_WRITE; /* start on first addr */
+   while(*LS232_I2C_SR & SR_TIP);
+
+ if((* LS232_I2C_SR) & SR_NOACK) return i;
+
+  * LS232_I2C_CR  = CR_READ;
+  while(*LS232_I2C_SR & SR_TIP);
+
+    buf[i] = * LS232_I2C_TXR;
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+  * LS232_I2C_CR  = CR_STOP;
+  * LS232_I2C_SR;
+ 
+	}
+
+	return count;
+}
+
+unsigned char i2c_send_s(unsigned char *addr,int addrlen,unsigned char reg,unsigned char * buf ,int count)
+{
+int i;
+int j;
+	for(i=0;i<count;i++)
+	{
+		for(j=0;j<addrlen;j++)
+		{
+		/*write slave_addr*/
+  * LS232_I2C_TXR = addr[j];
+  * LS232_I2C_CR  = j == 0? (CR_START|CR_WRITE):CR_WRITE; /* start on first addr */
+   while(*LS232_I2C_SR & SR_TIP);
+
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+		}
+
+  * LS232_I2C_TXR = reg;
+  * LS232_I2C_CR  = CR_WRITE;
+   while(*LS232_I2C_SR & SR_TIP);
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+
+  * LS232_I2C_TXR = buf[i];
+  * LS232_I2C_CR = CR_WRITE|CR_STOP;
+  while(*LS232_I2C_SR & SR_TIP);
+
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+	}
+  while(*LS232_I2C_SR & SR_BUSY);
+	return count;
+}
+
+
+unsigned char i2c_rec_b(unsigned char *addr,int addrlen,unsigned char reg,unsigned char* buf ,int count)
+{
+int i;
+int j;
+
+	
+	unsigned char value;
+
+		for(j=0;j<addrlen;j++)
+		{
+		/*write slave_addr*/
+  * LS232_I2C_TXR = addr[j];
+  * LS232_I2C_CR  = j == 0? (CR_START|CR_WRITE):CR_WRITE; /* start on first addr */
+   while(*LS232_I2C_SR & SR_TIP);
+
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+		}
+
+
+  * LS232_I2C_TXR = reg;
+  * LS232_I2C_CR  = CR_WRITE;
+   while(*LS232_I2C_SR & SR_TIP);
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+
+  * LS232_I2C_TXR = addr[0]|1;
+  * LS232_I2C_CR  = CR_START|CR_WRITE;
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+
+		for(i=0;i<count;i++)
+		{
+  * LS232_I2C_CR  = CR_READ;
+  while(*LS232_I2C_SR & SR_TIP);
+
+    buf[i] = * LS232_I2C_TXR;
+		}
+  * LS232_I2C_CR  = CR_STOP;
+
+	return count;
+}
+unsigned char i2c_send_b(unsigned char *addr,int addrlen,unsigned char reg,unsigned char * buf ,int count)
+{
+int i;
+int j;
+		for(j=0;j<addrlen;j++)
+		{
+		/*write slave_addr*/
+  * LS232_I2C_TXR = addr[j];
+  * LS232_I2C_CR  = j == 0? (CR_START|CR_WRITE):CR_WRITE; /* start on first addr */
+   while(*LS232_I2C_SR & SR_TIP);
+
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+		}
+
+
+  * LS232_I2C_TXR = reg;
+  * LS232_I2C_CR  = CR_WRITE;
+   while(*LS232_I2C_SR & SR_TIP);
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+
+	for(i=0;i<count;i++)
+	{	
+  * LS232_I2C_TXR = buf[i];
+  * LS232_I2C_CR = CR_WRITE;
+  while(*LS232_I2C_SR & SR_TIP);
+
+  if((* LS232_I2C_SR) & SR_NOACK) return i;
+
+	}
+  * LS232_I2C_CR  = CR_STOP;
+  while(*LS232_I2C_SR & SR_BUSY);
+	return count;
+}
+
+/*
+ * 0 single: 每次读一个
+ * 1 smb block
+ */
+int tgt_i2cread(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count)
+{
+int i;
+tgt_i2cinit();
+memset(buf,-1,count);
+switch(type)
+{
+case I2C_SINGLE:
+return i2c_rec_s(addr,addrlen,reg,buf,count);
+break;
+case I2C_BLOCK:
+return i2c_rec_b(addr,addrlen,reg,buf,count);
+break;
+
+default: return 0;break;
+}
+return 0;
+}
+
+int tgt_i2cwrite(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count)
+{
+tgt_i2cinit();
+switch(type&0xff)
+{
+case I2C_SINGLE:
+i2c_send_s(addr,addrlen,reg,buf,count);
+break;
+case I2C_BLOCK:
+return i2c_send_b(addr,addrlen,reg,buf,count);
+break;
+case I2C_SMB_BLOCK:
+break;
+default:return -1;break;
+}
+return -1;
+}
+
+
+int tgt_i2cinit()
 {
 static int inited=0;
 if(inited)return 0;
 inited=1;
  * LS232_I2C_PRER_LO = 0x64;
- * LS232_I2C_PRER_HI = 0x0;
+ * LS232_I2C_PRER_HI = 0;
  * LS232_I2C_CTR = 0x80;
-  if(v)printf("* LS232_I2C_PRER_LO=0x%x\n",* LS232_I2C_PRER_LO);
-  if(v)printf("* LS232_I2C_PRER_HI=0x%x\n",* LS232_I2C_PRER_HI);
-  if(v)printf("* LS232_I2C_CTR=0x%x\n",* LS232_I2C_CTR);
-  if((* LS232_I2C_PRER_LO != 0x64) || (* LS232_I2C_PRER_HI != 0x0))
-  return -1;
-  else return 0;
 }
-
-unsigned char i2c_read(unsigned char addr,int v)
-{
-  unsigned char tmp;
-  unsigned char result;
-  i2c_init(v);
-
-  * LS232_I2C_TXR = 0x64;
-  * LS232_I2C_CR  = 0x90;
-  do  tmp = * LS232_I2C_SR;
-  while( tmp & 0x02);
-  if((* LS232_I2C_SR) & 0x80)
-  {
-    if(v)printf("write slave address dnot receive ack \n");
-//          return 0;
-  }
-  else
-    if(v)printf("write slave address receive ack");
-  * LS232_I2C_TXR = addr<<4;
-  * LS232_I2C_CR  = 0x10;
-  do  tmp = * LS232_I2C_SR;
-  while( tmp & 0x02);
-  if((* LS232_I2C_SR) & 0x80)
-  {
-   if(v)printf("write reg dnot receive ack\n");
-  //        return 0;
-  }
-  else 
-   if(v)printf("write reg receive ack\n");
-  * LS232_I2C_TXR = 0x65;
-  * LS232_I2C_CR  = 0x90;
-  do  tmp = * LS232_I2C_SR;
-  while( tmp & 0x02);
-  if((* LS232_I2C_SR) & 0x80)
-  {
-    if(v)printf("write slave address 2 dnot receive ack\n");
-    //     return 0;
-  }
-  else
-    if(v)printf("write slave address 2 receive ack\n");
- 
-
-  * LS232_I2C_CR  = 0x20;
-  do  tmp = * LS232_I2C_SR;
-  while( tmp & 0x02);
-  if((* LS232_I2C_SR) & 0x80)
-  {
-  if(v)printf("read data dnot receive ack\n");
-      //    return 0;
-  }
-  else
-  if(v)printf("read data receive ack\n");
-    result = * LS232_I2C_TXR;
-  * LS232_I2C_CR  = 0x40;
-    if(v)printf("result=%x\n",result);
-    
-  
-  return result;
-}
-
-int i2c_write(unsigned char data, unsigned char addr,int v)
-{
-  unsigned char tmp;
-  i2c_init(v);
-
-
-  * LS232_I2C_TXR = 0x64;
-  * LS232_I2C_CR  = 0x90;
-  do  tmp = * LS232_I2C_SR;
-  while( tmp & 0x02);
-  if((* LS232_I2C_SR) & 0x80)
-  {
-     if(v)printf("write slave addresss dnot receive ack\n");
-      //   return 0;
-   }
-   else
-   if(v)printf("write slave addresss receive ack\n");
-   if(v)printf("addr =0x%x\n",addr);
-  * LS232_I2C_TXR = addr<<4;
-  * LS232_I2C_CR  = 0x10;
-  do  tmp = * LS232_I2C_SR;
-  while( tmp & 0x02);
-  if((* LS232_I2C_SR) & 0x80)
-  {
-   if(v)printf("write reg dnot receive ack\n");
-        //  return 0;
-   }
-   else 
-   if(v)printf("write reg receive ack\n");
-//   if(v)printf("write reg 2\n");
-  * LS232_I2C_TXR = data;
-  * LS232_I2C_CR  = 0x50;
-  do  tmp = * LS232_I2C_SR;
-  while( tmp & 0x02);
-  if((* LS232_I2C_SR) & 0x80)
-  {
-  if(v)printf("write data dnot receive ack\n");
-     //     return 0;
-  }
-  else
-   if(v)printf("write data receive ack\n");
-  if(v)printf("write data =%d\n",data);
-   return 1;
-}
-
-
-void i2c_send(char ctrl,char addr)
-{
-  * LS232_I2C_TXR = addr;
-  * LS232_I2C_CR  = ctrl;
-while(i2c_stat()&(I2C_RUN))idle();
-}
-
-char i2c_stat()
-{
-  return * LS232_I2C_SR;
-}
-
-char i2c_recv()
-{
-char tmp;
-  * LS232_I2C_CR  = I2C_READ;
-  while( i2c_stat() & I2C_RUN)idle();
-    return * LS232_I2C_RXR;
-}
-
 

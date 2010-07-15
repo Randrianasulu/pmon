@@ -10,47 +10,20 @@ union commondata{
 extern unsigned int syscall_addrtype;
 extern int (*syscall1)(int type,long long addr,union commondata *mydata);
 extern int (*syscall2)(int type,long long addr,union commondata *mydata);
-unsigned char i2c_read(unsigned char addr,int v);
-int i2c_write(unsigned char data, unsigned char addr,int v);
-static int rtc_verbose=0;
 
-static int __rtcsyscall1(int type,long long addr,union commondata *mydata)
-{
-switch(type)
-{
-case 1:mydata->data1=i2c_read(addr,rtc_verbose);break;
-default:break;
-}
-return 0;
-}
-
-static int __rtcsyscall2(int type,long long addr,union commondata *mydata)
-{
-switch(type)
-{
-case 1: i2c_write(addr,mydata->data1,rtc_verbose);return 0;
-default:break;
-}
-}
 
 
 static int Ics950220Read(int type,long long addr,union commondata *mydata)
 {
-unsigned char c;
-unsigned char count;
+char c;
+char i2caddr[]={0xd2};
 switch(type)
 {
 case 1:
-i2c_send(I2C_START|I2C_WRITE,0xd2);
-i2c_send(I2C_WRITE,addr);
-i2c_send(I2C_START|I2C_WRITE,0xd3);
-count=i2c_recv();
-i2c_send(I2C_WACK,0);
-c=i2c_recv();
-mydata->data1=c;
+tgt_i2cread(I2C_SMB_BLOCK,i2caddr,1,addr,&mydata->data1,1);
 
-i2c_send(I2C_STOP|I2C_WRITE,0);
 break;
+
 default: return -1;break;
 }
 return 0;
@@ -59,14 +32,12 @@ return 0;
 static int Ics950220Write(int type,long long addr,union commondata *mydata)
 {
 char c;
+char i2caddr[]={0xd2};
 switch(type)
 {
 case 1:
-i2c_send(I2C_START|I2C_WRITE,0xd2);
-i2c_send(I2C_WRITE,addr);
-i2c_send(I2C_WRITE,1);
-i2c_send(I2C_WRITE,mydata->data1);
-i2c_send(I2C_STOP|I2C_WRITE,0);
+tgt_i2cwrite(I2C_SMB_BLOCK,i2caddr,1,addr,&mydata->data1,1);
+
 break;
 
 default: return -1;break;
@@ -74,37 +45,57 @@ default: return -1;break;
 return 0;
 return -1;
 }
+//----------------------------------------
+
+static int syscall_i2c_type,syscall_i2c_addrlen;
+static char syscall_i2c_addr[2];
+
+static int i2c_read_syscall(int type,long long addr,union commondata *mydata)
+{
+char c;
+switch(type)
+{
+case 1:
+tgt_i2cread(syscall_i2c_type,syscall_i2c_addr,syscall_i2c_addrlen,addr,&mydata->data1,1);
+
+break;
+
+default: return -1;break;
+}
+return 0;
+}
+
+static int i2c_write_syscall(int type,long long addr,union commondata *mydata)
+{
+char c;
+switch(type)
+{
+case 1:
+tgt_i2cwrite(syscall_i2c_type,syscall_i2c_addr,syscall_i2c_addrlen,addr,&mydata->data1,1);
+
+break;
+
+default: return -1;break;
+}
+return 0;
+return -1;
+}
+//----------------------------------------
 
 static int i2cs(int argc,char **argv)
 {
-    unsigned int tmp;
-	if(argc<2)return -1;
-	if(!strcmp(argv[1],"init")){
-	if(argc!=3)return -1;
-	tmp=strtoul(argv[2],0,0);
+	volatile int i;
+	if(argc<2) 
+		return -1;
 
- * LS232_I2C_PRER_LO = tmp&0xff;
- * LS232_I2C_PRER_HI = (tmp>>8)&0xff;
- * LS232_I2C_CTR = 0x80;
-	return 0;
-	}
-	switch(strtoul(argv[1],0,0))
-	{
-	case 0:
-	syscall1=__rtcsyscall1;
-	syscall2=__rtcsyscall2;
-	rtc_verbose=(argc==2)?0:1;
-    printf("select rtc\n");
-	break;
-	case 1:
-	syscall1=Ics950220Read;
-	syscall2=Ics950220Write;
-    printf("select Ics950220\n");
-	break;
-	default:
-	return -1;
-	break;
-	}
+	syscall_i2c_type=strtoul(argv[1],0,0);
+	syscall_i2c_addrlen=argc-2;
+	for(i=2;i<argc;i++)syscall_i2c_addr[i-2]=strtoul(argv[i],0,0);
+	syscall1=(void*)i2c_read_syscall;
+	syscall2=(void*)i2c_write_syscall;
+
+	syscall_addrtype=0;
+
 	return 0;
 }
 static void fcrtest(int argc,char *argv[])

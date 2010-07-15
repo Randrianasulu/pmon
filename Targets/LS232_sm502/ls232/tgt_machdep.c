@@ -437,7 +437,7 @@ tgt_devinit()
 
 	if(have_pci)_pci_businit(1);	/* PCI bus initialization */
 //zgj	init_lcd();
-   	 i2c_init();
+   	 tgt_i2cinit();
 #if 0//def I2C_WRITE    
        	
 	i2c_write(26,0);
@@ -529,15 +529,91 @@ static void init_legacy_rtc(void)
 static inline unsigned char CMOS_READ(unsigned char addr)
 {
         unsigned char val;
-        linux_outb_p(addr, 0x70);
-        val = linux_inb_p(0x71);
+        unsigned char tmp1,tmp2;
+	volatile int tmp;
+	pcitag_t tag;
+	unsigned char value;
+	char i2caddr[]={(unsigned char)0x64};
+	if(addr >= 0x0a)
+		return 0;
+	switch(addr)
+	{
+		case 0:
+			break;
+		case 2:
+			addr = 1;
+			break;
+		case 4:
+			addr = 2;
+			break;
+		case 6:
+			addr = 3;
+			break;
+		case 7:
+			addr = 4;
+			break;
+		case 8:
+			addr = 5;
+			break;
+		case 9:
+			addr = 6;
+			break;
+		
+	}
+		
+	tgt_i2cread(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+		value = value|0x20;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+	tgt_i2cread(I2C_SINGLE,i2caddr,1,addr<<4,&val,1);
+	tmp1 = ((val>>4)&0x0f)*10;
+	tmp2  = val&0x0f;
+	val = tmp1 + tmp2;
         return val;
 }
                                                                                
 static inline void CMOS_WRITE(unsigned char val, unsigned char addr)
 {
-        linux_outb_p(addr, 0x70);
-        linux_outb_p(val, 0x71);
+	char a;
+  	unsigned char tmp1,tmp2;
+	volatile int tmp;
+	char i2caddr[]={(unsigned char)0x64};
+	tmp1 = (val/10)<<4;
+	tmp2  = (val%10);
+	val = tmp1|tmp2;
+	if(addr >=0x0a)
+		return 0;
+	switch(addr)
+	{
+		case 0:
+			break;
+		case 2:
+			addr = 1;
+			break;
+		case 4:
+			addr = 2;
+			break;
+		case 6:
+			addr = 3;
+			break;
+		case 7:
+			addr = 4;
+			break;
+		case 8:
+			addr = 5;
+			break;
+		case 9:
+			addr = 6;
+			break;
+		
+	}
+	{
+		unsigned char value;
+	
+		tgt_i2cread(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+		value = value|0x20;
+		tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+		tgt_i2cwrite(I2C_SINGLE,i2caddr,1,addr<<4,&val,1);
+	}
 }
 
 static void
@@ -580,10 +656,10 @@ _probe_frequencies()
                         while(CMOS_READ(DS_REG_CTLA) & DS_CTLA_UIP);
                                                                                
                         cur = CMOS_READ(DS_REG_SEC);
-                } while(timeout != 0 && cur == sec);
-                                                                               
+                } while(timeout != 0 && ((cur == sec)||(cur !=((sec+1)%60))) && (CPU_GetCOUNT() - cnt<0x30000000));
                 cnt = CPU_GetCOUNT() - cnt;
                 if(timeout == 0) {
+			tgt_printf("time out!\n");
                         break;          /* Get out if clock is not running */
                 }
         }
@@ -599,7 +675,7 @@ _probe_frequencies()
 		 */
 		md_cpufreq = 66000000;
 	}
-                                                                               
+         tgt_printf("cpu fre %u\n",md_pipefreq);                                                                      
 #endif /* HAVE_TOD */
 }
                                                                                

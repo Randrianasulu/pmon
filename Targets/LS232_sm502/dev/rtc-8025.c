@@ -189,72 +189,17 @@ void rtc_8025_read (void)
 //        uchar buf[17];
 	uchar i;
 	struct rtc_time *tmp;
+	char value;
+	char i2caddr[]={(unsigned char)0x64};
 	tmp = malloc(sizeof(struct rtc_time ));
-// for(j=0;j<256;j++)
-//	j = 0x32;
-	i2c_write(0x20,0x0e,1);
-	i2c_write(0x00,0x0f,1);
-	for(i=0;i<16;i++)
-	{
-		buf[i+1] = i2c_read(i,0);
-		printf("buf[%d] = 0x%x\n",i+1,buf[i+1]);
-		delay(0x100000);
-	}
-#if 0
-	{
-		delay(0x100000);
-		i2c_write(0x20,0x00,1);
-//		delay(0x100000);
-		i2c_write(0x30,0x01,1);
-//		delay(0x100000);
-		i2c_write(0x10,0x02,1);
-//		delay(0x100000);
-		i2c_write(0x03,0x03,1);
-//		delay(0x100000);
-		i2c_write(0x15,0x04,1);
-//		delay(0x100000);
-		i2c_write(0x07,0x05,1);
-//		delay(0x100000);
-		i2c_write(0x09,0x06,1);
-//		delay(0x100000);
-	}
-//{
-//printf("========================I2C Addr is : 0x%x  ================\n",j);
-//        if (i2c_read(CFG_I2C_RTC_ADDR, 0, 0, buf, 16))
-//                printf("Error reading from RTC\n");
-	for(i=0;i<16;i++)
-	{
-#if 0
-	//i2c_send(I2C_START|I2C_WRITE,0x32);
-	i2c_send( I2C_START|I2C_WRITE, j );
-	i2c_send( I2C_WRITE, i );
-	i2c_send( I2C_WRITE, 1 );
-	i2c_send( I2C_WRITE,i );
-	i2c_send(I2C_STOP|I2C_WRITE,0);
+	value = 0x20;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
 
-#endif
+	value = 0x0;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xf<<4,&value,1);
 
-#if 0
-        //i2c_send(I2C_START|I2C_WRITE,0x32);
-        i2c_send(I2C_START|I2C_WRITE,j);
-        i2c_send(I2C_WRITE,i);
-#if 0
-        i2c_send(I2C_START|I2C_WRITE,0xd3);
-        count=i2c_recv();
-#endif
+	tgt_i2cread(I2C_SINGLE,i2caddr,1,0,buf,16);
 
-        i2c_send(I2C_WACK,0);
-        buf[i] = i2c_recv();
-        i2c_send(I2C_STOP|I2C_WRITE,0);
-#endif
-//		8025_i2c_read(i);
-		//buf[i]=8025_i2c_read(i);
-		buf[i+1] = i2c_read(i,0);
-		printf("buf[%d] = 0x%x\n",i+1,buf[i+1]);
-		delay(0x100000);
-	}
-
-#endif
         sec = rtc_read(RTC_SEC_REG_ADDR);
         min = rtc_read(RTC_MIN_REG_ADDR);
         hour = rtc_read(RTC_HR_REG_ADDR);
@@ -291,7 +236,6 @@ void rtc_8025_read (void)
         DEBUGR ("Get DATE: %4d-%02d-%02d (wday=%d)  TIME: %2d:%02d:%02d\n",
                 tmp->tm_year, tmp->tm_mon, tmp->tm_mday, tmp->tm_wday,
                 tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
-// }
 	free(tmp);
 #endif
 }
@@ -306,77 +250,20 @@ void rtc_8025_set (void)
 //        uchar buf[17];
 	uchar i;
 	struct rtc_time *tmp;
+	char value;
+	char i2caddr[]={(unsigned char)0x64};
 	tmp = malloc(sizeof(struct rtc_time ));
-	i2c_write(0x20,0x0e,1);
-	i2c_write(0x00,0x0f,1);
-	for(i=0;i<16;i++)
-	{
-		buf[i+1] = i2c_read(i,0);
-		printf("buf[%d] = 0x%x\n",i+1,buf[i+1]);
-		delay(0x100000);
-	}
-#if 1
-	{
-		delay(0x100000);
-		i2c_write(0x20,0x00,1);
-//		delay(0x100000);
-		i2c_write(0x35,0x01,1);
-//		delay(0x100000);
-		i2c_write(0x20,0x02,1);
-//		delay(0x100000);
-		i2c_write(0x05,0x03,1);
-//		delay(0x100000);
-		i2c_write(0x24,0x04,1);
-//		delay(0x100000);
-		i2c_write(0x07,0x05,1);
-//		delay(0x100000);
-		i2c_write(0x09,0x06,1);
-//		delay(0x100000);
-	}
-	for(i=0;i<16;i++)
-	{
-		buf[i+1] = i2c_read(i,0);
-		printf("buf[%d] = 0x%x\n",i+1,buf[i+1]);
-		delay(0x100000);
-	}
 
-#endif
-        sec = rtc_read(RTC_SEC_REG_ADDR);
-        min = rtc_read(RTC_MIN_REG_ADDR);
-        hour = rtc_read(RTC_HR_REG_ADDR);
-        wday = rtc_read(RTC_WEEK_REG_ADDR);
-        mday = rtc_read(RTC_DATE_REG_ADDR);
-        mon = rtc_read(RTC_MON_REG_ADDR);
-        year = rtc_read(RTC_YR_REG_ADDR);
+	value = 0x20;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
 
-        DEBUGR ("Get RTC year: %02x mon: %02x mday: %02x wday: %02x "
-                "hr: %02x min: %02x sec: %02x\n",
-                year, mon, mday, wday, hour, min, sec);
+	value = 0x0;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xf<<4,&value,1);
 
-        /* dump status */
-        ctl2 = rtc_read(RTC_CTL2_REG_ADDR);
-        if (ctl2 & RTC_CTL2_BIT_PON)
-                printf("RTC: power-on detected\n");
+	memset(tmp,0,sizeof(struct rtc_time));
 
-        if (ctl2 & RTC_CTL2_BIT_VDET)
-                printf("RTC: voltage drop detected\n");
+	rtc_set(tmp);
 
-        if (!(ctl2 & RTC_CTL2_BIT_XST))
-                printf("RTC: oscillator stop detected\n");
-
-        tmp->tm_sec  = bcd2bin (sec & 0x7F);
-        tmp->tm_min  = bcd2bin (min & 0x7F);
-        tmp->tm_hour = bcd2bin (hour & 0x3F);
-        tmp->tm_mday = bcd2bin (mday & 0x3F);
-        tmp->tm_mon  = bcd2bin (mon & 0x1F);
-        tmp->tm_year = bcd2bin (year) + ( bcd2bin (year) >= 70 ? 1900 : 2000);
-        tmp->tm_wday = bcd2bin (wday & 0x07);
-        tmp->tm_yday = 0;
-        tmp->tm_isdst= 0;
-
-        DEBUGR ("Get DATE: %4d-%02d-%02d (wday=%d)  TIME: %2d:%02d:%02d\n",
-                tmp->tm_year, tmp->tm_mon, tmp->tm_mday, tmp->tm_wday,
-                tmp->tm_hour, tmp->tm_min, tmp->tm_sec);
 	free(tmp);
 #endif
 }
@@ -444,13 +331,8 @@ void rtc_reset (void)
  */
 static void rtc_write (uchar reg, uchar val)
 {
-        uchar buf[2];
-        buf[0] = reg << 4;
-        buf[1] = val;
-#if 0
-        if (i2c_write(CFG_I2C_RTC_ADDR, 0, 0, buf, 2) != 0)
-                printf("Error writing to RTC\n");
-#endif
+	char i2caddr[]={(unsigned char)0x64};
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,reg,&val,1);
 }
 
 static unsigned bcd2bin (uchar n)

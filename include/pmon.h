@@ -397,4 +397,6 @@ extern int cpuid;
 #define I2C_BLOCK 1
 #define I2C_SMB_BLOCK 2
 
+int tgt_i2cread(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count);
+int tgt_i2cwrite(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count);
 #endif /* _PMON_H_ */
