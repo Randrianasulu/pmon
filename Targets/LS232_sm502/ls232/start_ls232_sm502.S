@@ -322,9 +322,7 @@ locate:
         #li      a1, 0x0c4007b8
         li	a1, 0x0c4002d4
 #zgj-20090205        sw      a1, 0x0(a2)
-#ifndef BOOT_FROM_EJTAG
         sw      a1, 0x0(a2) ; #zgj-20090227
-#endif
        # li      a1, 0x209800a7
         li      a1, 0x209800cd  #for 256MB sdram 4 x 8k x 2k x 8 b  ##zgj-20090713 for ls232 Demo#
         #zgj-20090713  li      a1, 0x209800ca  #for 128MB sdram 4 x 8k x 1k x 16 b
@@ -332,9 +330,7 @@ locate:
         #li      a1, 0x209000c6
         #li      a1, 0x208800c6
 #zgj-20090205        sw      a1, 0x4(a2) ; #zgj-20090227
-#ifndef BOOT_FROM_EJTAG
         sw      a1, 0x4(a2) ; #zgj-20090227
-#endif
 	GPIOLED_SET(11)	
 
 	#li  msize,0x02000000     
@@ -416,11 +412,7 @@ bootnow:
 121: 
 	FCALL_PRINTSTR("Copy PMON to execute location...\r\n")
 	la	a0, start
-#ifdef BOOT_FROM_EJTAG
-	li	a1, 0xa0200000
-#else
 	addu a1,a0,s0
-#endif
 	la	a2, _edata
         or      a0, 0xa0000000
         or      a2, 0xa0000000
