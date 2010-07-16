@@ -366,13 +366,8 @@ do_caches:
 	nop
 	TTYDBG("\r\n\r\n")
 
-    mfc0   a0,COP_0_CONFIG
-    and    a0,a0,~((1<<12) | 3)
-	or     a0,a0,2
-    mtc0   a0,COP_0_CONFIG
 
 	GPIOLED_SET(14)	
-
 
 #include "newtest.32/mydebug.S"
 bootnow:
@@ -386,8 +381,10 @@ bootnow:
 	jalr v0; \
 	nop;
 
-
-
+        mfc0   a0,COP_0_CONFIG
+        and    a0,a0,0xfffffff8
+        or     a0,a0,0x2
+        mtc0   a0,COP_0_CONFIG
 
 /*copy copy program to sdram to make copy fast*/
 
@@ -396,7 +393,7 @@ bootnow:
 	la t1,122f
 	addu t1,s0
 	
-	li t2,0xa0000000
+	li t2,0x80000000
 1:
 	lw  v0,(t0)
 	sw v0,(t2)
@@ -405,17 +402,19 @@ bootnow:
 	ble t0,t1,1b
 	nop
 
-	li t0,0xa0000000
+	li t0,0x80000000
    	jr t0	
 	nop		
 .align 3
 121: 
+        mfc0   a0,COP_0_CONFIG
+        and    a0,a0,0xfffffff8
+        or     a0,a0,0x3
+        mtc0   a0,COP_0_CONFIG
 	FCALL_PRINTSTR("Copy PMON to execute location...\r\n")
 	la	a0, start
 	addu a1,a0,s0
 	la	a2, _edata
-        or      a0, 0xa0000000
-        or      a2, 0xa0000000
 	subu	t1, a2, a0
 	srl	t1, t1, 2
 
@@ -457,6 +456,29 @@ bootnow:
 	move a0, sp
 	BAL(hexserial)
 	nop
+
+	.set mips3
+#ifndef WAYBIT
+#define WAYBIT 12
+#endif
+#define WAY__(x) x
+#define WAY_(x,y) WAY__((x<<y))
+#define WAY(x) WAY_(x,WAYBIT)
+        li    $5,0x80000000;
+        addu  $6,$5,16384;
+1:
+        cache  1, WAY(0)($5);
+        cache  1, WAY(1)($5);
+        cache  1, WAY(2)($5);
+        cache  1, WAY(3)($5);
+        cache  0, WAY(0)($5);
+        cache  0, WAY(1)($5);
+        cache  0, WAY(2)($5);
+        cache  0, WAY(3)($5);
+        add    $5,$5,32;
+        bne    $5,$6,1b;
+        nop;
+	.set mips0
 
 	li	a0, 0
 	sw	a0, CpuTertiaryCacheSize /* Set L3 cache size */
