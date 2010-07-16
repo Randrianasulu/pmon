@@ -673,7 +673,6 @@ _probe_frequencies()
 		md_pipefreq *= 20000;
 		/* we have no simple way to read multiplier value
 		 */
-		md_cpufreq = 66000000;
 	}
          tgt_printf("cpu fre %u\n",md_pipefreq);                                                                      
 #endif /* HAVE_TOD */
