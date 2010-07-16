@@ -460,7 +460,10 @@ int fl_program(void *fl_base, void *data_base, int data_size, int verbose)
 	    char *nvram;
 		int offs,count,left;
 		struct fl_device *dev=fl_devident(fl_base,0);
-		int nvram_size=dev->fl_secsize;
+		int nvram_size;
+
+		if (!dev) return -1;
+		nvram_size=dev->fl_secsize;
 
 	nvramsecbuf = (char *)malloc(nvram_size);
 	if(nvramsecbuf == 0) {
