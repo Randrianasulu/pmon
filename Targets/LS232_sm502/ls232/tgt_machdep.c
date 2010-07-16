@@ -378,8 +378,8 @@ tgt_devconfig()
 	    	rc=1;
         else 
 	{
-		init_kbd();
-		rc=kbd_initialize();
+//		init_kbd();
+//		rc=kbd_initialize();
 	}
         printf("%s\n",kbd_error_msgs[rc]);
         if(!rc){

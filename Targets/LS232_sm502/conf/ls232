@@ -113,7 +113,7 @@ option		NOSNOOP			# Caches are no-snooping
 #
 option		HAVE_TOD		# Time-Of-Day clock
 option		HAVE_NVENV		#  Platform has non-volatile env mem
-option		HAVE_LOGO		# Output splash logo
+#option		HAVE_LOGO		# Output splash logo
 option		USE_SUPERIO_UART
 #option		USE_LEGACY_RTC
 #option		GODSONEV2A
@@ -128,6 +128,7 @@ option		AUTOLOAD
 option		CONFIG_CACHE_64K_4WAY
 option 	    NVRAM_IN_FLASH	
 #option		FLASH_READ_ONLY
+option		KBD_CHECK_FAST
 
 #
 #  Now the Machine specification
