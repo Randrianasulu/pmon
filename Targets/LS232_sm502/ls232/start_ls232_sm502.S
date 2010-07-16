@@ -299,15 +299,14 @@ locate:
 	nop
 	PRINTSTR("\r\n")
 
+	PRINTSTR(" s0=")
+	move	a0, s0
+	bal	hexserial
+	nop
+	PRINTSTR("\r\n")
+
 	GPIOLED_SET(7)	
 
-	bnez s0,1f
-	nop
-	li a0,128
-	la v0,initmips
-	jr v0
-	nop
-1:
 
 	/* 
 	 * Now determine DRAM configuration and size by
@@ -369,8 +368,16 @@ do_caches:
 
 	GPIOLED_SET(14)	
 
+
 #include "newtest.32/mydebug.S"
 bootnow:
+
+	bnez s0,1f
+	nop
+	b copydone
+	nop
+1:
+
 #define	FCALL_PRINTSTR(x) \
 	.rdata;98: .asciz x; .text; la a0, 98b; la v0, stringserial; addu v0,s0;jalr v0; nop	
 
@@ -479,6 +486,8 @@ bootnow:
         bne    $5,$6,1b;
         nop;
 	.set mips0
+
+copydone:
 
 	li	a0, 0
 	sw	a0, CpuTertiaryCacheSize /* Set L3 cache size */
