@@ -399,4 +399,5 @@ extern int cpuid;
 
 int tgt_i2cread(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count);
 int tgt_i2cwrite(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char *buf,int count);
+int tgt_printf (const char *fmt, ...);
 #endif /* _PMON_H_ */

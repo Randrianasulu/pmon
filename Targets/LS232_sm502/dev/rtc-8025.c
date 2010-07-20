@@ -103,6 +103,7 @@
 
 /* static uchar rtc_read (uchar reg); */
 //#define rtc_read(reg) buf[((reg) + 1) & 0xf]
+void rtc_set (struct rtc_time *tmp);
 
 #ifndef uchar
 typedef char uchar ;
