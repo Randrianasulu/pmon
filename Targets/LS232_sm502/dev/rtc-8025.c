@@ -103,20 +103,6 @@
 
 /* static uchar rtc_read (uchar reg); */
 //#define rtc_read(reg) buf[((reg) + 1) & 0xf]
-void rtc_set (struct rtc_time *tmp);
-
-#ifndef uchar
-typedef char uchar ;
-#endif
-static uchar buf[16];
-
-uchar rtc_read(uchar reg)
-{
-	uchar a;
-	a = buf[((reg) + 1) & 0xf];
-	return a;
-}
-
 /*
  * The struct used to pass data from the generic interface code to
  * the hardware dependend low-level code ande vice versa. Identical
@@ -141,6 +127,21 @@ struct rtc_time {
         int tm_yday;
         int tm_isdst;
 };
+
+void rtc_set (struct rtc_time *tmp);
+
+#ifndef uchar
+typedef char uchar ;
+#endif
+static uchar buf[16];
+
+uchar rtc_read(uchar reg)
+{
+	uchar a;
+	a = buf[((reg) + 1) & 0xf];
+	return a;
+}
+
 
 /*
 extern void i2c_send(char ctrl,char addr);
