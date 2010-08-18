@@ -132,7 +132,7 @@ static union commondata{
 }mydata,*pmydata;
 
 unsigned int syscall_addrtype=0;
-#define syscall_addrwidth ((syscall_addrtype<0?0:(syscall_addrtype>>4))+1)
+#define syscall_addrwidth ((syscall_addrtype>256?0:(syscall_addrtype>>4))+1)
 static int __syscall1(int type,long long addr,union commondata *mydata);
 static int __syscall2(int type,long long addr,union commondata *mydata);
 int (*syscall1)(int type,long long addr,union commondata *mydata)=(void *)&__syscall1;
