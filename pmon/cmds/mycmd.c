@@ -351,7 +351,7 @@ switch(type)
 {
 case 1:
 	  MYC(mydata->data1=*(volatile char *)addr;);
-	  MYASM("ld $2,%1;lbu $2,($2);" \
+	  MYASM("ld $2,%1;lb $2,($2);" \
 		  "sb $2,%0;" \
 		  ::"m"(mydata->data1),"m"(addr)
 		  :"$2","memory"
@@ -359,7 +359,7 @@ case 1:
 	   break;
 case 2:
 	  MYC(mydata->data2=*(volatile short *)addr;);
-	  MYASM("ld $2,%1;lhu $2,($2);" \
+	  MYASM("ld $2,%1;lh $2,($2);" \
 		  "sh $2,%0;" \
 		  ::"m"(mydata->data2),"m"(addr)
 		  :"$2"
@@ -367,7 +367,7 @@ case 2:
 	   break;
 case 4:
 	  MYC(mydata->data4=*(volatile int *)addr;);
-	  MYASM("ld $2,%1;lwu $2,($2);" \
+	  MYASM("ld $2,%1;lw $2,($2);" \
 		   "sw $2,%0;" \
 		  ::"m"(mydata->data4),"m"(addr)
 		  :"$2"
@@ -391,21 +391,21 @@ switch(type)
 {
 case 1:
 	 MYC(*(volatile char *)addr=mydata->data1;);
-	  MYASM("ld $2,%1;lbu $3,%0;sb $3,($2);" \
+	  MYASM("ld $2,%1;lb $3,%0;sb $3,($2);" \
 		  ::"m"(mydata->data1),"m"(addr)
 		  :"$2","$3"
 		 );
 	   break;
 case 2:
 	  MYC(*(volatile short *)addr=mydata->data2;);
-	  MYASM("ld $2,%1;lhu $3,%0;sh $3,($2);" \
+	  MYASM("ld $2,%1;lh $3,%0;sh $3,($2);" \
 		  ::"m"(mydata->data2),"m"(addr)
 		  :"$2","$3"
 		 );
 	  break;
 case 4:
 	  MYC(*(volatile int *)addr=mydata->data4;);
-	  MYASM("ld $2,%1;lwu $3,%0;sw $3,($2);" \
+	  MYASM("ld $2,%1;lw $3,%0;sw $3,($2);" \
 		  ::"m"(mydata->data2),"m"(addr)
 		  :"$2","$3"
 		 );
