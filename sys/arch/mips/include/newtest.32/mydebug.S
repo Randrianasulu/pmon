@@ -883,6 +883,7 @@ func_ke:
 		move   a0,v0
 		bal tgt_putchar
 		nop
+        or     a0,a0,0x2
         mtc0   a0,CP0_CONFIG
 		b func_q
 		nop
