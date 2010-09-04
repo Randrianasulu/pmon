@@ -1,5 +1,7 @@
 #ifndef __MYDEBUG__
 #define __MYDEBUG__
+.set push
+.set mips3
 bootkeytest:
 	bal tgt_testchar
 	nop
@@ -1460,4 +1462,4 @@ b mydebug_restarth
 nop
 END(mydebug_main)
 #endif
-
+.set pop
