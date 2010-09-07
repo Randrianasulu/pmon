@@ -78,7 +78,7 @@ static const int tftperrmap[] = {
     EACCES	/* ENOUSER	no such user */
 };
 
-#define	TIMEOUT		2		/* secs between rexmts */
+#define	TIMEOUT		100000		/* secs between rexmts */
 #define MAXREXMT	0x7fffffff		/* no of rexmts */
 #define PKTSIZE		(SEGSIZE+4)
 
@@ -493,7 +493,7 @@ tftprrq (tfp, req, size)
 
 		FD_ZERO(&ifds);
 		FD_SET(tfp->sock, &ifds);
-		timo.tv_sec = TIMEOUT; timo.tv_usec = 0;
+		timo.tv_sec = 0; timo.tv_usec = TIMEOUT;
 		switch (select (tfp->sock + 1, &ifds, 0, 0, &timo)) {
 			case -1:
 				perror("tftp: select");
@@ -586,7 +586,7 @@ int size;
 
 		FD_ZERO(&ifds);
 		FD_SET(tfp->sock, &ifds);
-		timo.tv_sec = TIMEOUT; timo.tv_usec = 0;
+		timo.tv_sec = 0; timo.tv_usec = TIMEOUT;
 		switch (select (tfp->sock + 1, &ifds, 0, 0, &timo)) {
 			case -1:
 				perror("tftp: select");
