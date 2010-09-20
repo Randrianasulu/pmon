@@ -346,7 +346,8 @@ tgt_devinit()
         i2c_write(7,6);
 //        i2c_write(0,7);
 #endif
-//    *(volatile int *)0xbf00000c=0x151f;
+/*N_MODE，当实际nandflash发出的地址周期超过了配置的值的时候NN_CS会一直为低。soc系统复位的值是0x1315，即最多3个地址周期，应该改成0x1515*/
+    *(volatile int *)0xbf00000c=0x1515;
 }
 
 
