@@ -53,6 +53,7 @@
 
 /***************************************************/
 
+s32  synopGMAC_init_network_interface(char* xname,u64 synopGMACMappedAddr);
 int  SynopGMAC_Host_Interface_init(void)
 {
 
@@ -75,10 +76,13 @@ int  SynopGMAC_Host_Interface_init(void)
 
         /* Initialize the Network dependent services */
 	
-	printf("=======00000 \n");
 	TR("======000\n");
-        if((retval = synopGMAC_init_network_interface())){
-		TR0("Could not initialize the Network interface.\n");
+        if((retval = synopGMAC_init_network_interface("syn0",0x90000c0000000000LL))){
+		TR("Could not initialize the Network interface.\n");
+		return retval;
+	}
+        if((retval = synopGMAC_init_network_interface("syn1",0x90000d0000000000LL))){
+		TR("Could not initialize the Network interface.\n");
 		return retval;
 	}
 	

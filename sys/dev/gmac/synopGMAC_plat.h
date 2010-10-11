@@ -34,7 +34,7 @@
 #define IOCTL_POWER_DOWN     SIOCDEVPRIVATE+6
 
 #define SYNOP_GMAC0 1
-//#define SYNOP_GMAC1 1
+#define SYNOP_GMAC1 1
 
 typedef unsigned long long  u64;
 typedef unsigned long  u32;
@@ -57,6 +57,7 @@ typedef unsigned long dma_addr_t;
 #define readl(addr) (*(volatile u32*)(addr))
 
 
+/*	sw
 #define TR0(fmt, args...) printk(KERN_CRIT "SynopGMAC: " fmt, ##args)				
 
 #ifdef DEBUG
@@ -65,6 +66,7 @@ typedef unsigned long dma_addr_t;
 #else
 # define TR(fmt, args...) // not debugging: nothing 
 #endif
+*/
 /*
 #define TR0(fmt, args...) printf("SynopGMAC: " fmt, ##args)				
 */
@@ -80,7 +82,7 @@ typedef unsigned long dma_addr_t;
 */
 
 //sw: nothing to display
-#define TR0(fmt, args...) printf(fmt, ##args) 
+#define TR0(fmt, args...) 		
 #define TR(fmt, args...) printf(fmt, ##args) 
 
 //typedef int bool;
@@ -136,30 +138,14 @@ void   plat_delay(u32);
  * @param[in] Offset from the base
  * \return  Returns the register contents 
  */
-static u32  synopGMACReadReg(u64 *RegBase, u32 RegOffset, u32 sel)
+static u32  synopGMACReadReg(u64 RegBase, u32 RegOffset)
 {
 
-//  u64 addr;
-  u32 addr;
+  u64 addr;
   u32 data;
 
-  if(! sel)
-	  if (RegBase == 0x5)
-//		  addr = (u32)(0x90000c0000000000) + (u32)RegOffset;
-		  addr = (u32)(0xbfe10000) + (u32)RegOffset;
-	  else
-//		  addr = (u32)(0x90000c0000001000) + (u32)RegOffset;
-		  addr = (u32)(0xbfe11000) + (u32)RegOffset;
-/* 
-  else	  
-	  if (RegBase == 0x5)
-		  addr = (u32)(0x90000d0000000000) + (u32)RegOffset;
-	  else
-		  addr = (u32)(0x90000d0000001000) + (u32)RegOffset;
-*/
-  
-	  data = readl((void *)addr);
-/*	
+		  addr = RegBase + (u64)RegOffset;
+
 	__asm __volatile(
 			".set\tnoreorder\n\t"
 			".set\tmips3\n\t"
@@ -172,8 +158,6 @@ static u32  synopGMACReadReg(u64 *RegBase, u32 RegOffset, u32 sel)
 			:"m"(addr)
 			:"memory","$8","$9"
 			);
-*/
-
 #if SYNOP_REG_DEBUG
   TR("%s RegBase = 0x%08x RegOffset = 0x%08x RegData = 0x%08x\n", __FUNCTION__, (u32)RegBase, RegOffset, data );
 #endif
@@ -189,33 +173,16 @@ static u32  synopGMACReadReg(u64 *RegBase, u32 RegOffset, u32 sel)
  * @param[in] Data to be written 
  * \return  void 
  */
-static void synopGMACWriteReg(u64 *RegBase, u32 RegOffset, u32 RegData ,u32 sel)
+static void synopGMACWriteReg(u64 RegBase, u32 RegOffset, u32 RegData )
 {
 
-  u32 addr;
+  u64 addr;
 
-  if(! sel)
-	  if (RegBase == 0x5)
-//		  addr = (u32)(0x90000c0000000000) + (u64)RegOffset;
-		  addr = (u32)(0xbfe10000) + (u32)RegOffset;
-	  else
-//		  addr = (u32)(0x90000c0000001000) + (u64)RegOffset;
-		  addr = (u32)(0xbfe11000) + (u32)RegOffset;
-/*  
-  else
-	  if (RegBase == 0x5)
-		  addr = (u64)(0x90000d0000000000) + (u64)RegOffset;
-	  else
-		  addr = (u64)(0x90000d0000001000) + (u64)RegOffset;
-*/
-		  
-  //printf("regbase = 0x%x\n",RegBase);
+		  addr = RegBase + (u64)RegOffset;
 #if SYNOP_REG_DEBUG
   TR("%s RegBase = 0x%08x RegOffset = 0x%08x RegData = 0x%08x\n", __FUNCTION__,(u32) RegBase, RegOffset, RegData );
 #endif
-  	 writel(RegData,(void *)addr);
- 
-/*
+  //writel(RegData,(void *)addr);
   //printf("GMAC addr = 0x%lx \n",addr);
 	__asm __volatile(
 			".set\tnoreorder\n\t"
@@ -227,7 +194,6 @@ static void synopGMACWriteReg(u64 *RegBase, u32 RegOffset, u32 RegData ,u32 sel)
 			:"m"(RegData),"m"(addr)
 			:"memory","$8","$9"
 			);
-*/			
   return;
 }
 
@@ -239,13 +205,13 @@ static void synopGMACWriteReg(u64 *RegBase, u32 RegOffset, u32 RegData ,u32 sel)
  * @param[in] Bit mask to set bits to logical 1 
  * \return  void 
  */
-static void synopGMACSetBits(u64 *RegBase, u32 RegOffset, u32 BitPos, u32 sel)
+static void synopGMACSetBits(u64 RegBase, u32 RegOffset, u32 BitPos)
 {
   //u64 addr = (u64)RegBase + (u64)RegOffset;
   u32 data;
-  data = synopGMACReadReg(RegBase, RegOffset, sel);
+  data = synopGMACReadReg(RegBase, RegOffset);
   data |= BitPos; 
-  synopGMACWriteReg(RegBase, RegOffset, data, sel);
+  synopGMACWriteReg(RegBase, RegOffset, data);
  // writel(data,(void *)addr);
 #if SYNOP_REG_DEBUG
   TR("%s !!!!!!!!!!!!! RegOffset = 0x%08x RegData = 0x%08x\n", __FUNCTION__, RegOffset, data );
@@ -262,12 +228,12 @@ static void synopGMACSetBits(u64 *RegBase, u32 RegOffset, u32 BitPos, u32 sel)
  * @param[in] Bit mask to clear bits to logical 0 
  * \return  void 
  */
-static void  synopGMACClearBits(u64 *RegBase, u32 RegOffset, u32 BitPos, u32 sel)
+static void  synopGMACClearBits(u64 RegBase, u32 RegOffset, u32 BitPos)
 {
   u32 data;
-  data = synopGMACReadReg(RegBase, RegOffset, sel);
+  data = synopGMACReadReg(RegBase, RegOffset);
   data &= (~BitPos); 
-  synopGMACWriteReg(RegBase, RegOffset, data, sel);
+  synopGMACWriteReg(RegBase, RegOffset, data);
 #if SYNOP_REG_DEBUG
   TR("%s !!!!!!!!!!!!! RegOffset = 0x%08x RegData = 0x%08x\n", __FUNCTION__, RegOffset, data );
 #endif
@@ -283,42 +249,19 @@ static void  synopGMACClearBits(u64 *RegBase, u32 RegOffset, u32 BitPos, u32 sel
  * \return  returns TRUE if set to '1' returns FALSE if set to '0'. Result undefined there are no bit set in the BitPos argument.
  * 
  */
-static bool  synopGMACCheckBits(u64 *RegBase, u32 RegOffset, u32 BitPos, u32 sel)
+static bool  synopGMACCheckBits(u64 RegBase, u32 RegOffset, u32 BitPos)
 {
 
   u32 data;
-  data = synopGMACReadReg(RegBase, RegOffset, sel);
+  data = synopGMACReadReg(RegBase, RegOffset);
   data &= BitPos; 
   if(data)  return true;
   else	    return false;
 
 }
 
-// read cp0-9
-
-/*
-#define	READ_CP09 asm("\
-	         .set mips32\
-		 mfc0   $15,$9,0  ;\
-		 sw	$15,(%0) ;\
-	         "\
-		 :"=r"(data)\
-		 :\
-		 :"$15"\
-			   );
 
 
-//write cp0-9
-#define WRITE_CP09 asm("\
-	         .set mips32\
-		 lw	$15,(%0) ;\
-		 mtc0   $15,$9,0  ;\
-	         "\
-		 ::"r"(data)\
-		 :"$15"\
-			   );
-*/
 
-			   
 
 #endif

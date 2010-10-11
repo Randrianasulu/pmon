@@ -55,7 +55,7 @@ struct	PmonInet{
 	struct arpcom arpcom;
 		
 //	struct mii_data sc_mii;		/* MII media information */
-	char*  dev_addr; //the net interface's address
+	char  dev_addr[6]; //the net interface's address
 	unsigned long ioaddr;
 
 //	int flags;

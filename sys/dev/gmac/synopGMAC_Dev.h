@@ -17,7 +17,6 @@
 #define SYNOP_LOOPBACK_MODE 0
 #define SYNOP_LOOPBACK_DEBUG 0
 #define SYNOP_PHY_LOOPBACK 0
-#define SYNOP_PHY_FORCELINK 0
 
 #define SYNOP_TX_TEST 0
 #define SYNOP_RX_TEST 0
@@ -44,7 +43,7 @@ typedef unsigned long dma_addr_t;
 */
 
 /*SynopGMAC can support up to 32 phys*/
-#define DEFAULT_PHY_BASE PHY0		//We use First Phy 
+#define DEFAULT_PHY_BASE PHY16		//We use First Phy 
 #define MACBASE 0x0000			// The Mac Base address offset is 0x0000
 #define DMABASE 0x1000			// Dma base address starts with an offset 0x1000
 
@@ -53,6 +52,7 @@ enum GMACPhyBase
 {
 	PHY0  = 0,			//The device can support 32 phys, but we use first phy only
 	PHY1  = 1,
+	PHY16 = 16,
 	PHY31 = 31,
 };
 
@@ -60,9 +60,8 @@ enum GMACPhyBase
 //#define TRANSMIT_DESC_SIZE  256		//Tx Descriptors needed in the Descriptor pool/queue
 //#define RECEIVE_DESC_SIZE   256 	//Rx Descriptors needed in the Descriptor pool/queue
 //#define TRANSMIT_DESC_SIZE  13//256	//Tx Descriptors needed in the Descriptor pool/queue
-#define TRANSMIT_DESC_SIZE  21//256	//Tx Descriptors needed in the Descriptor pool/queue
-//#define RECEIVE_DESC_SIZE   13//256	//Rx Descriptors needed in the Descriptor pool/queue
-#define RECEIVE_DESC_SIZE   184//256	//Rx Descriptors needed in the Descriptor pool/queue
+#define TRANSMIT_DESC_SIZE  48 	//Tx Descriptors needed in the Descriptor pool/queue
+#define RECEIVE_DESC_SIZE   96 	//Rx Descriptors needed in the Descriptor pool/queue
 
 #define ETHERNET_HEADER             14	//6 byte Dest addr, 6 byte Src addr, 2 byte length/type
 #define ETHERNET_CRC                 4	//Ethernet CRC
@@ -79,10 +78,7 @@ enum GMACPhyBase
 
 
 // This is the IP's phy address. This is unique address for every MAC in the universe
-//#define DEFAULT_MAC_ADDRESS_0 {0x00, 0x55, 0x7B, 0xB5, 0x7D, 0xF7}
-#define DEFAULT_MAC_ADDRESS_0 {0x00, 0x56, 0x7B, 0xB5, 0x7D, 0xF7}
-//#define DEFAULT_MAC_ADDRESS_1 {0x00, 0x55, 0x7B, 0xB5, 0x7D, 0xF8}
-#define DEFAULT_MAC_ADDRESS_1 {0x00, 0x56, 0x7B, 0xB5, 0x7D, 0xF8}
+#define DEFAULT_MAC_ADDRESS {0x00, 0x55, 0x7B, 0xB5, 0x7D, 0xF7}
 
 /*
 DMA Descriptor Structure
@@ -178,6 +174,7 @@ typedef struct synopGMACDeviceStruct
   /*Phy related stuff*/
   u32 ClockDivMdc;		/* Clock divider value programmed in the hardware           */
   /* The status of the link */
+  u32 LinkState0;		/* Link status as reported by the Marvel Phy                */
   u32 LinkState;		/* Link status as reported by the Marvel Phy                */
   u32 DuplexMode;               /* Duplex mode of the Phy				    */
   u32 Speed;			/* Speed of the Phy					    */
@@ -706,7 +703,7 @@ enum DmaControlReg
 { 
   DmaDisableDropTcpCs	  = 0x04000000,   /* (DT) Dis. drop. of tcp/ip CS error frames        26      RW        0       */
                                         
-  DmaStoreAndForward      = 0x00200000,   /* (SF)Store and forward                            21      RW        0       */
+  DmaStoreAndForward      = 0x02200000,   /* (SF)Store and forward                            21      RW        0       */
   DmaFlushTxFifo          = 0x00100000,   /* (FTF)Tx FIFO controller is reset to default      20      RW        0       */ 
   
   DmaTxThreshCtrl         = 0x0001C000,   /* (TTC)Controls thre Threh of MTL tx Fifo          16:14   RW                */ 
@@ -1565,84 +1562,84 @@ void synopGMAC_TS_read_target_timestamp(synopGMACdevice *gmacdev, u32 * sec_val,
 /**********************************************************
  * Common functions
  **********************************************************/
-s32 synopGMAC_set_mdc_clk_div(synopGMACdevice *gmacdev,u32 clk_div_val ,u32 sel);
-u32 synopGMAC_get_mdc_clk_div(synopGMACdevice *gmacdev, u32 sel);
-s32 synopGMAC_read_phy_reg(u64 *RegBase,u32 PhyBase, u32 RegOffset, u16 * data, u32 sel);
-s32 synopGMAC_write_phy_reg(u64 *RegBase, u32 PhyBase, u32 RegOffset, u16 data, u32 sel);
+s32 synopGMAC_set_mdc_clk_div(synopGMACdevice *gmacdev,u32 clk_div_val );
+u32 synopGMAC_get_mdc_clk_div(synopGMACdevice *gmacdev);
+s32 synopGMAC_read_phy_reg(u64 RegBase,u32 PhyBase, u32 RegOffset, u16 * data);
+s32 synopGMAC_write_phy_reg(u64 RegBase, u32 PhyBase, u32 RegOffset, u16 data);
 s32 synopGMAC_phy_loopback(synopGMACdevice *gmacdev, bool loopback);
-s32 synopGMAC_read_version (synopGMACdevice * gmacdev, u32 sel) ;
-s32 synopGMAC_reset (synopGMACdevice * gmacdev ,u32 sel); 
-s32 synopGMAC_dma_bus_mode_init(synopGMACdevice * gmacdev, u32 init_value ,u32 sel);
-s32 synopGMAC_dma_control_init(synopGMACdevice * gmacdev, u32 init_value , u32 sel);
-void synopGMAC_wd_enable(synopGMACdevice * gmacdev, u32 sel);
+s32 synopGMAC_read_version (synopGMACdevice * gmacdev) ;
+s32 synopGMAC_reset (synopGMACdevice * gmacdev ); 
+s32 synopGMAC_dma_bus_mode_init(synopGMACdevice * gmacdev, u32 init_value );
+s32 synopGMAC_dma_control_init(synopGMACdevice * gmacdev, u32 init_value );
+void synopGMAC_wd_enable(synopGMACdevice * gmacdev);
 void synopGMAC_wd_disable(synopGMACdevice * gmacdev);
-void synopGMAC_jab_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_jab_enable(synopGMACdevice * gmacdev);
 void synopGMAC_jab_disable(synopGMACdevice * gmacdev);
-void synopGMAC_frame_burst_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_frame_burst_enable(synopGMACdevice * gmacdev);
 void synopGMAC_frame_burst_disable(synopGMACdevice * gmacdev);
 void synopGMAC_jumbo_frame_enable(synopGMACdevice * gmacdev);
-void synopGMAC_jumbo_frame_disable(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_select_gmii(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_select_mii(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_rx_own_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_jumbo_frame_disable(synopGMACdevice * gmacdev);
+void synopGMAC_select_gmii(synopGMACdevice * gmacdev);
+void synopGMAC_select_mii(synopGMACdevice * gmacdev);
+void synopGMAC_rx_own_enable(synopGMACdevice * gmacdev);
 void synopGMAC_rx_own_disable(synopGMACdevice * gmacdev);
-void synopGMAC_loopback_on(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_loopback_off(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_set_full_duplex(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_set_half_duplex(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_retry_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_loopback_on(synopGMACdevice * gmacdev);
+void synopGMAC_loopback_off(synopGMACdevice * gmacdev);
+void synopGMAC_set_full_duplex(synopGMACdevice * gmacdev);
+void synopGMAC_set_half_duplex(synopGMACdevice * gmacdev);
+void synopGMAC_retry_enable(synopGMACdevice * gmacdev);
 void synopGMAC_retry_disable(synopGMACdevice * gmacdev);
 void synopGMAC_pad_crc_strip_enable(synopGMACdevice * gmacdev);
-void synopGMAC_pad_crc_strip_disable(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_back_off_limit(synopGMACdevice * gmacdev, u32 value, u32 sel);
+void synopGMAC_pad_crc_strip_disable(synopGMACdevice * gmacdev);
+void synopGMAC_back_off_limit(synopGMACdevice * gmacdev, u32 value);
 void synopGMAC_deferral_check_enable(synopGMACdevice * gmacdev);
-void synopGMAC_deferral_check_disable(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_rx_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_deferral_check_disable(synopGMACdevice * gmacdev);
+void synopGMAC_rx_enable(synopGMACdevice * gmacdev);
 void synopGMAC_rx_disable(synopGMACdevice * gmacdev);
-void synopGMAC_tx_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_tx_enable(synopGMACdevice * gmacdev);
 void synopGMAC_tx_disable(synopGMACdevice * gmacdev);
-void synopGMAC_frame_filter_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_frame_filter_enable(synopGMACdevice * gmacdev);
 void synopGMAC_frame_filter_disable(synopGMACdevice * gmacdev);
 void synopGMAC_write_hash_table_high(synopGMACdevice * gmacdev, u32 data);
 void synopGMAC_write_hash_table_low(synopGMACdevice * gmacdev, u32 data);
 void synopGMAC_hash_perfect_filter_enable(synopGMACdevice * gmacdev);
 void synopGMAC_Hash_filter_only_enable(synopGMACdevice * gmacdev);
 void synopGMAC_src_addr_filter_enable(synopGMACdevice * gmacdev);
-void synopGMAC_src_addr_filter_disable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_src_addr_filter_disable(synopGMACdevice * gmacdev);
 void synopGMAC_dst_addr_filter_inverse(synopGMACdevice * gmacdev);
-void synopGMAC_dst_addr_filter_normal(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_set_pass_control(synopGMACdevice * gmacdev,u32 passcontrol, u32 sel);
-void synopGMAC_broadcast_enable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_dst_addr_filter_normal(synopGMACdevice * gmacdev);
+void synopGMAC_set_pass_control(synopGMACdevice * gmacdev,u32 passcontrol);
+void synopGMAC_broadcast_enable(synopGMACdevice * gmacdev);
 void synopGMAC_broadcast_disable(synopGMACdevice * gmacdev);
 void synopGMAC_multicast_enable(synopGMACdevice * gmacdev);
-void synopGMAC_multicast_disable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_multicast_disable(synopGMACdevice * gmacdev);
 void synopGMAC_multicast_hash_filter_enable(synopGMACdevice * gmacdev);
-void synopGMAC_multicast_hash_filter_disable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_multicast_hash_filter_disable(synopGMACdevice * gmacdev);
 void synopGMAC_promisc_enable(synopGMACdevice * gmacdev);
-void synopGMAC_promisc_disable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_promisc_disable(synopGMACdevice * gmacdev);
 void synopGMAC_unicast_hash_filter_enable(synopGMACdevice * gmacdev);
-void synopGMAC_unicast_hash_filter_disable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_unicast_hash_filter_disable(synopGMACdevice * gmacdev);
 void synopGMAC_unicast_pause_frame_detect_enable(synopGMACdevice * gmacdev);
-void synopGMAC_unicast_pause_frame_detect_disable(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_rx_flow_control_enable(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_rx_flow_control_disable(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_tx_flow_control_enable(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_tx_flow_control_disable(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_unicast_pause_frame_detect_disable(synopGMACdevice * gmacdev);
+void synopGMAC_rx_flow_control_enable(synopGMACdevice * gmacdev);
+void synopGMAC_rx_flow_control_disable(synopGMACdevice * gmacdev);
+void synopGMAC_tx_flow_control_enable(synopGMACdevice * gmacdev);
+void synopGMAC_tx_flow_control_disable(synopGMACdevice * gmacdev);
 void synopGMAC_tx_activate_flow_control(synopGMACdevice * gmacdev);
 void synopGMAC_tx_deactivate_flow_control(synopGMACdevice * gmacdev);
-void synopGMAC_pause_control(synopGMACdevice *gmacdev, u32 sel);
-s32 synopGMAC_mac_init(synopGMACdevice * gmacdev, u32 sel);
-s32 synopGMAC_check_phy_init (synopGMACdevice * gmacdev, u32 sel);
-s32 synopGMAC_set_mac_addr(synopGMACdevice *gmacdev, u32 MacHigh, u32 MacLow, u8 *MacAddr ,u32 sel);
-s32 synopGMAC_get_mac_addr(synopGMACdevice *gmacdev, u32 MacHigh, u32 MacLow, u8 *MacAddr ,u32 sel);
-s32 synopGMAC_attach (synopGMACdevice * gmacdev, u64 macBase, u64 dmaBase, u32 phyBase,u32 sel); 
+void synopGMAC_pause_control(synopGMACdevice *gmacdev);
+s32 synopGMAC_mac_init(synopGMACdevice * gmacdev);
+s32 synopGMAC_check_phy_init (synopGMACdevice * gmacdev);
+s32 synopGMAC_set_mac_addr(synopGMACdevice *gmacdev, u32 MacHigh, u32 MacLow, u8 *MacAddr );
+s32 synopGMAC_get_mac_addr(synopGMACdevice *gmacdev, u32 MacHigh, u32 MacLow, u8 *MacAddr );
+s32 synopGMAC_attach (synopGMACdevice * gmacdev, u64 macBase, u64 dmaBase, u32 phyBase,u8 *mac_addr);
 void synopGMAC_rx_desc_init_ring(DmaDesc *desc, bool last_ring_desc);
 void synopGMAC_tx_desc_init_ring(DmaDesc *desc, bool last_ring_desc);
 void synopGMAC_rx_desc_init_chain(DmaDesc * desc);
 void synopGMAC_tx_desc_init_chain(DmaDesc * desc);
 s32 synopGMAC_init_tx_rx_desc_queue(synopGMACdevice *gmacdev);
-void synopGMAC_init_rx_desc_base(synopGMACdevice *gmacdev, u32 sel);
-void synopGMAC_init_tx_desc_base(synopGMACdevice *gmacdev, u32 sel);
+void synopGMAC_init_rx_desc_base(synopGMACdevice *gmacdev);
+void synopGMAC_init_tx_desc_base(synopGMACdevice *gmacdev);
 void synopGMAC_set_owner_dma(DmaDesc *desc);
 void synopGMAC_set_desc_sof(DmaDesc *desc);
 void synopGMAC_set_desc_eof(DmaDesc *desc);
@@ -1683,21 +1680,21 @@ s32 synopGMAC_get_rx_qptr(synopGMACdevice * gmacdev, u32 * Status, u32 * Buffer1
 #else
 s32 synopGMAC_get_rx_qptr(synopGMACdevice * gmacdev, u32 * Status, u32 * Buffer1, u32 * Length1, u32 * Data1, u32 * Buffer2, u32 * Length2, u32 * Data2);
 #endif
-void synopGMAC_clear_interrupt(synopGMACdevice *gmacdev, u32 sel);
-u32 synopGMAC_get_interrupt_type(synopGMACdevice *gmacdev, u32 sel);
+void synopGMAC_clear_interrupt(synopGMACdevice *gmacdev);
+u32 synopGMAC_get_interrupt_type(synopGMACdevice *gmacdev);
 u32 synopGMAC_get_interrupt_mask(synopGMACdevice *gmacdev);
 void synopGMAC_enable_interrupt(synopGMACdevice *gmacdev, u32 interrupts);
-void synopGMAC_disable_interrupt_all(synopGMACdevice *gmacdev, u32 sel);
+void synopGMAC_disable_interrupt_all(synopGMACdevice *gmacdev);
 void synopGMAC_disable_interrupt(synopGMACdevice *gmacdev, u32 interrupts);
-void synopGMAC_enable_dma_rx(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_enable_dma_tx(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_resume_dma_tx(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_resume_dma_rx(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_enable_dma_rx(synopGMACdevice * gmacdev);
+void synopGMAC_enable_dma_tx(synopGMACdevice * gmacdev);
+void synopGMAC_resume_dma_tx(synopGMACdevice * gmacdev);
+void synopGMAC_resume_dma_rx(synopGMACdevice * gmacdev);
 void synopGMAC_take_desc_ownership(DmaDesc * desc);
 void synopGMAC_take_desc_ownership_rx(synopGMACdevice * gmacdev);
 void synopGMAC_take_desc_ownership_tx(synopGMACdevice * gmacdev);
-void synopGMAC_disable_dma_tx(synopGMACdevice * gmacdev, u32 sel);
-void synopGMAC_disable_dma_rx(synopGMACdevice * gmacdev, u32 sel);
+void synopGMAC_disable_dma_tx(synopGMACdevice * gmacdev);
+void synopGMAC_disable_dma_rx(synopGMACdevice * gmacdev);
 /******Following APIs are valid only for Enhanced Descriptor from 3.50a release onwards*******/
 bool synopGMAC_is_ext_status(synopGMACdevice *gmacdev,u32 status); 		      
 bool synopGMAC_ES_is_IP_header_error(synopGMACdevice *gmacdev,u32 ext_status);         
@@ -1705,7 +1702,7 @@ bool synopGMAC_ES_is_rx_checksum_bypassed(synopGMACdevice *gmacdev,u32 ext_statu
 bool synopGMAC_ES_is_IP_payload_error(synopGMACdevice *gmacdev,u32 ext_status);
 /*******************PMT APIs***************************************/
 void synopGMAC_pmt_int_enable(synopGMACdevice *gmacdev);
-void synopGMAC_pmt_int_disable(synopGMACdevice *gmacdev, u32 sel);
+void synopGMAC_pmt_int_disable(synopGMACdevice *gmacdev);
 void synopGMAC_power_down_enable(synopGMACdevice *gmacdev);
 void synopGMAC_power_down_disable(synopGMACdevice *gmacdev);
 void synopGMAC_enable_pmt_interrupt(synopGMACdevice *gmacdev);
@@ -1713,8 +1710,8 @@ void synopGMAC_disable_pmt_interrupt(synopGMACdevice *gmacdev);
 void synopGMAC_magic_packet_enable(synopGMACdevice *gmacdev);
 void synopGMAC_wakeup_frame_enable(synopGMACdevice *gmacdev);
 void synopGMAC_pmt_unicast_enable(synopGMACdevice *gmacdev);
-bool synopGMAC_is_magic_packet_received(synopGMACdevice *gmacdev, u32 sel);
-bool synopGMAC_is_wakeup_frame_received(synopGMACdevice *gmacdev, u32 sel);
+bool synopGMAC_is_magic_packet_received(synopGMACdevice *gmacdev);
+bool synopGMAC_is_wakeup_frame_received(synopGMACdevice *gmacdev);
 void synopGMAC_write_wakeup_frame_register(synopGMACdevice *gmacdev, u32 * filter_contents);
 /*******************MMC APIs***************************************/
 void synopGMAC_mmc_counters_stop(synopGMACdevice *gmacdev);
@@ -1724,14 +1721,14 @@ void synopGMAC_mmc_counters_reset_selfclear(synopGMACdevice *gmacdev);
 void synopGMAC_mmc_counters_disable_rollover(synopGMACdevice *gmacdev);
 void synopGMAC_mmc_counters_enable_rollover(synopGMACdevice *gmacdev);
 u32 synopGMAC_read_mmc_counter(synopGMACdevice *gmacdev, u32 counter);
-u32 synopGMAC_read_mmc_rx_int_status(synopGMACdevice *gmacdev, u32 sel);
-u32 synopGMAC_read_mmc_tx_int_status(synopGMACdevice *gmacdev, u32 sel);
-void synopGMAC_disable_mmc_tx_interrupt(synopGMACdevice *gmacdev, u32 mask, u32 sel);
+u32 synopGMAC_read_mmc_rx_int_status(synopGMACdevice *gmacdev);
+u32 synopGMAC_read_mmc_tx_int_status(synopGMACdevice *gmacdev);
+void synopGMAC_disable_mmc_tx_interrupt(synopGMACdevice *gmacdev, u32 mask);
 void synopGMAC_enable_mmc_tx_interrupt(synopGMACdevice *gmacdev, u32 mask);
-void synopGMAC_disable_mmc_rx_interrupt(synopGMACdevice *gmacdev, u32 mask, u32 sel);
+void synopGMAC_disable_mmc_rx_interrupt(synopGMACdevice *gmacdev, u32 mask);
 void synopGMAC_enable_mmc_rx_interrupt(synopGMACdevice *gmacdev, u32 mask);
 void synopGMAC_enable_mmc_ipc_rx_interrupt(synopGMACdevice *gmacdev, u32 mask);
-void synopGMAC_disable_mmc_ipc_rx_interrupt(synopGMACdevice *gmacdev, u32 mask, u32 sel);
+void synopGMAC_disable_mmc_ipc_rx_interrupt(synopGMACdevice *gmacdev, u32 mask);
 /*******************Ip checksum offloading APIs***************************************/
 void synopGMAC_enable_rx_chksum_offload(synopGMACdevice *gmacdev);
 void synopGMAC_disable_rx_Ipchecksum_offload(synopGMACdevice *gmacdev);

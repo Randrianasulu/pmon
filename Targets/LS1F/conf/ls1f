@@ -144,7 +144,12 @@ pci*		at pcibr?
 #cd*		at scsibus? target ? lun ? 
 
 #### Networking Devices
-select      gmac_syp    #LS1F_GMAC
+
+syn0		at localbus0
+syn1		at localbus0
+option GMAC0_ADDR=0xbfe10000
+option GMAC1_ADDR=0xbfe11000
+select      gmac
 #gt0		at localbus? base 4
 #gt1		at localbus? base 5
 #gt2		at localbus? base 6
