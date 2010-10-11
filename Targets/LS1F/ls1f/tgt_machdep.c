@@ -158,45 +158,87 @@ void addr_tst1(void);
 void addr_tst2(void);
 void movinv1(int iter, ulong p1, ulong p2);
 
-//sw
-//#define MEMSCAN
 
+//#define	HPET
+void hpet_test()
+{
+	hpet_init();
+
+//	while(1)
+//		get_hpet_sts();
+//	while(!check_intr())
+//		;
+//	hpet_intr();
+
+}
 
 #define NMOD_SDCARD_STORAGE  1
 
 
-#define GMAC
-//#undef GMAC
+//#define GS_SOC_CAN
+//#ifdef
+//void can_test(void);
+//#endif
+
+//#define GS_SOC_I2C
+
+#ifdef GS_SOC_I2C
+#include <target/i2c.h>
+void idelay(int n)
+{
+	int count = n;
+	while(count > 0)
+		count--;
+	
+}
+
+int i2c_test(void)
+{
+	char i,j;
+	
+	for(i = 0x10; i < 0x20; i++)
+	{	
+		i2c_write(i+10,i);
+		idelay(100);
+		printf("===i2c_read addr: 0x%x  ,val: 0x%x\n",i,i2c_read(i));
+	}
+}
+
+#endif
+
+void pci_conf_dump()
+{
+	unsigned int * cfg_map;
+	unsigned int * conf_reg;
+	unsigned long data;
+	unsigned long data1;
+	int i,j;
+
+	
+	data1 = readl(0xbfd00410);
+	printf("===%x \n",data1);
+	
+		cfg_map = (unsigned int *)(0xbfd01120);
+		for(i = 0;i < 0x40;i = i+0x4)
+		{
+			*(cfg_map) = 0x1;
+			conf_reg = (unsigned int *)(0xbc100000+i);
+		
+			data = *(conf_reg);
+			printf("==conf_reg %d : %x\n",i,data);
+		
+		}
+
+}
+
+
+//#define GMAC
 #ifdef GMAC
-int gs232_gmac_init()
+int ls1f_gmac_init()
 {
 	return	SynopGMAC_Host_Interface_init();	
 }
 
-void gmac_test()
-{
-	unsigned int gbase = 0xbfe10000;
-	int i;
-	
-	printf("=== gmac reg resd test begin\n");
-
-	for (i = 0;i < 0xd8;i = i+4)
-		printf("=== reg:%x value:%x\n",i,LOAD32(gbase+i));
-	for (i = 0;i < 0x58;i = i+4)
-		printf("=== dma reg:%x value:%x\n",i,LOAD32(gbase+i+0x1000));
-
-/*
-	printf("=== gmac reg write test begin\n");
-	
-	printf("=== write 0xffffffff in all the regs bellow,then read them \n");
-	for (i = 0;i < 0x58;i = i+4)
-		STORE32(gbase+i+0x1000,0xffffffff);
-	for (i = 0;i < 0x58;i = i+4)
-*/		printf("=== dma reg:%x value:%x\n",i,LOAD32(gbase+i+0x1000));
-
-	
-	printf("=== gmac reg test end\n");
-}
 #endif
 
 void
@@ -243,12 +285,17 @@ initmips(unsigned int memsz)
 	//fcr_soc_nand_init();
 
 #ifdef  MEMSCAN	
-//zgj	memscan();
+	memscan();
 #endif	
-//sw	
+
+#ifdef	HPET
+	hpet_test();
+#endif
+	
+//	pci_conf_dump();
+	
 #ifdef	GMAC	
-//	gmac_test();
-	gs232_gmac_init();
+	ls1f_gmac_init();
 #endif	
 
 	/*
@@ -349,8 +396,6 @@ tgt_devconfig()
 	else 
         vga_available=0;
 
-//     vga_available=0;  //zgj-2010-3-16
-
 #endif
     config_init();
 
@@ -359,26 +404,17 @@ tgt_devconfig()
    
     printf("====before init ps/2 kbd\n");
 #if NMOD_VGACON >0
-//  	something wrong here 	disable it temporily	//sw
-//sw: dbg
-#ifdef PS2_DEBUG
-   	printf("====init ps/2 kbd\n");
-    if(getenv("nokbd")) 
-	    rc=1;
-	else
-    {
-	    init_kbd();
-	    rc=kbd_initialize();
+        if(getenv("nokbd")) 
+	rc=1;
+	else{
+	init_kbd();
+	rc=kbd_initialize();
 	}
-//sw: dbg	
-	printf("====ps/2 kbd init passed...");
-	printf("%s\n",kbd_error_msgs[rc]);
 	if(!rc){ 
 		kbd_available=1;
 	}
 	//psaux_init();
-#endif
-
+   
 #endif
    printf("devconfig done.\n");
 }
@@ -388,7 +424,6 @@ extern int test_icache_2(int addr);
 extern int test_icache_3(int addr);
 extern void godson1_cache_flush(void);
 #define tgt_putchar_uc(x) (*(void (*)(char)) (((long)tgt_putchar)|0x20000000)) (x)
-
 
 #define I2C_WRITE
 int i2c_init();
@@ -430,24 +465,29 @@ tgt_devinit()
 }
 #endif
 
+//sw: set clock delay
+	(*(volatile u32*)(0xbfd00410) = (0x24a8));
+//sw: enable gpio	
+	(*(volatile u32*)(0xbfd010c8) = (0xf00000));
+	(*(volatile u32*)(0xbfd010d8) = (0xf00000));
+//	(*(volatile u32*)(0xbc180000+0x20) = 0x0;
+//	(*(volatile u32*)(0xbc180000+0x24) = 0x80000000;
+	printf("==pci_businit: clock delay %x\n",readl(0xbfd00410));
+	printf("==gpio: gpio status %x\n",readl(0xbfd010e8));
+	
 	if(have_pci)_pci_businit(1);	/* PCI bus initialization */
 
 	
-//zgj	init_lcd();
-
-	//   	 i2c_init();		//sw	no i2c for now
-#if 0//def I2C_WRITE    
-       	
-	i2c_write(26,0);
-        i2c_write(30,1);
-        i2c_write(15,2);
-        i2c_write(1,3);
-        i2c_write(16,4);
-        i2c_write(7,5);
-        i2c_write(7,6);
-//        i2c_write(0,7);
+#ifdef GS_SOC_I2C	
+	i2c_init();
+	i2c_test();
+	
 #endif
 
+#ifdef GS_SOC_CAN
+	can_test();
+#endif
+	
 }
 
 
@@ -479,7 +519,6 @@ tgt_cmd_vers()
 void
 tgt_logo()
 {
-#if 0
     printf("\n");
     printf("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[\n");
     printf("[[[            [[[[   [[[[[[[[[[   [[[[            [[[[   [[[[[[[  [[\n");
@@ -493,7 +532,6 @@ tgt_logo()
     printf("[[  [[[[[[[[[[[[[[[  [[[[[[[[[[[[  [[[   [[[[[[[[   [[[  [[[[[[[   [[\n");
     printf("[[  [[[[[[[[[[[[[[[  [[[[[[[[[[[[  [[[[            [[[[  [[[[[[[[  [[\n");
     printf("[[[[[[[2005][[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[\n"); 
-#endif
 }
 
 static void init_legacy_rtc(void)
@@ -845,7 +883,6 @@ tgt_mapenv(int (*func) __P((char *, char *)))
 	printf("in envinit\n");
 #ifdef NVRAM_IN_FLASH
     nvram = (char *)(tgt_flashmap())->fl_map_base;
-    (char *)(tgt_flashmap())->fl_map_base;
 	printf("nvram=%08x\n",(unsigned int)nvram);
 	if(fl_devident(nvram, NULL) == 0 ||
            cksum(nvram + NVRAM_OFFS, NVRAM_SIZE, 0) != 0) {

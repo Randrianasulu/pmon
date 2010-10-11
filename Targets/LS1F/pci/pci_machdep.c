@@ -47,11 +47,17 @@
 
 #include <pmon.h>
 
+/*sw
 #define FCR_CFG_BASE			0x1f002000	
 #define FCR_PCI_IO_BASE		0x1fd00000
 #define FCR_PCI_MEM_BASE		0x10000000
+*/
+#define FCR_CFG_BASE			0x1c100000	
+#define FCR_PCI_IO_BASE		0x1c000000
+#define FCR_PCI_MEM_BASE		0x10000000
 
-#define FCR_SOC_PCI_REGS_BASE 0x1f002000
+#define BONITO_PCICMD		*((unsigned long *)(0xbc100000+0x4))
+
 
 extern void *pmalloc __P((size_t ));
 
@@ -122,8 +128,10 @@ _pci_hwinit(initialise, iot, memt)
 	pd->pa.pa_flags = PCI_FLAGS_IO_ENABLED | PCI_FLAGS_MEM_ENABLED;
 	pd->pa.pa_iot = pmalloc(sizeof(bus_space_tag_t));
 	pd->pa.pa_iot->bus_reverse = 1;
-	pd->pa.pa_iot->bus_base = 0xbfd00000;
-	//printf("pd->pa.pa_iot=%p,bus_base=0x%x\n",pd->pa.pa_iot,pd->pa.pa_iot->bus_base);
+//	pd->pa.pa_iot->bus_base = 0xbfd00000;
+//sw
+	pd->pa.pa_iot->bus_base = 0xbc000000;
+//	printf("pd->pa.pa_iot=%p,bus_base=0x%x\n",pd->pa.pa_iot,pd->pa.pa_iot->bus_base);
 	pd->pa.pa_memt = pmalloc(sizeof(bus_space_tag_t));
 	pd->pa.pa_memt->bus_reverse = 1;
 	pd->pa.pa_dmat = &bus_dmamap_tag;
@@ -132,11 +140,12 @@ _pci_hwinit(initialise, iot, memt)
 
 	pb->minpcimemaddr  = FCR_PCI_MEM_BASE+0x04000000;
 	pb->nextpcimemaddr = 0x17000000; 
-	pd->pa.pa_memt->bus_base = 0xa0000000;
+//	pd->pa.pa_memt->bus_base = 0xa0000000;		??
+	pd->pa.pa_memt->bus_base = 0xb0000000;
 	pb->minpciioaddr  = 0x0004000;
 	pb->nextpciioaddr = 0x100000;
 	pb->pci_mem_base   = 0xb0000000;
-	pb->pci_io_base    = 0xbfd00000;
+	pb->pci_io_base    = 0xbc000000;
 	pb->max_lat = 255;
 	pb->fast_b2b = 1;
 	pb->prefetch = 1;
@@ -149,8 +158,29 @@ _pci_hwinit(initialise, iot, memt)
 	bus_dmamap_tag._dmamap_offs = 0;
 
 
-	pci_local_mem_pci_base = 0;
-	AHB2PCI();
+	pci_local_mem_pci_base = 0x80000000;
+
+//sw: code form 2f	
+/*set pci base0 address and window size*/
+//	printf("\n\n==1150: %x 1154: %x\n\n\n",	*(volatile unsigned long*)(0xbfd00000+0x1150),*(volatile unsigned long*)(0xbfd00000+0x1154));
+//	printf("==win base: %x  win mmap: %x\n",*(unsigned long *)(0xbfd00120),*(unsigned long *)(0xbfd001a0));
+
+	*(volatile unsigned long*)(0xbc180024) = 0x0;
+	*(volatile unsigned long*)(0xbc180020) = 0x80000000;
+//	*(volatile unsigned long*)(0xbfd01154) = 0xffffffff;
+//	*(volatile unsigned long*)(0xbfd01150) = 0xff00000c;
+	*(volatile unsigned long*)(0xbc180004) = 0x7;
+	*(volatile unsigned long*)(0xbfd01120) = 0x1;
+	*(volatile unsigned long*)(0xbfd0110c) = 0x1;
+//	*(volatile unsigned long*)(0xbfd00120) = 0x80000000;
+//	*(volatile unsigned long*)(0xbfd001a0) = 0x000000f0;
+	*(volatile unsigned long*)(0xbfd01114) = 0x6144;
+
+	printf("\n\n==1150: %x 1154: %x\n\n\n",	*(volatile unsigned long*)(0xbfd00000+0x1150),*(volatile unsigned long*)(0xbfd00000+0x1154));
+	printf("==win base: %x  win mmap: %x\n",*(unsigned long *)(0xbfd00120),*(unsigned long *)(0xbfd001a0));
+
+//sw: ??	
+//	AHB2PCI();
 
 	return(1);
 }
@@ -185,20 +215,6 @@ _pci_dmamap(va, len)
 	return(pci_local_mem_pci_base + VA_TO_PA (va));
 }
 
-
-#if 0
-/*
- *  Map the PCI address of an area of local memory to a CPU physical
- *  address.
- */
-vm_offset_t
-_pci_cpumap(pcia, len)
-	vm_offset_t pcia;
-	unsigned int len;
-{
-	return PA_TO_VA(pcia - pci_local_mem_pci_base);
-}
-#endif
 
 
 /*
@@ -254,6 +270,7 @@ _pci_conf_read(pcitag_t tag,int reg)
 {
 	return _pci_conf_readn(tag,reg,4);
 }
+
 pcireg_t
 _pci_conf_readn(pcitag_t tag, int reg, int width)
 {
@@ -262,7 +279,8 @@ _pci_conf_readn(pcitag_t tag, int reg, int width)
     int bus, device, function;
 
     if ((reg & (width-1)) || reg < 0 || reg >= 0x100) {
-	    printf ("_pci_conf_read: bad reg 0x%x\n", reg);
+	if (_pciverbose >= 1)
+	    _pci_tagprintf (tag, "_pci_conf_read: bad reg 0x%x\n", reg);
 	return ~0;
     }
 
@@ -271,27 +289,35 @@ _pci_conf_readn(pcitag_t tag, int reg, int width)
 	/* Type 0 configuration on onboard PCI bus */
 	if (device > 20 || function > 7)
 	    return ~0;		/* device out of range */
+	addr = (1 << (device+11)) | (function << 8) | reg;
 	type = 0x00000;
     }
     else {
 	/* Type 1 configuration on offboard PCI bus */
 	if (bus > 255 || device > 31 || function > 7)
 	    return ~0;	/* device out of range */
-	type = 0x00001;
+	addr = (bus << 16) | (device << 11) | (function << 8) | reg;
+	type = 0x10000;
     }
 
-        addr=(bus<<16)|(device<<11)|(function<<8)|(reg&~0x3)|type;
+//sw: dbg
+//    printf("===bus; %x  device: %x   function: %x\n",bus,device,function);
+//    printf("===pci cfgmap: %x  addr: %x\n",((addr >> 16) | type),(FCR_CFG_BASE | (addr & 0xfffc)));
+   
+    (*(volatile unsigned long *)(0xbfd01120)) = (addr >> 16) | type;
 
-	*(volatile unsigned int *)PHYS_TO_UNCACHED(FCR_SOC_PCI_REGS_BASE + 0x1e0)=addr;
-	data = *(volatile unsigned int *)PHYS_TO_UNCACHED(FCR_SOC_PCI_REGS_BASE + 0x1e4);
+    data = *(volatile pcireg_t *)PHYS_TO_UNCACHED(FCR_CFG_BASE | (addr & 0xfffc));
 
+//sw: dbg
+//    printf("===pci read conf data: %x\n",data);    	
 
+//sw: ???    
     /* move data to correct position */
-    data = data >> ((reg & 3) << 3);
-
+    data = data >> ((addr & 3) << 3);
 
     return data;
 }
+
 
 void _pci_conf_writen(pcitag_t tag, int reg, pcireg_t data,int width);
 
@@ -301,14 +327,15 @@ _pci_conf_write(pcitag_t tag, int reg, pcireg_t data)
 	return _pci_conf_writen(tag,reg,data,4);
 }
 
-void
-_pci_conf_writen(pcitag_t tag, int reg, pcireg_t data,int width)
+
+void _pci_conf_writen(pcitag_t tag, int reg, pcireg_t data,int width)
 {
     u_int32_t addr, type;
     int bus, device, function;
 
     if ((reg &(width-1)) || reg < 0 || reg >= 0x100) {
-	    printf ("_pci_conf_write: bad reg %x\n", reg);
+	if (_pciverbose >= 1)
+	    _pci_tagprintf (tag, "_pci_conf_write: bad reg %x\n", reg);
 	return;
     }
 
@@ -318,46 +345,50 @@ _pci_conf_writen(pcitag_t tag, int reg, pcireg_t data,int width)
 	/* Type 0 configuration on onboard PCI bus */
 	if (device > 20 || function > 7)
 	    return;		/* device out of range */
+	addr = (1 << (device+11)) | (function << 8) | reg;
 	type = 0x00000;
     }
     else {
 	/* Type 1 configuration on offboard PCI bus */
 	if (bus > 255 || device > 31 || function > 7)
 	    return;	/* device out of range */
-	type = 0x00001;
+	addr = (bus << 16) | (device << 11) | (function << 8) | reg;
+	type = 0x10000;
     }
 
-
-        addr=(bus<<16)|(device<<11)|(function<<8)|(reg&~0x3)|type;
-
-	*(volatile unsigned int *)PHYS_TO_UNCACHED(FCR_SOC_PCI_REGS_BASE + 0x1e0)=addr;
-
-	if(width!=4)
-	{
-      pcireg_t ori =  *(volatile unsigned int *)PHYS_TO_UNCACHED(FCR_SOC_PCI_REGS_BASE + 0x1e4);
+    (*(volatile unsigned long *)(0xbfd01120)) = (addr >> 16) | type;
+	
+    {
+      pcireg_t ori = *(volatile pcireg_t *)PHYS_TO_UNCACHED(FCR_CFG_BASE | (addr & 0xfffc));
       pcireg_t mask = 0x0;
 
       if (width == 2) {
-	if (reg & 3) mask = 0xffff; 
-	else mask = 0xffff0000;
-      }else if (width == 1) {
-	if ((reg & 3) == 1) {
-	  mask = 0xffff00ff;
-	}else if ((reg & 3) == 2) {
-	  mask = 0xff00ffff;
-	}else if ((reg & 3) == 3) {
-	  mask = 0x00ffffff;
-	}else{
-	  mask = 0xffffff00;
+		if (addr & 3) mask = 0xffff; 
+		else mask = 0xffff0000;
+	      }else if (width == 1) {
+		if ((addr & 3) == 1) {
+		  mask = 0xffff00ff;
+		}else if ((addr & 3) == 2) {
+		  mask = 0xff00ffff;
+		}else if ((addr & 3) == 3) {
+		  mask = 0x00ffffff;
+		}else{
+		  mask = 0xffffff00;
+		}
 	}
-      }
+//sw:dbg
+//      printf("===pci cfgmap: %x  addr: %x\n",((addr >> 16) | type),(FCR_CFG_BASE | (addr & 0xfffc)));
 
-      data = data << ((reg & 3) << 3);
+      data = data << ((addr & 3) << 3);
       data = (ori & mask) | data;
-	  }
-        *(volatile unsigned int *)PHYS_TO_UNCACHED(FCR_SOC_PCI_REGS_BASE + 0x1e4)=data;
-
+//sw: dbg
+//      printf("===pci write conf data: %x\n",data);    
+ 	     
+      *(volatile pcireg_t *)PHYS_TO_UNCACHED(FCR_CFG_BASE | (addr & 0xfffc)) = data;
+	}
+      
 }
+
 
 void
 pci_sync_cache(p, adr, size, rw)
@@ -367,5 +398,66 @@ pci_sync_cache(p, adr, size, rw)
 	int rw;
 {
 	CPU_IOFlushDCache(adr, size, rw);
+}
+
+
+
+//sw: dbg
+void dump_pci()
+{
+	int  i,j;
+	unsigned long res[4];
+
+	
+	printf("-=== dump bridge regs\n");
+
+	for (j = 0;j < 0x40;j = j+4)
+	{
+		for (i = 0;i < 4;i++)
+			res[i] = *(unsigned long *)(0xbc180000+j);
+		printf("==ddr: %x  val: %x\n",(0xbc180000+j),res[3]);
+	}
+
+	printf("-=== \n");
+
+	printf("-=== dump config space\n");
+	for (i = 0;i < 0x40;i = i+4)
+	{
+		*(unsigned long *)(0xbfd01120) = 1;
+		printf("==addr: %x  val: %x\n",0xbc100000+i,*(unsigned long *)(0xbc100000+i));
+	}
+
+	printf("==pci hitsel2(1150): %x  1154: %x\n",*(unsigned long *)(0xbfd01150),*(unsigned long *)(0xbfd01154));
+	printf("==pci winbase: %x pci winmmap: %x\n",*(unsigned long *)(0xbfd00120),*(unsigned long *)(0xbfd001a0));
+
+//sw: dbg
+/*
+	*(volatile unsigned long*)(0xbc180024) = 0x0;
+	*(volatile unsigned long*)(0xbc180020) = 0x80000000;
+	*(volatile unsigned long*)(0xbfd01154) = 0xffffffff;
+	*(volatile unsigned long*)(0xbfd01150) = 0xff00000c;
+	*(volatile unsigned long*)(0xbc180004) = 0x7;
+	*(volatile unsigned long*)(0xbfd01120) = 0x1;
+	*(volatile unsigned long*)(0xbfd0110c) = 0x1;
+*/
+	
+}
+
+static const Cmd pciCmds[] =
+{
+//sw: dbg	
+	{"dump_pci", "", NULL,
+		    "dump sb pci-bridge regs", dump_pci, 1, 2, 0},
+	{0, 0}
+};
+
+
+static void init_pcicmd __P((void)) __attribute__ ((constructor));
+
+static void
+init_pcicmd()
+{
+	printf("====expend pci cmds\n");
+	cmdlist_expand(pciCmds, 1);
 }
 

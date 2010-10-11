@@ -10,15 +10,16 @@ file	Targets/LS1F/dev/i2c.c
 file	Targets/LS1F/dev/spi.c
 file	Targets/LS1F/dev/ac97.c
 file	Targets/LS1F/ls1f/tgt_cmd.c
-#file	Targets/LS1F/dev/sdcard_gpio.c
-#file	Targets/LS1F/dev/sdcard_spi.c
 file	Targets/LS1F/ls1f/memscan.c
+file	Targets/LS1F/dev/hpet.c
 #sw
 file	sys/dev/gmac/synopGMAC_Host.c               gmac_syp
 file	sys/dev/gmac/synopGMAC_Dev.c                gmac_syp
 file	sys/dev/gmac/synopGMAC_network_interface.c  gmac_syp
 file	sys/dev/gmac/synopGMAC_pci_bus_interface.c  gmac_syp
 file	sys/dev/gmac/synopGMAC_plat.c               gmac_syp
+file	Targets/LS1F/dev/can.c
+file    Targets/LS1F/dev/spi_w.c
 
 #file 	sys/dev/phy/bcm5461config.c
 

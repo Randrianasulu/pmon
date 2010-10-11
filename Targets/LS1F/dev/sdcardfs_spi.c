@@ -78,8 +78,7 @@ static void spi_init0()
 //  SET_SPI(FCR_SPER, 0x04);
   SET_SPI(FCR_SPER, 0x04);
   SET_SPI(0x5, 0x01);			//softcs
-//  SET_SPI(FCR_SPCR, 0x5d);
-  SET_SPI(FCR_SPCR, 0x5C);
+  SET_SPI(FCR_SPCR, 0x5c);
   
 }
 

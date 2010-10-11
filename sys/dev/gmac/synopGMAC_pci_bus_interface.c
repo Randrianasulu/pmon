@@ -220,7 +220,7 @@ static struct pci_driver pci_driver =
  * \return Returns 0 on success and Error code on failure.
  */
 
-/* sw we do nothing in gs232
+/* sw we do nothing in ls1f
   s32 __init synopGMAC_init_pci_bus_interface (void) 
 {
   s32 retval;

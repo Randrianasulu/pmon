@@ -44,12 +44,12 @@ struct synopGMACNetworkAdapter * synopGMACadapter_1;
 //u32 synopGMACMappedAddr = 0xbfe10000;
 u64 synopGMACMappedAddr = 0; // this is of no use in this driver! liyifu on 2010-01-12
 u32 synop_pci_using_dac = 0;
-//zgj #define MAC_ADDR {0x00, 0x55, 0x7B, 0xB5, 0x7D, 0xF7}	//sw: may be it should be F7 7D B5 7B 55 00
-#define MAC_ADDR {0x00, 0x55, 0x7B, 0x98, 0x7D, 0xF7}	//sw: may be it should be F7 7D B5 7B 55 00
+//#define MAC_ADDR {0x00, 0x55, 0x7B, 0xB5, 0x7D, 0xF7}	//sw: may be it should be F7 7D B5 7B 55 00
+#define MAC_ADDR {0x00, 0x56, 0x7B, 0xB5, 0x7D, 0xF7}	//sw: may be it should be F7 7D B5 7B 55 00
 
 u32 regbase = 0xbfe10000;	//sw: not used
-//zgj char mac_addr[6] = {0x00,0x55,0x7B,0xB5,0x7D,0xF7};
-char mac_addr[6] = {0x00,0x55,0x7B,0x98,0x7D,0xF7};
+//char mac_addr[6] = {0x00,0x55,0x7B,0xB5,0x7D,0xF7};
+char mac_addr[6] = {0x00,0x56,0x7B,0xB5,0x7D,0xF7};
 
 void dumppkghd(struct ether_header *eh,int tp);
 int set_lpmode(synopGMACdevice * gmacdev);
@@ -659,6 +659,7 @@ int synopGMAC_intr_handler_0(struct synopGMACNetworkAdapter * tp)
 	if(dma_status_reg == 0x660004 || dma_status_reg == 0x660000)	//sw: dbg
 		return 0;
 	
+//	dumpreg(regbase);
 //sw: check phy status	
 //	synopGMAC_linux_cable_unplug_function(tp);
 	

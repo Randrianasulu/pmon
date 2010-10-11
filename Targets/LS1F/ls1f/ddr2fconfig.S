@@ -75,9 +75,9 @@ DDR2_CTL_04_DATA_LO:	.word 0x00010101
 //000000_01 rtt_0 000000_00 ctrl_raw 000000_10 axi0_w_priority 000000_10 axi0_r_priority 
 DDR2_CTL_04_DATA_HI:	.word 0x01000202
 //00000_100 column_size 00000_101 caslat 00000_010 addr_pins 000000_10 rtt_pad_termination
-DDR2_CTL_05_DATA_LO:	.word 0x04040102 #CL =4
+//DDR2_CTL_05_DATA_LO:	.word 0x04040102 #CL =4
 //DDR2_CTL_05_DATA_LO:	.word 0x04050102 #CL =5
-//zgj DDR2_CTL_05_DATA_LO:	.word 0x04040202 #CL =4
+DDR2_CTL_05_DATA_LO:	.word 0x04040202 #CL =4
 //00000_000 q_fullness 00000_000 port_data_error_type 00000_000 out_of_range_type 00000_000 max_cs_reg 
 DDR2_CTL_05_DATA_HI:	.word 0x00000000
 //00000_010 trtp 00000_010 trrd 00000_010 temrs 00000_011 tcke

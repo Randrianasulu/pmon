@@ -57,7 +57,6 @@ typedef unsigned long dma_addr_t;
 #define readl(addr) (*(volatile u32*)(addr))
 
 
-/*	sw
 #define TR0(fmt, args...) printk(KERN_CRIT "SynopGMAC: " fmt, ##args)				
 
 #ifdef DEBUG
@@ -66,7 +65,6 @@ typedef unsigned long dma_addr_t;
 #else
 # define TR(fmt, args...) // not debugging: nothing 
 #endif
-*/
 /*
 #define TR0(fmt, args...) printf("SynopGMAC: " fmt, ##args)				
 */

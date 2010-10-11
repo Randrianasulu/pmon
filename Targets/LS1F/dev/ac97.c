@@ -7,86 +7,183 @@
 #include <pmon.h>
 #include <linux/types.h>
 #define udelay delay
-#define ac97_base  0xbf004200
-#define dma_base  0xbf004280
+#define ac97_base 0xbfe74000  // 0xbfe74000
+#define confreg_base 0xbfd00000
+#define dma_base  0xbfe74080  //0xbf004280
 #define ac97_reg_write(addr ,val) do{ *(volatile u32 *)(ac97_base+(addr))=val; }while(0)
 #define ac97_reg_read(addr) *(volatile u32 * )(ac97_base+(addr))
 //#define udelay(n)   
 #define dma_reg_write(addr ,val) do{ *(volatile u32 *)(dma_base+(addr))=val; }while(0)
-#define dma_reg_read(addr) *(volatile u32 * )(dma_base+(addr))
-
+//#define dma_reg_read(addr) *(volatile u32 * )(dma_base+(addr))
+#define dma_reg_read(addr) *(volatile u32 *)(addr)
 #define codec_wait(n) do{ int __i=n;\
         while (__i-->0){ \
             if (ac97_reg_read(0x5c)&0x3!=0) break;\
             udelay(100); }\
             if (__i>0){ \
                 ac97_reg_read(0x6c);\
-                ac97_reg_read(0x70);\
+                ac97_reg_read(0x68);\
             }\
         }while (0)
-        
-#define DMA_BUF 0x00300000
-#define  BUF_SIZE 0x200000
-//#define  BUF_SIZE 0x7000
 
+//yq:0x70-->0x68
+        
+#define DMA_BUF 0x00800000
+#define  BUF_SIZE 0x200000        //0x200000
+//#define  BUF_SIZE 0x7000
+#define SYNC_W 1    //sync cache for writing data
 #define CPU2FIFO 1
 
 #define AC97_RECORD 0
 #define AC97_PLAY   1 
 
-#define REC_DMA_BUF   (DMA_BUF+ BUF_SIZE)//0x00500000
+#define REC_DMA_BUF   (DMA_BUF+ BUF_SIZE)        //0x00a00000
 #define  REC_BUF_SIZE  (BUF_SIZE>>1)
+
+ 
 
 static unsigned short sample_rate=0xac44;
 
 static int ac97_rw=0;
 
+//static unsigned u32 *dma_rec_des_base=(unsigned u32*)(DMA_DESC_BASE);
+//static unsigned u32  *dma_play_des_base=dma_rec_des_base;
+static struct desc{
+	u32 ordered;
+	u32 saddr;
+	u32 daddr;
+	u32 length;
+	u32 step_length;
+	u32 step_times;
+	u32 cmd;
+};
+
+
+static struct desc *DMA_DESC_BASE;
+static struct desc *dma_desc2_addr;
+
+static u32 play_desc1[7]={
+	0x0,                       //need to be filled
+	(DMA_BUF|0xa0000000)&0x1fffffff,     
+	0xdfe72420,                    //(ac97_base&0x9fffffff)+0x20,           //9fffffff?fun
+	
+	0x8,
+	0x0,
+	0x4000,
+	0x00001001
+};
+
+static u32 play_desc2[7]={
+	0x00001200,
+	(DMA_BUF|0xa0000000)&0x1fffffff,
+	0xdfe72420,                                //( ac97_base&0x9fffffff)+0x20,
+	0x6,
+	0x0,
+	0x30,
+	0x00001001	
+};
+
+static u32 rec_desc1[7]={
+	0x0,                       //need to be filled
+	//0xdfe72420,
+	(REC_DMA_BUF|0xa0000000)&0x1fffffff,                    //(ac97_base&0x9fffffff)+0x20,           //9fffffff?func
+	0x9fe74c4c,
+	0x8,
+	0x0,
+	0x4000,
+	0x00000001
+};
+
+static u32 rec_desc2[7]={
+	0x00001200,                       //need to be filled   
+	//0xdfe72420,                    //(ac97_base&0x9fffffff)+0x20,           //9fffffff?func
+	(REC_DMA_BUF|0xa0000000)&0x1fffffff,                    //(ac97_base&0x9fffffff)+0x20,      //9fffffff?func
+	0x9fe74c4c,
+	0x6,
+	0x0,
+	0x30,
+	0x00000001
+};
+
+
+
  void  init_audio_data(void )
  {
- #if 0
-   volatile unsigned int *data= (volatile unsigned int*)(DMA_BUF|0x80000000);
+ 
+ //    volatile unsigned int *data= (volatile unsigned int*)(DMA_BUF|0xa0000000);
+  
+     unsigned int *data= (unsigned int*)(DMA_BUF|0xa0000000);
    
    int i;
+
+
+   //;data=(unsigned int *)malloc(BUF_SIZE*sizeof(int));
    
-   for (i=0;i<((BUF_SIZE)>>3);i++)
+  for (i=0;i<((BUF_SIZE)>>3);i++)
    {     
-        data[i<<1]=0x7fff0000;
-        data[i<<1+1]=0x7fff;
+	//printf("===data=%x\n",data);
+	//printf("==data=%x,   %x\n",(data+(i*8)),(i*8));
+        data[i*2]=0x7fffe000;
+	//printf("===data=%x,   %x\n",(data+(i*8+4)),(i*8+4));
+        data[i*2+1]=0x1f2e3d4c;
    }
- #endif 
+  
+//   memset()
+   //pci_sync_cache(0,(DMA_BUF|0xa0000000),BUF_SIZE,SYNC_W);
+   for(i=0;i<40;i++){
+	   printf("%x:  data:%x\n",((DMA_BUF|0xa0000000)+(i*4)),*(volatile unsigned int *)(DMA_BUF|0xa0000000+(i*4)));
+	
+	   
+   }
+   printf("=======init audio data complete\n");
+  
  }
  
 int ac97_config()
  {
-    printf("ac97 config enter\n");
+     int i=0;
+    printf("ac97 config enter===\n");
     /*
     ac97_reg_write(0x58,0x0000036f);
     ac97_reg_write(0x4,0x6b6b6b6b);
     ac97_reg_write(0x10,0x006b6b6b);
     */
     
-    ac97_reg_write(0x4,0x6969|0x202); //OCCR0   L&& R enable ; 3/4 empty; dma enabled;8 bits;var rate(0x202);
-    //ac97_reg_write(0x4,0x6565); //OCCR0   L&& R enable ; 3/4 empty; dma enabled;16 bits;fix rate;
+    //ac97_reg_write(0x4,0x6969|0x202); //OCCR0   L&& R enable ; 3/4 empty; dma enabled;16bits;var rate(0x202);
+      ac97_reg_write(0x4,0x6b6b6b6b);
     
-    ac97_reg_write(0x10,0x690000|0x20000);//ICCR
-    
+    //ac97_reg_write(0x4,0x6969); //OCCR0   L&& R enable ; 3/4 empty; dma enabled;16 bits;fix rate;
+    printf("OCCR0 complete:%x\n",ac97_reg_read(0x4));
+    ac97_reg_write(0x10,0x006b6b6b);
+    //ac97_reg_write(0x10,0x690000|0x20000);//ICCR
+    printf("ICCR complete\n");
     ac97_reg_write(0x58,0x3); //INTM
-    
+    printf("INTM complete\n");
     //codec
-    ac97_reg_write(0x18,0|(0<<16)|(0<<31)); //codec reset
+    ac97_reg_write(0x18,0x0|(0x0<<16)|(0<<31)); //codec reset
     
     codec_wait(10);
 
+    printf("register 0x18 content1:%x\n",ac97_reg_read(0x18)&0xffffffff);
+    ac97_reg_write(0x18,0|(0x0<<16)|(0<<31));
+    codec_wait(10);
+    printf("======0x00:%x\n",ac97_reg_read(0x0)&0xffffffff);
+    ac97_reg_write(0x18,0|(0x7c<<16)|(1<<31));    //codec register addr(read)
     
-    ac97_reg_write(0x18,0|(0x7c<<16)|(1<<31));
-    
+    //printf("register 0x18 content1:%x\n",ac97_reg_read(0x18));
     codec_wait(10);
 
+    printf("register 0x18 content2:%x\n",ac97_reg_read(0x18));
     printf("codec id %x \n",ac97_reg_read(0x18)&0xffff); //read ID 
     
+    for(i=5;i>0;i--){
+    	ac97_reg_write(0x18,0x0|(0x26<<16)|(1<<31));
+    	codec_wait(10);
+    	printf("=====D/A status:%x\n",ac97_reg_read(0x18)&0xffffffff);
+    }
     
-    ac97_reg_write(0x18,0x0808|(0x2<<16)|(0<<31));      //Master Vol.
-    
+    ac97_reg_write(0x18,0x0808|(0x2<<16)|(0<<31));      //Master Vol. data=0x0808
+    printf("register 0x18 Master Vol.content2:%x\n",ac97_reg_read(0x18));
     codec_wait(10);
     ac97_reg_write(0x18,0x0808|(0x4<<16)|(0<<31));      //headphone Vol.
     
@@ -111,10 +208,10 @@ int ac97_config()
     ac97_reg_write(0x18,sample_rate|(0x2c<<16)|(0<<31));     //PCM Out Vol. FIXME:22k can play 44k wav data?
     
     codec_wait(10);
-
-
-    if (AC97_RECORD==ac97_rw) //play
+	//////////////////////
+    if (ac97_rw==AC97_RECORD) //record
     {
+	    printf("===record config\n");
             ac97_reg_write(0x18,sample_rate|(0x32<<16)|(0<<31));     //ADC rate .
     
             codec_wait(10);
@@ -137,16 +234,107 @@ int ac97_config()
    return 0;
  }
 
-void dma_config(void)
-{
-    if (AC97_PLAY==ac97_rw) //play
-        dma_reg_write(0x20,0x10006); // 16bits X 6 entry 
+
+	
+void dma_config(void){	
+	int i=10000;
+	u32 addr;
+	u32 addr2;
+	/*do{
+		*(volatile u32*)(confreg_base+0x1160)=0x0001000b;
+	}while(0);
+	delay(10);
+	printf("==========write first\n");
+	printf("======dma_config:%x\n",*(volatile u32*)(confreg_base+0x1160));*/
+	
+	DMA_DESC_BASE=(struct desc*)malloc(sizeof(struct desc)+32);
+	addr=(u32)(*(&DMA_DESC_BASE));
+	DMA_DESC_BASE=(struct desc*)((((addr>>5)<<5)+32)|0xa0000000);
+			
+	printf("======addr:%x\n",DMA_DESC_BASE);
+	addr=(u32)(*(&DMA_DESC_BASE));
+	dma_desc2_addr=(struct desc*)malloc(sizeof(struct desc)+32);
+	addr2=(u32)(*(&dma_desc2_addr));
+	dma_desc2_addr=(struct desc*)((((addr2>>5)<<5)+32)|0xa0000000);
+	printf("===addr2:%x\n",dma_desc2_addr);
+	addr2=(u32)(*(&dma_desc2_addr));
+	
+     if (AC97_PLAY==ac97_rw) //play
+      {
+	 DMA_DESC_BASE->ordered=play_desc1[0]|(addr2&0x1fffffff);    ///addr&0xffffffe0;
+	 DMA_DESC_BASE->saddr=play_desc1[1];   //0x00010000;//addr&0x1fffffff;
+	 DMA_DESC_BASE->daddr=play_desc1[2];
+	 DMA_DESC_BASE->length=play_desc1[3];
+	 DMA_DESC_BASE->step_length=play_desc1[4];
+	 DMA_DESC_BASE->step_times=play_desc1[5];
+	 DMA_DESC_BASE->cmd=play_desc1[6];
+	 printf("========play1\n");
+	 pci_sync_cache(0,(unsigned long)addr,32*7,SYNC_W);
+	 
+	 printf("====desc:%x;%x,%x,%x,%x\n",DMA_DESC_BASE->ordered,DMA_DESC_BASE->saddr,DMA_DESC_BASE->daddr,DMA_DESC_BASE->length,DMA_DESC_BASE->step_times);	 
+	 printf("====mem desc:%x,%x\n",*(volatile unsigned int*)(addr),*(volatile unsigned int*)(addr+4));
+	 dma_desc2_addr->ordered=play_desc2[0];
+	 dma_desc2_addr->saddr=play_desc2[1];//0x00001000;//addr2&0x1fffffff;                     //play_desc2[1];
+	 dma_desc2_addr->daddr=play_desc2[2];
+	 dma_desc2_addr->length=play_desc2[3];
+	 dma_desc2_addr->step_length=play_desc2[4];
+	 dma_desc2_addr->step_times=play_desc2[5];
+	 dma_desc2_addr->cmd=play_desc2[6];
+	 pci_sync_cache(0,(unsigned long)addr2,32*7,SYNC_W);
+	 printf("===play2");
+	 printf("====desc2:%x\n",dma_desc2_addr->ordered);
+    
+	 addr=(u32)(addr&0x1fffffff);
+     
+         printf("====addr:%x\n",addr);
+         printf("====addr':%x",addr|0x00000009);
+         do{
+	     *(volatile u32*)(confreg_base+0x1160)=addr|0x00000009;
+	     delay(1000000);	
+             printf("dma register:%x\n",(*(volatile u32*)(confreg_base+0x1160)));
+	  
+          }while(--i);
+      }
      else       //record
-        dma_reg_write(0x24,0x4); //  6 entry 
+     {	    
+	     
+	 DMA_DESC_BASE->ordered=rec_desc1[0]|(addr2&0x1fffffff);    ///addr&0xffffffe0;
+	 DMA_DESC_BASE->saddr=rec_desc1[1];   //0x00010000;//addr&0x1fffffff;
+	 DMA_DESC_BASE->daddr=rec_desc1[2];
+	 DMA_DESC_BASE->length=rec_desc1[3];
+	 DMA_DESC_BASE->step_length=rec_desc1[4];
+	 DMA_DESC_BASE->step_times=rec_desc1[5];
+	 DMA_DESC_BASE->cmd=rec_desc1[6];
+	 printf("========rec1\n");
+	 pci_sync_cache(0,(unsigned long)addr,32*7,SYNC_W);
+	 
+	 printf("====rec desc:%x;%x,%x,%x,%x\n",DMA_DESC_BASE->ordered,DMA_DESC_BASE->saddr,DMA_DESC_BASE->daddr,DMA_DESC_BASE->length,DMA_DESC_BASE->step_times);	 
+	 dma_desc2_addr->ordered=rec_desc2[0];
+	 dma_desc2_addr->saddr=rec_desc2[1];//0x00001000;//addr2&0x1fffffff;                     //play_desc2[1];
+	 dma_desc2_addr->daddr=rec_desc2[2];
+	 dma_desc2_addr->length=rec_desc2[3];
+	 dma_desc2_addr->step_length=rec_desc2[4];
+	 dma_desc2_addr->step_times=rec_desc2[5];
+	 dma_desc2_addr->cmd=rec_desc2[6];
+	 pci_sync_cache(0,(unsigned long)addr2,32*7,SYNC_W);
+	 printf("===rec2");
+	 printf("====desc2:%x\n",dma_desc2_addr->ordered);
+ 
+	 addr=(u32)(addr&0x1fffffff);    
+         printf("====addr:%x\n",addr);
+         printf("====addr':%x",addr|0x0000000a);
+        do{
+	     *(volatile u32*)(confreg_base+0x1160)=addr|0x0000000a;
+	     delay(1000);	
+             printf("dma register:%x\n",(*(volatile u32*)(confreg_base+0x1160)));
+	  
+          }while(0);
+     }
+
 }
 
 
- void dma_setup_trans(u32 * src_addr,u32 size)
+ /*void dma_setup_trans(u32 * src_addr,u32 size)
  {
     
     if (AC97_PLAY==ac97_rw) //play
@@ -159,13 +347,14 @@ void dma_config(void)
         dma_reg_write(0x10,src_addr);
         dma_reg_write(0x14,size>>2);
     }
- }
+ }*/
 
  int ac97_test(int argc,char **argv)
  {
     
 	char cmdbuf[100];
     int i;
+    
 	if(argc!=2 && argc!=1)return -1;
 	if(argc==2){
 	sprintf(cmdbuf,"load -o 0x%x -r %s",DMA_BUF|0xa0000000,argv[1]);
@@ -174,27 +363,45 @@ void dma_config(void)
    
     ac97_rw=AC97_PLAY;
    
-    init_audio_data();
-    ac97_config();
+   // init_audio_data();
+   // ac97_config();
+    
     dma_config();
     
-    printf("%d\n",dma_reg_read(0x8));
-    printf("%d\n",dma_reg_read(0xc));
+    //printf("%d\n",dma_reg_read(0x8));
+    //printf("%d\n",dma_reg_read(0xc));
    
-    dma_setup_trans(DMA_BUF,BUF_SIZE);
+    //dma_setup_trans(DMA_BUF,BUF_SIZE);
  
         
-    printf("%d\n",dma_reg_read(0x8));
-    printf("%d\n",dma_reg_read(0xc));
+    //printf("%d\n",dma_reg_read(0x8));
+    //printf("%d\n",dma_reg_read(0xc));
 
+    delay(100);
     printf("play data on 0x%x,sz=0x%x\n",(DMA_BUF|0xa0000000),BUF_SIZE);
 
-        //1.wait a trans complete
-        while(((dma_reg_read(0x2c))&0x1)==0)
-		idle();
+    do{
+	    *(volatile u32*)(confreg_base+0x1160)=0x00200005;
+    }while(0);
+    delay(100);
+  
+    printf("dma state1:%x\n%x\n%x\n%x\n%x\n",dma_reg_read(0xa0200004),dma_reg_read(0xa0200008),dma_reg_read(0xa020000c),dma_reg_read(0xa0200014),dma_reg_read(0xa0200018));
+    delay(1000);
+
+    do{
+	    *(volatile u32*)(confreg_base+0x1160)=0x00200005;
+    }while(0);
+    delay(100);
+  
+    printf("dma state2:%x\n%x\n%x\n%x\n%x\n",dma_reg_read(0xa0200004),dma_reg_read(0xa0200008),dma_reg_read(0xa020000c),dma_reg_read(0xa0200014),dma_reg_read(0xa0200018));
+   
+	    //1.wait a trans complete
+	    //
+       // while(((dma_reg_read(0x2c))&0x1)==0)
+	//	idle();
         
         //2.clear int status  bit.
-        dma_reg_write(0x2c,0x1);
+        //dma_reg_write(0x2c,0x1);
 
 return 0;
  }
@@ -206,42 +413,50 @@ int ac97_read(int argc,char **argv)
     unsigned int k;
     unsigned int m;
 
-    volatile unsigned short * rec_buff;
-    volatile unsigned int  *  ply_buff;
+     unsigned short * rec_buff;
+     unsigned int  *  ply_buff;
     ac97_rw=AC97_RECORD;
     
+    init_audio_data();
+    
     /*1.dma_config read*/
-   
-     dma_config();
     
     /*2.ac97 config read*/
     
      ac97_config();
+     dma_config();
 
     /*3.set dma desc*/
     printf("wait 5s ");
-    for(i=0;i<5;i++)
+    for(i=0;i<5;i++)	    
     {
         udelay(1000000);
         printf("."); 
     }
-    printf("\n");
+    printf("rec done\n");
+    delay(10000);
+    do{
+	    *(volatile u32*)(confreg_base+0x1160)=0x00200006;
+    }while(0);
+    delay(5000);
+  
+    printf("dma state1:%x\n%x\n%x\n%x\n%x\n",dma_reg_read(0xa0200004),dma_reg_read(0xa0200008),dma_reg_read(0xa020000c),dma_reg_read(0xa0200014),dma_reg_read(0xa0200018));
     
-    dma_setup_trans(REC_DMA_BUF,REC_BUF_SIZE);
+    //dma_setup_trans(REC_DMA_BUF,REC_BUF_SIZE);
     
     /*4.wait dma done,return*/ 
-    while(((dma_reg_read(0x2c))&0x8)==0)
-         udelay(1000);//1 ms 
+    //while(((dma_reg_read(0x2c))&0x8)==0)
+      //   udelay(1000);//1 ms 
 
-    dma_reg_write(0x2c,0x8);
+    //dma_reg_write(0x2c,0x8);
     /*5.transform single channel to double channel*/
-    l = 0;
-    printf("record complete\n");
+    //l = 0;
+    //printf("record complete\n");
     
    // printf("%d\n",sizeof(short));
    
-    rec_buff=(volatile unsigned short * )(REC_DMA_BUF|0xa0000000);
-    ply_buff=(volatile unsigned int * )(DMA_BUF|0xa0000000);
+   rec_buff=( unsigned short * )(REC_DMA_BUF|0xa0000000);
+    ply_buff=( unsigned int * )(DMA_BUF|0xa0000000);
     
     
     for(i=0;i<(REC_BUF_SIZE<<1);i++)
