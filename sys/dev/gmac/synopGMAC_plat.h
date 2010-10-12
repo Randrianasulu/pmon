@@ -146,6 +146,7 @@ static u32  synopGMACReadReg(u64 RegBase, u32 RegOffset)
 
 		  addr = RegBase + (u64)RegOffset;
 
+#if __mips >= 3 && __mips != 32
 	__asm __volatile(
 			".set\tnoreorder\n\t"
 			".set\tmips3\n\t"
@@ -154,10 +155,15 @@ static u32  synopGMACReadReg(u64 RegBase, u32 RegOffset)
 			"nop\n\t"
 			"nop\n\t"
 			"sw $9,%0\n\t"
+			".set\tmips0\n\t"
 			:"=m"(data)
 			:"m"(addr)
 			:"memory","$8","$9"
 			);
+#else
+	data = *(volatile u32 *)addr;
+#endif
+
 #if SYNOP_REG_DEBUG
   TR("%s RegBase = 0x%08x RegOffset = 0x%08x RegData = 0x%08x\n", __FUNCTION__, (u32)RegBase, RegOffset, data );
 #endif
@@ -184,16 +190,21 @@ static void synopGMACWriteReg(u64 RegBase, u32 RegOffset, u32 RegData )
 #endif
   //writel(RegData,(void *)addr);
   //printf("GMAC addr = 0x%lx \n",addr);
+#if __mips >= 3 && __mips != 32
 	__asm __volatile(
 			".set\tnoreorder\n\t"
 			".set\tmips3\n\t"
 			"lw $9,%0\n\t"
 			"ld $8,%1\n\t"
 			"sw $9,0x0($8)\n\t"
+			".set\tmips0\n\t"
 			:
 			:"m"(RegData),"m"(addr)
 			:"memory","$8","$9"
 			);
+#else
+	*(volatile u32 *)addr = RegData;
+#endif
   return;
 }
 
