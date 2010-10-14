@@ -164,6 +164,8 @@ rtl*        at pci? dev ? function ?
 #usb*		 at usbbus ? 
 #ohci1		 at pci? dev ? function ?
 #atp*           at pci? dev ? function ?  #sata atp8620
+ahci*		at pci? dev ? function ?
+ahcisata*	at ahci?
 
 #select      mod_usb
 #select  	mod_usb_storage
