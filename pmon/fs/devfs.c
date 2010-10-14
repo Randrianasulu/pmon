@@ -54,6 +54,7 @@
 #include "loopdev.h"
 #include "atp.h"
 #include "sdcard.h"
+#include "ahcisata.h"
 
 extern int errno;
 
@@ -106,6 +107,13 @@ extern int atp_write __P((dev_t dev, void *uio, int flag));
 extern int atp_close __P((dev_t dev, int flag, int mode, void *));
 #endif
 
+#if NAHCISATA > 0
+extern int ahcisata_open __P((dev_t dev, int flags, int mode, void *));
+extern int ahcisata_read __P((dev_t dev, void *uio, int flag));
+extern int ahcisata_write __P((dev_t dev, void *uio, int flag));
+extern int ahcisata_close __P((dev_t dev, int flag, int mode, void *));
+#endif
+
 /*
  * Check for and add any target specific declarations from "pmon_target.h"
  */
@@ -145,6 +153,9 @@ struct devsw devswitch[] = {
 #endif
 #if NATP > 0
         { "sata", atp_open, atp_read, atp_write, atp_close},
+#endif
+#if NAHCISATA > 0
+        { "ahcisata", ahcisata_open, ahcisata_read, ahcisata_write, ahcisata_close},
 #endif
 #if NSDCARD > 0
 	{ "sdcard", loopdevopen, loopdevread, loopdevwrite, loopdevclose},
