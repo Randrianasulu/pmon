@@ -14,10 +14,13 @@
 #define SPCR      0x0
 #define SPSR      0x1
 #define TXFIFO    0x2
+#define RXFIFO    0x2
 #define SPER      0x3
 #define PARAM     0x4
 #define SOFTCS    0x5
 #define PARAM2    0x6
+
+#define RFEMPTY 1
 
 #define SET_SPI(addr,val)        KSEG1_STORE8(SPI_BASE+addr,val)
 #define GET_SPI(addr)            KSEG1_LOAD8(SPI_BASE+addr)
@@ -28,7 +31,7 @@ void spi_initw()
 	unsigned char val;
 
   	SET_SPI(SPSR, 0xc0); 
-  	printf("SPSR:%x\n",GET_SPI(0x1));
+  	printf("SPSR:%x\n",GET_SPI(SPSR));
 	
   	SET_SPI(PARAM, 0x40);             //espr:0100
   	printf("PARAM:%x\n",GET_SPI(0x4));
@@ -51,21 +54,21 @@ int read_sr(void)
 {
 	int val;
 	
-	SET_SPI(0x5,0x01);
-	SET_SPI(0x2,0x05);
+	SET_SPI(SOFTCS,0x01);
+	SET_SPI(TXFIFO,0x05);
 
-	while((GET_SPI(0x1))&0x1 == 0x1){
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
 		
 	}
-	val = GET_SPI(0x2);
-	SET_SPI(0x2,0x00);
+	val = GET_SPI(RXFIFO);
+	SET_SPI(TXFIFO,0x00);
 
-	while((GET_SPI(0x1))&0x1 == 0x1){
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
 				
 	}
-	val = GET_SPI(0x2);
+	val = GET_SPI(RXFIFO);
 	
-	SET_SPI(0x5,0x11);
+	SET_SPI(SOFTCS,0x11);
       
 	return val;
 }
@@ -82,14 +85,14 @@ int set_wren(void)
 		res = read_sr();
 	}
 	
-	SET_SPI(0x5,0x01);
+	SET_SPI(SOFTCS,0x01);
 	
-	SET_SPI(0x2,0x6);
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0x6);
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 
-	SET_SPI(0x5,0x11);
+	SET_SPI(SOFTCS,0x11);
 
 	return 1;
 }
@@ -107,20 +110,20 @@ int write_sr(char val)
 		res = read_sr();
 	}
 	
-	SET_SPI(0x5,0x01);
+	SET_SPI(SOFTCS,0x01);
 
-	SET_SPI(0x2,0x01);
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0x01);
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 
-	SET_SPI(0x2,val);
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,val);
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
-	SET_SPI(0x5,0x11);
+	GET_SPI(RXFIFO);
+	SET_SPI(SOFTCS,0x11);
 	
 	return 1;
 	
@@ -138,15 +141,15 @@ int erase_all(void)
 		res = read_sr();
 	}
 	
-	SET_SPI(0x5,0x1);
+	SET_SPI(SOFTCS,0x1);
 	
-	SET_SPI(0x2,0xC7);
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0xC7);
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 	
-	SET_SPI(0x5,0x11);
+	SET_SPI(SOFTCS,0x11);
 
 	return 1;
 }
@@ -162,31 +165,31 @@ int erase_sector(char addr2,char addr1,char addr0)
 		res = read_sr();
 	}
 	
-	SET_SPI(0x5,0x01);
+	SET_SPI(SOFTCS,0x01);
 	
-	SET_SPI(0x2,0xd8);
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0xd8);
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
-	SET_SPI(0x2,addr2);
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+	GET_SPI(RXFIFO);
+	SET_SPI(TXFIFO,addr2);
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
-	SET_SPI(0x2,addr1);
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+	GET_SPI(RXFIFO);
+	SET_SPI(TXFIFO,addr1);
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
-	SET_SPI(0x2,addr0);
+	GET_SPI(RXFIFO);
+	SET_SPI(TXFIFO,addr0);
 	
-       	while((GET_SPI(0x1))&0x1 == 0x1){
+       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 	
-	SET_SPI(0x5,0x11);
+	SET_SPI(SOFTCS,0x11);
 
 	return 1;
 
@@ -209,42 +212,42 @@ int write_pmon(void)
 	{
 		val = read_sr();
 	}
-	SET_SPI(0x5,0x01);
+	SET_SPI(SOFTCS,0x01);
 	
 // read flash id command
-	SET_SPI(0x2,0xab);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0xab);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
 				
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 	
-        SET_SPI(0x2,0x00);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+        SET_SPI(TXFIFO,0x00);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
 				
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 	
-        SET_SPI(0x2,0x00);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+        SET_SPI(TXFIFO,0x00);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 	
-        SET_SPI(0x2,0x00);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+        SET_SPI(TXFIFO,0x00);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
 				
 	}
-        GET_SPI(0x2);
+        GET_SPI(RXFIFO);
 // commad end
 		
-        SET_SPI(0x2,0x00);
-        while((GET_SPI(0x1))&0x1 == 0x1){
+        SET_SPI(TXFIFO,0x00);
+        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
         }
-        val = GET_SPI(0x2);
+        val = GET_SPI(RXFIFO);
         printf("id:%x\n",val);
 //     while ((*(volatile unsigned char *)(0xbfe80001))&0x01);
-	val = GET_SPI(0x1);
+	val = GET_SPI(SPSR);
 	printf("====spsr value:%x\n",val);
 	
 	SET_SPI(0x5,0x10);
@@ -279,28 +282,28 @@ int write_pmon(void)
 		SET_SPI(0x5,0x01);
 		
 // writing sector command
-		SET_SPI(0x2,0x2);		
-        	while((GET_SPI(0x1))&0x1 == 0x1){
+		SET_SPI(TXFIFO,0x2);		
+        	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 		}
-		val = GET_SPI(0x2);
+		val = GET_SPI(RXFIFO);
 
 // addr
-		SET_SPI(0x2,addr2);     
-        	while((GET_SPI(0x1))&0x1 == 0x1){
+		SET_SPI(TXFIFO,addr2);     
+        	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
         	}
-	        val = GET_SPI(0x2);
-		SET_SPI(0x2,addr1);
-        	while((GET_SPI(0x1))&0x1 == 0x1){
+	        val = GET_SPI(RXFIFO);
+		SET_SPI(TXFIFO,addr1);
+        	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	        }
-	        val = GET_SPI(0x2);
-		SET_SPI(0x2,addr0);
-	        while((GET_SPI(0x1))&0x1 == 0x1){
+	        val = GET_SPI(RXFIFO);
+		SET_SPI(TXFIFO,addr0);
+	        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	        }
-	        val = GET_SPI(0x2);
+	        val = GET_SPI(RXFIFO);
 // addr end
 		
 //		printf("===PP send \n");
@@ -319,11 +322,11 @@ int write_pmon(void)
 			data =(unsigned char*) (PMON_ADDR+a+j);
 //			printf(" %02x ",*data);
 			
-			SET_SPI(0x2,*data);
-	                while((GET_SPI(0x1))&0x1 == 0x1){
+			SET_SPI(TXFIFO,*data);
+	                while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	                }
-	                val = GET_SPI(0x2);
+	                val = GET_SPI(RXFIFO);
 			j++;
 			addr++;	
 			
@@ -356,49 +359,49 @@ int read_pmon(void)
 	SET_SPI(0x5,0x01);
       			
 // read flash command 
-	SET_SPI(0x2,0x03);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0x03);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 	
 // addr
-	SET_SPI(0x2,0x00);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0x00);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-        GET_SPI(0x2);
+        GET_SPI(RXFIFO);
 	
-	SET_SPI(0x2,0x00);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0x00);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 	
-	SET_SPI(0x2,0x00);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+	SET_SPI(TXFIFO,0x00);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	GET_SPI(0x2);
+	GET_SPI(RXFIFO);
 // addr end
 	
-/*	SET_SPI(0x2,0x00);
-	while((GET_SPI(0x1))&0x1 == 0x1){
+/*	SET_SPI(TXFIFO,0x00);
+	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 	}
-	data = GET_SPI(0x2);
+	data = GET_SPI(RXFIFO);
 	
-	data = GET_SPI(0x2);
+	data = GET_SPI(RXFIFO);
 	printf("%02x   ",data);
 */
         
 	while(i--)
 	{
-		SET_SPI(0x2,0x00);
-		while((GET_SPI(0x1))&0x1 == 0x1){
+		SET_SPI(TXFIFO,0x00);
+		while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
       			
 		}
-	        data = GET_SPI(0x2);
+	        data = GET_SPI(RXFIFO);
 		printf("%02x   ",data);
 		if(addr%16 == 0 ){
 			printf("    %08x\n",addr);
