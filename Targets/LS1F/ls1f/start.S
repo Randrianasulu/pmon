@@ -108,7 +108,7 @@ stack = start - 0x4000		/* Place PMON stack below PMON start in RAM */
 	la	sp, stack
 	la	gp, _gp
 
-	bal	uncached		/* Switch to uncached address space */
+//	bal	uncached		/* Switch to uncached address space */
 	nop
 
 	bal	locate			/* Get current execute address */
@@ -231,9 +231,8 @@ exc_common:
  *  location into ra. Check to see if we run from ROM or if this is ramloaded.
  */
 locate:
-	la	s0,start
+	la	s0,uncached
 	subu	s0,ra,s0
-	and	s0,0xffff0000
 
 	#bal	CPU_TLBClear
 	#nop
@@ -277,37 +276,18 @@ locate:
 	nop
 	PRINTSTR("\r\n")
 
+	bnez s0,1f
+	nop
+	li a0,128
+	jal initmips
+	nop
+1:
+
 	/* 
 	 * Now determine DRAM configuration and size by
 	 * reading the I2C EEROM on the DIMMS
 	 */
 
-#if 0
-################################
-#   Initailize SDRAM Interface #
-################################
-        li      a2, 0xbf000000
-        #li      a1, 0x0c4007b8
-        li	a1, 0x0c4002d4
-#zgj-20090205        sw      a1, 0x0(a2)
-#ifndef BOOT_FROM_EJTAG
-        sw      a1, 0x0(a2) ; #zgj-20090227
-#endif
-       # li      a1, 0x209800a7
-        li      a1, 0x209800ca  #for 128MB sdram 4 x 8k x 1k x 16 b
-	#zgj        li      a1, 0x209800c6 #for 64MB sdram 4 x 8k x 512 x 16 b
-        #li      a1, 0x209000c6
-        #li      a1, 0x208800c6
-#zgj-20090205        sw      a1, 0x4(a2) ; #zgj-20090227
-#ifndef BOOT_FROM_EJTAG
-        sw      a1, 0x4(a2) ; #zgj-20090227
-#endif
-
-	#li  msize,0x02000000     
-	#zgj li  msize,0x04000000 #for 64MB
- 	li  msize,0x08000000  #for 128MB
-	PRINTSTR("Init SDRAM Done!\r\n");
-#endif
 
 #ddr2config by cww 20090901
         li      msize,0x0f000000
@@ -486,15 +466,45 @@ endtest:
 
 /* #include "newtest.32/mydebug.S" */
 bootnow:
-/* #include "ejtag_1.S" */
-	TTYDBG("Copy PMON to execute location...\r\n")
+#define	FCALL_PRINTSTR(x) \
+	.rdata;98: .asciz x; .text; la a0, 98b; la v0, stringserial; addu v0,s0;jalr v0; nop	
+
+#undef BAL
+#define BAL(x) \
+	la v0,x; \
+	addu v0,s0; \
+	jalr v0; \
+	nop;
+
+
+
+
+
+/*copy copy program to sdram to make copy fast*/
+
+	la t0,121f
+	addu t0,s0
+	la t1,122f
+	addu t1,s0
+	
+	li t2,0xa0000000
+1:
+	lw  v0,(t0)
+	sw v0,(t2)
+	addu t0,4
+	addu t2,4
+	ble t0,t1,1b
+	nop
+
+	li t0,0xa0000000
+   	jr t0	
+	nop		
+
+.align 3
+121: 
+	FCALL_PRINTSTR("Copy PMON to execute location...\r\n")
 	la	a0, start
-#ifndef BOOT_FROM_EJTAG
-	li	a1, 0xbfc00000
-#zgj-20090205	li	a1, 0xbfc00000
-#else
-	li	a1, 0xa0300000
-#endif
+	addu a1,a0,s0
 	la	a2, _edata
         or      a0, 0xa0000000
         or      a2, 0xa0000000
@@ -511,10 +521,10 @@ bootnow:
 	bnez	t3,2f
 	nop
 	move	a0,t0
-	bal	hexserial
+	BAL(hexserial)
 	nop
 	li	a0,'\r'
-	bal 	tgt_putchar
+	BAL(tgt_putchar)
 	nop
 2:	lw	t3, 0(t1)
 	nop
@@ -524,7 +534,7 @@ bootnow:
 	bne	t2, t0, 1b
 	nop
 
-	PRINTSTR("\ncopy text section done.\r\n")
+	FCALL_PRINTSTR("\ncopy text section done.\r\n")
 	
 	/* Clear BSS */
 	la	a0, _edata
@@ -533,16 +543,12 @@ bootnow:
 	bne	a2, a0, 2b
 	addu	a0, 4
 
-/* ejtag_done: */
-	TTYDBG("Copy PMON to execute location done.\r\n")
-	TTYDBG("sp=");
+
+	FCALL_PRINTSTR("Copy PMON to execute location done.\r\n")
+	FCALL_PRINTSTR("sp=");
 	move a0, sp
-	bal	hexserial
+	BAL(hexserial)
 	nop
-
-
-
-
 
 	li	a0, 0
 	sw	a0, CpuTertiaryCacheSize /* Set L3 cache size */
@@ -551,17 +557,14 @@ bootnow:
 	move	a0,msize
 	srl	a0,20
 
-    /* pass pointer to kseg1 tgt_putchar */
-    la  a1, tgt_putchar
-	addu a1,a1,s0
-
-    la  a2, stringserial
-	addu a2,a2,s0
-
 
 	la	v0, initmips
 	jalr	v0
 	nop
+
+.align 3
+122:
+
 stuck:
 	b	stuck
 	nop
