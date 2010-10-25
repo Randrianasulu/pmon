@@ -505,6 +505,7 @@ LEAF(CPU_TLBInit)
 END(CPU_TLBInit)
 
 LEAF(stringserial)
+	nop
 	move	a2, ra
 	addu	a1, a0, s0
 	lbu	a0, 0(a1)
@@ -539,6 +540,7 @@ LEAF(outstring)
 END(outstring)
 
 LEAF(hexserial)
+	nop
 	move	a2, ra
 	move	a1, a0
 	li	a3, 7
@@ -560,6 +562,7 @@ LEAF(hexserial)
 END(hexserial)
 
 LEAF(tgt_putchar)
+	nop
 	la	v0, COM1_BASE_ADDR
 1:
 	lbu	v1, NSREG(NS16550_LSR)(v0)
