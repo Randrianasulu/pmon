@@ -88,7 +88,7 @@ select 		yaffsfs
 option 	    MY40IO
 #option 		GC300
 #select      gpu300_compile
-select 		mod_framebuffer
+#select 		mod_framebuffer
 #select		mod_x86emu_int10
 select		mod_vgacon
 option		NOPCINAMES		# Save some space for x86emu
@@ -146,7 +146,7 @@ pci*		at pcibr?
 #### Networking Devices
 
 syn0		at localbus0
-syn1		at localbus0
+#syn1		at localbus0
 option GMAC0_ADDR=0xbfe10000
 option GMAC1_ADDR=0xbfe11000
 select      gmac
@@ -194,7 +194,7 @@ option IDECD
 #select cmd_bootp
 #option FOR_GXEMUL
 select fatfs
-option FLOATINGPT
+#option FLOATINGPT
 select gzip
 option INPUT_FROM_BOTH
 option OUTPUT_TO_BOTH
