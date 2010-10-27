@@ -29,13 +29,16 @@ void *plat_alloc_memory(u32 bytes)
   * @param[in] bytes in bytes to allocate
   */
 
-//sw to-be clean
-/*
 void *plat_alloc_consistent_dmaable_memory(struct pci_dev *pcidev, u32 size, u32 *addr) 
 {
- return (pci_alloc_consistent (pcidev,size,addr));
+void *buf;
+     buf = (void*)malloc((size_t)size, M_DEVBUF, M_DONTWAIT);
+//    pci_sync_cache(hwdev, buf,size, SYNC_W);
+
+    buf = (unsigned char *)CACHED_TO_UNCACHED(buf);
+    *addr =vtophys(buf);
+ return buf;
 }
-*/
 
 /**
   * This is a wrapper function for freeing consistent dma-able Memory.
@@ -43,14 +46,13 @@ void *plat_alloc_consistent_dmaable_memory(struct pci_dev *pcidev, u32 size, u32
   * @param[in] bytes in bytes to allocate
   */
 
-//sw to-be clean
-/*
+
 void plat_free_consistent_dmaable_memory(struct pci_dev *pcidev, u32 size, void * addr,u32 dma_addr) 
 {
- pci_free_consistent (pcidev,size,addr,dma_addr);
+	free(PHYS_TO_CACHED(UNCACHED_TO_PHYS(addr)),M_DEVBUF);
  return;
 }
-*/
+
 
 
 /**
@@ -65,6 +67,18 @@ void plat_free_memory(void *buffer)
 }
 
 
+dma_addr_t __attribute__((weak)) gmac_dmamap(unsigned long va,size_t size)
+{
+	return VA_TO_PA (va);
+}
+
+dma_addr_t plat_dma_map_single(void *hwdev, void *ptr,
+		                    size_t size, int direction)
+{
+	    unsigned long addr = (unsigned long) ptr;
+pci_sync_cache(hwdev,addr,size, direction);
+return gmac_dmamap(addr,size);
+}
 /**
   * This is a wrapper function for platform dependent delay 
   * Take care while passing the argument to this function 

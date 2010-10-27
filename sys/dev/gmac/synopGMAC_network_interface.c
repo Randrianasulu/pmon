@@ -401,32 +401,22 @@ s32 synopGMAC_setup_tx_desc_queue(synopGMACdevice * gmacdev,u32 no_of_desc, u32 
 
 	DmaDesc *first_desc = NULL;
 	//DmaDesc *second_desc = NULL;
-	//dma_addr_t dma_addr;
+	dma_addr_t dma_addr;
 	gmacdev->TxDescCount = 0;
 
 	TR("Total size of memory required for Tx Descriptors in Ring Mode = 0x%08x\n",((sizeof(DmaDesc) * no_of_desc)));
-	//	first_desc = plat_alloc_consistent_dmaable_memory (pcidev, sizeof(DmaDesc) * no_of_desc,&dma_addr);
-	first_desc = (DmaDesc *)plat_alloc_memory(sizeof(DmaDesc) * no_of_desc+15);	//sw: 128 aligned
+	first_desc = plat_alloc_consistent_dmaable_memory (gmacdev, sizeof(DmaDesc) * no_of_desc,&dma_addr);
 	if(first_desc == NULL){
 		TR("Error in Tx Descriptors memory allocation\n");
 		return -ESYNOPGMACNOMEM;
 	}
-	first_desc = ((u32)first_desc) & ~15;
 
-
-	//	memset((u32)first_desc,0, sizeof(DmaDesc) * no_of_desc);
 	gmacdev->TxDescCount = no_of_desc;
 	gmacdev->TxDesc      = first_desc;
-
-	bf1  = (DmaDesc *)CACHED_TO_UNCACHED((unsigned long)(gmacdev->TxDesc));	
-	//gmacdev->TxDescDma  = (unsigned long)vtophys((unsigned long)bf1);
-	gmacdev->TxDescDma  = (unsigned long)UNCACHED_TO_PHYS((unsigned long)bf1);
-	//gmacdev->TxDesc     =  bf1;
+	gmacdev->TxDescDma  = dma_addr;
 
 	TR("\n===Tx first_desc: %x\n",gmacdev->TxDesc);
 
-	//	gmacdev->TxDescDma   = dma_addr;
-	//	gmacdev->TxDescDma   = (dma_addr_t) first_desc;
 
 	for(i =0; i < gmacdev -> TxDescCount; i++){
 		synopGMAC_tx_desc_init_ring(gmacdev->TxDesc + i, i == gmacdev->TxDescCount-1);
@@ -484,29 +474,21 @@ s32 synopGMAC_setup_rx_desc_queue(synopGMACdevice * gmacdev,u32 no_of_desc, u32 
 	DmaDesc * bf1;
 	DmaDesc *first_desc = NULL;
 	//DmaDesc *second_desc = NULL;
-	//dma_addr_t dma_addr;
+	dma_addr_t dma_addr;
 	gmacdev->RxDescCount = 0;
 
 	TR("total size of memory required for Rx Descriptors in Ring Mode = 0x%08x\n",((sizeof(DmaDesc) * no_of_desc)));
-	//	first_desc = plat_alloc_consistent_dmaable_memory (pcidev, sizeof(DmaDesc) * no_of_desc, &dma_addr);
-	first_desc = plat_alloc_memory (sizeof(DmaDesc) * no_of_desc+15);		//sw: 2word aligned
+	first_desc = plat_alloc_consistent_dmaable_memory (gmacdev, sizeof(DmaDesc) * no_of_desc, &dma_addr);
 	if(first_desc == NULL){
 		TR("Error in Rx Descriptor Memory allocation in Ring mode\n");
 		return -ESYNOPGMACNOMEM;
 	}
-	first_desc = (DmaDesc *)((u32)first_desc & ~15);
 
 
 	gmacdev->RxDescCount = no_of_desc;
 	gmacdev->RxDesc      = first_desc;
-	//	gmacdev->RxDescDma   = dma_addr;
+	gmacdev->RxDescDma   = dma_addr;
 
-	bf1  = (DmaDesc *)CACHED_TO_UNCACHED((unsigned long)(gmacdev->RxDesc));	
-	//gmacdev->RxDescDma  = (unsigned long)vtophys((unsigned long)bf1);
-	gmacdev->RxDescDma  = (unsigned long)UNCACHED_TO_PHYS((unsigned long)bf1);
-	//gmacdev->RxDesc     = bf1;
-
-	//	gmacdev->RxDescDma   = (dma_addr_t) first_desc;
 
 	for(i =0; i < gmacdev -> RxDescCount; i++){
 		synopGMAC_rx_desc_init_ring(gmacdev->RxDesc + i, i == gmacdev->RxDescCount-1);
@@ -862,6 +844,7 @@ void synop_handle_received_data(struct synopGMACNetworkAdapter* tp)
 				;
 #endif
 
+			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_R);
 				len =  synopGMAC_get_rx_desc_frame_length(status) - 4; //Not interested in Ethernet CRC bytes
 				bcopy((char *)data1, mtod(skb, char *), len); 
 
@@ -902,7 +885,6 @@ void synop_handle_received_data(struct synopGMACNetworkAdapter* tp)
 				skb->m_data += sizeof(struct ether_header);
 
 				ether_input(ifp, eh, skb);
-				memset((u32)data1,0,RX_BUF_SIZE);
 				adapter->synopGMACNetStats.rx_packets++;
 				adapter->synopGMACNetStats.rx_bytes += len;
 			}
@@ -914,7 +896,6 @@ void synop_handle_received_data(struct synopGMACNetworkAdapter* tp)
 				adapter->synopGMACNetStats.rx_length_errors += synopGMAC_is_rx_frame_length_errors(status);
 			}
 
-			dma_addr1  = (unsigned long)CACHED_TO_PHYS((unsigned long)(data1));
 			desc_index = synopGMAC_set_rx_qptr(gmacdev,dma_addr1, RX_BUF_SIZE, (u32)data1,0,0,0);
 
 			if(desc_index < 0){
@@ -1125,10 +1106,8 @@ int synopGMAC_intr_handler(struct synopGMACNetworkAdapter * tp)
 			}
 			
 			//dma_addr = (u32)skb;
-			dma_addr  = (unsigned long)UNCACHED_TO_PHYS((unsigned long)(skb));
+			dma_addr = plat_dma_map_single(gmacdev,skb,RX_BUF_SIZE,SYNC_R);
 			status = synopGMAC_set_rx_qptr(gmacdev,dma_addr,RX_BUF_SIZE, (u32)skb,0,0,0);
-				//pci_sync_cache(0, (vm_offset_t)skb, len, SYNC_W);
-				//printf("==rx sync cache\n");
 			TR("%s::Set Rx Descriptor no %08x for skb %08x \n",__FUNCTION__,status,(u32)skb);
 			if(status < 0)
 			{	
@@ -1300,13 +1279,6 @@ unsigned long synopGMAC_linux_open(struct synopGMACNetworkAdapter *tp)
 
 
 
-//sw: debug
-/*
-	setup_tx_desc(gmacdev);	//sw: debug
-	synopGMAC_init_tx_desc_base(gmacdev);	//Program the transmit descriptor base address in to DmaTxBase addr
-	
-	reg_init(gmacdev);
-*/
 #if SYNOP_TOP_DEBUG
 	//dumpphyreg(regbase);
 #endif
@@ -1346,21 +1318,12 @@ unsigned long synopGMAC_linux_open(struct synopGMACNetworkAdapter *tp)
 //			return -ESYNOPGMACNOMEM;
 		}
 		
-		skb1 = (u32)CACHED_TO_UNCACHED((unsigned long)(skb));	
-		//dma_addr  = (unsigned long)vtophys((unsigned long)(skb1));
-		dma_addr  = (unsigned long)UNCACHED_TO_PHYS((unsigned long)(skb1));
+		dma_addr = plat_dma_map_single(gmacdev,skb,RX_BUF_SIZE,SYNC_R);
 
 
-//		dbgdesc = gmacdev->RxNextDesc + 12;	
-		//status = synopGMAC_set_rx_qptr_init(gmacdev,dma_addr,RX_BUF_SIZE, (u32)skb,0,0,0);
 		status = synopGMAC_set_rx_qptr(gmacdev,dma_addr,RX_BUF_SIZE, (u32)skb,0,0,0);
-				//pci_sync_cache(0, (vm_offset_t)skb, len, SYNC_W);
-				//printf("==rx sync cache\n");
-		//status = 0;
-		
 		if(status < 0)
 		{
-//sw: something wrong with free ,just let it go now
 			plat_free_memory((void *)skb);
 		}	
 	}while(status >= 0 && status < RECEIVE_DESC_SIZE-1);
@@ -1513,14 +1476,13 @@ s32 synopGMAC_linux_xmit_frames(struct ifnet* ifp)
 	s32 status = 0;
 	u64 dma_addr;
 	u32 offload_needed = 0;
-	u32 bf1;
-	u32 bf2;
+	u32 skb;
 	u32 index;
 	DmaDesc * dpr;
 	int len;
 	int i;
 	char * ptr;
-	struct mbuf *skb;	//sw	we just use the name skb
+	struct mbuf *mb_head;	//sw	we just use the name skb
 	struct ether_header * eh;
 
 	//u32 flags;
@@ -1547,27 +1509,27 @@ s32 synopGMAC_linux_xmit_frames(struct ifnet* ifp)
 			if(!synopGMAC_is_desc_owned_by_dma(gmacdev->TxNextDesc))
 			{
 
-				bf1 = (u32)plat_alloc_memory(TX_BUF_SIZE);
-				if(bf1 == 0)
+				skb = (u32)plat_alloc_memory(TX_BUF_SIZE);
+				if(skb == 0)
 				{
 #if SYNOP_TX_DEBUG
 					printf("===error in alloc bf1\n");	
 #endif
 					return -1;
 				}
-				memset((char *)bf1,0,TX_BUF_SIZE);
 
-				IF_DEQUEUE(&ifp->if_snd, skb);
+				IF_DEQUEUE(&ifp->if_snd, mb_head);
 
 				/*Now we have skb ready and OS invoked this function. Lets make our DMA know about this*/
 
 
 
-				len = skb->m_pkthdr.len;
+				len = mb_head->m_pkthdr.len;
 
 
 				//sw: i don't know weather it's right
-				m_copydata(skb, 0, len,(char *)bf1);
+				m_copydata(mb_head, 0, len,(char *)skb);
+				dma_addr = plat_dma_map_single(gmacdev,skb,len,SYNC_W);
 
 				/*
 				   if(len < 64)
@@ -1577,9 +1539,9 @@ s32 synopGMAC_linux_xmit_frames(struct ifnet* ifp)
 #if SYNOP_TX_DEBUG
 				printf("==tx pkg len: %d",len);
 #endif
+#if SYNOP_TX_DEBUG
 				//sw: dbg
 				eh = mtod(skb, struct ether_header *);
-#if SYNOP_TX_DEBUG
 				dumppkghd(eh,0);
 
 				for(i = 0;i < len;i++)
@@ -1591,14 +1553,11 @@ s32 synopGMAC_linux_xmit_frames(struct ifnet* ifp)
 #endif
 
 
-				plat_free_memory(skb);
-
-				bf2  = (u32)CACHED_TO_UNCACHED((unsigned long)bf1);	
-				//dma_addr  = (unsigned long)vtophys((unsigned long)(bf2));
-				dma_addr  = (unsigned long)UNCACHED_TO_PHYS((unsigned long)(bf2));
+				m_freem(mb_head);
+				
 
 				//		status = synopGMAC_set_tx_qptr(gmacdev, dma_addr, TX_BUF_SIZE, bf1,0,0,0,offload_needed);
-				status = synopGMAC_set_tx_qptr(gmacdev, dma_addr, len, bf1,0,0,0,offload_needed,&index,dpr);
+				status = synopGMAC_set_tx_qptr(gmacdev, dma_addr, len, skb,0,0,0,offload_needed,&index,dpr);
 
 #if SYNOP_TX_DEBUG
 				printf("status = %d \n",status);
@@ -2129,51 +2088,6 @@ void setphysreg0(synopGMACdevice * gmacdev,int reg,int val)
 }
 */
 
-#if UNUSED
-void test_tx(struct ifnet * ifp)
-{
-	int s;
-	u32 skb;
-	int error;
-	struct mbuf *m;
-	int i;
-
-for(i = 0;i < 150;i++)
-{	
-	m = (struct mbuf *)plat_alloc_memory(sizeof(struct mbuf));
-
-	skb = (u32)plat_alloc_memory(TX_BUF_SIZE);		//should skb aligned here?
-	if(skb == NULL){
-			TR0("ERROR in skb buffer allocation\n");
-//			return -ESYNOPGMACNOMEM;
-	}
-
-	mtod(m,u32)  = skb;	
-	
-	s = splimp();
-	/*
-	 * Queue message on interface, and start output if interface
-	 * not yet active.
-	 */
-	if (IF_QFULL(&ifp->if_snd)) {
-		IF_DROP(&ifp->if_snd);
-		splx(s);
-	}
-	ifp->if_obytes += m->m_pkthdr.len;
-	IF_ENQUEUE(&ifp->if_snd, m);
-	if (m->m_flags & M_MCAST)
-		ifp->if_omcasts++;
-	if ((ifp->if_flags & IFF_OACTIVE) == 0)
-		(*ifp->if_start)(ifp);
-	splx(s);
-
-//	dumpreg(regbase);
-
-}
-	return (error);
-
-
-}
 
 int set_lpmode(synopGMACdevice * gmacdev)
 {
@@ -2269,67 +2183,6 @@ void reg_init(synopGMACdevice * gmacdev)
 	
 }
 	
-void setup_tx_desc(synopGMACdevice * gmacdev)
-{
-
-	
-	int i,j;
-	int * first_desc;
-	int * descbuf;
-	int * TxDesc;
-	int * buf;
-	
-	
-	TR("Total size of memory required for Tx Descriptors in Ring Mode = 0x%08x\n",(4*(sizeof(int) * 4)));
-//	first_desc = plat_alloc_consistent_dmaable_memory (pcidev, sizeof(DmaDesc) * no_of_desc,&dma_addr);
-	first_desc = (int **)plat_alloc_memory(4 * sizeof(int) * 4);	//should first_desc aligned here?
-	buf = (void *)plat_alloc_memory(1536);	//max frame
-	if(first_desc == NULL){
-		TR("Error in Tx Descriptors memory allocation\n");
-		return -ESYNOPGMACNOMEM;
-	}
-	
-	if(buf == NULL){
-		TR("Error in Tx Descriptors buf memory allocation\n");
-		return -ESYNOPGMACNOMEM;
-	}
-	
-	TR("==first_desc: %x\n",first_desc);
-	TR("==desc buf: %x\n",buf);
-
-	gmacdev->TxDesc      = first_desc;
-	gmacdev->TxDescDma   = first_desc;
-	
-	memset((u32)first_desc,0,4 * sizeof(int) * 4);
-	
-	TxDesc = first_desc;
-	descbuf = buf;
-	
-	for(i = 0;i < 16;i = i+4)
-	{
-		TxDesc[i] = 0xb0000000;
-		TxDesc[i+1] = 0x60000400;
-		TxDesc[i+2] = descbuf;
-	}
-		
-	TxDesc[12] == 0xb0200000;
-		
-	
-		for(i =0; i < 16;i = i+4){
-			TR("==%x\n",TxDesc[i]);
-			TR("==%x\n",TxDesc[i+1]);
-			TR("==%x\n",TxDesc[i+2]);
-			TR("==%x\n\n",TxDesc[i+3]);
-		}
-
-	for(i = 0;i < 1536;i++)
-	{
-		descbuf[i] = 0xffffffff;
-	}
-
-		
-}
-#endif
 
 
 /**
