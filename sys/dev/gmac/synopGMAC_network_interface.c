@@ -844,7 +844,7 @@ void synop_handle_received_data(struct synopGMACNetworkAdapter* tp)
 				;
 #endif
 
-			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_R);
+				dma_addr1 =  plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_R);
 				len =  synopGMAC_get_rx_desc_frame_length(status) - 4; //Not interested in Ethernet CRC bytes
 				bcopy((char *)data1, mtod(skb, char *), len); 
 

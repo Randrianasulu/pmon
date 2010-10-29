@@ -12,6 +12,11 @@
  
 #include "synopGMAC_plat.h"
 
+dma_addr_t __attribute__((weak)) gmac_dmamap(unsigned long va,size_t size)
+{
+	return VA_TO_PA (va);
+}
+
 /**
   * This is a wrapper function for Memory allocation routine. In linux Kernel 
   * it it kmalloc function
@@ -33,10 +38,10 @@ void *plat_alloc_consistent_dmaable_memory(struct pci_dev *pcidev, u32 size, u32
 {
 void *buf;
      buf = (void*)malloc((size_t)size, M_DEVBUF, M_DONTWAIT);
-//    pci_sync_cache(hwdev, buf,size, SYNC_W);
+    pci_sync_cache(pcidev, buf,size, SYNC_W);
 
+    *addr =gmac_dmamap(buf,size);
     buf = (unsigned char *)CACHED_TO_UNCACHED(buf);
-    *addr =vtophys(buf);
  return buf;
 }
 
@@ -67,10 +72,6 @@ void plat_free_memory(void *buffer)
 }
 
 
-dma_addr_t __attribute__((weak)) gmac_dmamap(unsigned long va,size_t size)
-{
-	return VA_TO_PA (va);
-}
 
 dma_addr_t plat_dma_map_single(void *hwdev, void *ptr,
 		                    size_t size, int direction)

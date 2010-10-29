@@ -158,7 +158,7 @@ _pci_hwinit(initialise, iot, memt)
 	bus_dmamap_tag._dmamap_offs = 0;
 
 
-	pci_local_mem_pci_base = 0x80000000;
+	pci_local_mem_pci_base = 0x00000000;
 
 //sw: code form 2f	
 /*set pci base0 address and window size*/
