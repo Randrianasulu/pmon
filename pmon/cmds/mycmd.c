@@ -258,7 +258,7 @@ if(argc<3)return -1;
 	}
 	if(!fsrc||!fdst)return -1;
 	fp0=open(fsrc,O_RDONLY);
-	fp1=open(fdst,O_WRONLY);
+	fp1=open(fdst,O_RDWR|O_CREAT|O_TRUNC);
 
 	buf=malloc(bs);
 	if(!buf){printf("malloc failed!,please set heaptop bigger\n");return -1;}

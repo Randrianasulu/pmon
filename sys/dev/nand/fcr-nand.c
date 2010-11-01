@@ -10,16 +10,28 @@
 /*
  * MTD structure for fcr_soc board
  */
-static struct mtd_info *fcr_soc_mtd = NULL;
+struct mtd_info *fcr_soc_mtd = NULL;
 /*
  * Define partitions for flash device
  */
+#if 0
 static const struct mtd_partition partition_info[] = {
 	{
 	 .name = "fcr_soc flash partition 1",
 	 .offset = 12*1024*1024,
 	 .size = 32 * 1024 * 1024}
 };
+#endif
+#define KERNEL_AREA_SIZE 32*1024*1024
+ const struct mtd_partition partition_info[] = {
+//	{name ,size,offset,mask_flags }
+        {"kernel",KERNEL_AREA_SIZE,0,0},
+        {"os",0,KERNEL_AREA_SIZE,0},
+        {(void *)0,0,0,0}
+};
+
+
+
 
 #define NUM_PARTITIONS 1
 
@@ -146,7 +158,9 @@ int fcr_soc_nand_init(void)
 
 	/* Register the partitions */
 //	add_mtd_partitions(fcr_soc_mtd, partition_info, NUM_PARTITIONS);
-	add_mtd_device(fcr_soc_mtd,0,0,"total flash");
+	add_mtd_device(fcr_soc_mtd,0,0,"total");
+	add_mtd_device(fcr_soc_mtd,0,0x2000000,"kernel");
+	add_mtd_device(fcr_soc_mtd,0x2000000,0,"os");
 
 	find_good_part(fcr_soc_mtd);
 
