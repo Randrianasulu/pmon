@@ -843,6 +843,9 @@ static void init_legacy_rtc(void)
 
         CMOS_WRITE(DS_CTLB_24 | DS_CTLB_DM, DS_REG_CTLB);
                                                                                
+#if (PCI_IDSEL_CS5536 != 0)
+	if(!(CMOS_READ(0xd) & 0x80)) tgt_printf("\nrtc battery voltage too low!!!\n");
+#endif
 	//printf("RTC: %02d-%02d-%02d %02d:%02d:%02d\n",
 	//    year, month, date, hour, min, sec);
 }
