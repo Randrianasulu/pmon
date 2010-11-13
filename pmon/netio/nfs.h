@@ -3,7 +3,7 @@
 
 #define SUNRPC_PORT     111
 
-#define NFS_READ_SIZE   1024
+#define NFS_READ_SIZE   8192
 
 
 #define NFS_MAXLINKDEPTH 16
@@ -36,7 +36,7 @@
 #define NFS_MAXLINKDEPTH 16
 struct rpc_t {
     union {
-        uint8_t data[2048];
+        uint8_t data[128+NFS_READ_SIZE];
         struct {
             uint32_t id;
             uint32_t type;
