@@ -27,30 +27,6 @@
 #define NFS_RETRY_COUNT 30
 #define NFS_TIMEOUT 2000UL
 
-static char* basename (char *);
-static char* dirname (char *);
-extern void log __P((int kind, const char *fmt, ...));
-extern in_addr_t inet_addr __P((const char *));
-static void NfsSend (struct nfsfile *nfs);
-static void NfsHandler (struct nfsfile *nfs, struct rpc_t *pkt, void * buf,  unsigned len);
-
-#define STATE_RPCLOOKUP_PROG_MOUNT_REQ	1
-#define STATE_RPCLOOKUP_PROG_NFS_REQ	2
-#define STATE_MOUNT_REQ			3
-#define STATE_UMOUNT_REQ		4
-#define STATE_LOOKUP_REQ		5
-#define STATE_READ_REQ			6
-#define STATE_READLINK_REQ		7
-
-static int nfs_open (int , struct Url *, int, int);
-static int nfs_read (int, void *, int);
-static int nfs_write (int, const void *, int);
-static off_t nfs_lseek (int , long, int);
-static int nfs_close(int);
-
-static sig_t	pre_handler;
-static int client_port;
-
 struct nfsfile {
 struct sockaddr_in sin;
 int     sock;
@@ -74,11 +50,38 @@ char dirfh[NFS_FHSIZE];	/* file handle of directory */
 char filefh[NFS_FHSIZE]; /* file handle of kernel image */
 };
 
+static char* basename (char *);
+static char* dirname (char *);
+extern void log __P((int kind, const char *fmt, ...));
+extern in_addr_t inet_addr __P((const char *));
+static void NfsSend (struct nfsfile *nfs);
+static void NfsHandler (struct nfsfile *nfs, struct rpc_t *pkt, void * buf,  unsigned len);
+
+#define STATE_RPCLOOKUP_PROG_MOUNT_REQ	1
+#define STATE_RPCLOOKUP_PROG_NFS_REQ	2
+#define STATE_MOUNT_REQ			3
+#define STATE_UMOUNT_REQ		4
+#define STATE_LOOKUP_REQ		5
+#define STATE_READ_REQ			6
+#define STATE_READLINK_REQ		7
+#define STATE_DONE 8
+
+static int nfs_open (int , struct Url *, int, int);
+static int nfs_read (int, void *, int);
+static int nfs_write (int, const void *, int);
+static off_t nfs_lseek (int , long, int);
+static int nfs_close(int);
+
+static sig_t	pre_handler;
+static int nfs_sock;
 
 static void terminate()
 {
+extern struct proc *curproc;
 		signal(SIGINT, pre_handler);
-		close(client_port);
+		close(nfs_sock);
+		if(pre_handler) pre_handler(SIGINT);
+		else sigexit(curproc,SIGINT);
 }
 
 static int nfs_open(int fd, struct Url *url, int flags, int perms) {
@@ -88,6 +91,7 @@ static int nfs_open(int fd, struct Url *url, int flags, int perms) {
     NetFile *nfp = (NetFile *)_file[fd].data;
     struct nfsfile *nfs;
     int sock;
+	int client_port;
     short   oflags;
     struct sockaddr_in sin;
 
@@ -123,7 +127,7 @@ static int nfs_open(int fd, struct Url *url, int flags, int perms) {
     puts("File transfer via NFS from server ");
     printf("nfs_filename : %s\n", nfs->nfs_filename);
     printf("nfs_path : %s\n", nfs->nfs_path);
-    nfs->sock = sock = socket(AF_INET, SOCK_DGRAM, 0);
+    nfs_sock = nfs->sock = sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock < 0) goto error;
 
     for(client_port=800;client_port<=1000;client_port++)
@@ -147,7 +151,7 @@ static int nfs_open(int fd, struct Url *url, int flags, int perms) {
     nfs->sin = sin;
     nfs->NfsState = STATE_RPCLOOKUP_PROG_NFS_REQ;
     NfsSend(nfs);
-    while(nfs->NfsState != STATE_READ_REQ  || nfs->NfsState == STATE_UMOUNT_REQ) {
+    while(nfs->NfsState != STATE_READ_REQ && nfs->NfsState != STATE_DONE) {
         NfsHandler(nfs, &nfs->readbuf, NULL, sizeof(struct rpc_t));
     }
 
@@ -164,13 +168,14 @@ error:
 static int nfs_close(int fd) {
 	NetFile *nfp = (NetFile *)_file[fd].data;
 	struct nfsfile *nfs = nfp->data;
-	close(client_port);
+	close(nfs->sock);
 	signal(SIGINT, pre_handler);
+    free(nfs);
 	return 0;
 }
 
 
-static int nfs_read_reply (struct nfsfile *nfs, struct rpc_t *,void *, unsigned int);
+static int nfs_read_reply (struct nfsfile *nfs, struct rpc_t *, unsigned int);
 
 static int nfs_read(int fd, void *buf, int nread) {
 	NetFile *nfp = (NetFile *)_file[fd].data;
@@ -184,14 +189,15 @@ static int nfs_read(int fd, void *buf, int nread) {
 		bcopy((uint8_t *)&nfs->readbuf+sizeof(nfs->readbuf.u.reply) + (nfs->off - nfs->start), buf, n);
 		nfs->off += n;
 		nb -= n;
+		buf += n;
 	}
 	if(nfs->off >= nfs->end) {
 		NfsSend(nfs);
 		nfs->start = nfs->off;
-		n = nfs_read_reply (nfs, &nfs->readbuf, buf, n);
+		n = nfs_read_reply (nfs, &nfs->readbuf, n);
 		if(n <= 0) break;
 		nfs->end = nfs->off + n;
-		dotik (20000, 0);
+		dotik (25600, 0);
 	}
     }
     return nread - nb;
@@ -301,7 +307,7 @@ RPC_LOOKUP - Lookup RPC Port numbers
 static void
 rpc_req (struct nfsfile *nfs, int rpc_prog, int rpc_proc, uint32_t *data, int datalen)
 {
-	struct rpc_t pkt;
+	struct rpc_t *pkt = &nfs->readbuf;
 	unsigned long id;
 	uint32_t *p;
 	int pktlen;
@@ -310,18 +316,18 @@ rpc_req (struct nfsfile *nfs, int rpc_prog, int rpc_proc, uint32_t *data, int da
 
 
 	id = ++nfs->rpc_id;
-	pkt.u.call.id = htonl(id);
-	pkt.u.call.type = htonl(MSG_CALL);
-	pkt.u.call.rpcvers = htonl(2);	/* use RPC version 2 */
-	pkt.u.call.prog = htonl(rpc_prog);
-	pkt.u.call.vers = htonl(2);	/* portmapper is version 2 */
-	pkt.u.call.proc = htonl(rpc_proc);
-	p = (uint32_t *)&(pkt.u.call.data);
+	pkt->u.call.id = htonl(id);
+	pkt->u.call.type = htonl(MSG_CALL);
+	pkt->u.call.rpcvers = htonl(2);	/* use RPC version 2 */
+	pkt->u.call.prog = htonl(rpc_prog);
+	pkt->u.call.vers = htonl(2);	/* portmapper is version 2 */
+	pkt->u.call.proc = htonl(rpc_proc);
+	p = (uint32_t *)&(pkt->u.call.data);
 
 	if (datalen)
 		memcpy ((char *)p, (char *)data, datalen*sizeof(uint32_t));
 
-	pktlen = (char *)p + datalen*sizeof(uint32_t) - (char *)&pkt;
+	pktlen = (char *)p + datalen*sizeof(uint32_t) - (char *)pkt;
 
 
 	if (rpc_prog == PROG_PORTMAP)
@@ -332,7 +338,7 @@ rpc_req (struct nfsfile *nfs, int rpc_prog, int rpc_proc, uint32_t *data, int da
 		sport = nfs->NfsSrvNfsPort;
 
     nfs->sin.sin_port = htons(sport);
-    n = sendto(nfs->sock, &pkt, pktlen, 0, (struct sockaddr *)&nfs->sin, sizeof(nfs->sin));
+    n = sendto(nfs->sock, pkt, pktlen, 0, (struct sockaddr *)&nfs->sin, sizeof(nfs->sin));
 }
 
 /**************************************************************************
@@ -659,7 +665,7 @@ nfs_readlink_reply (uint8_t *pkt, unsigned len)
 #endif
 
 static int
-nfs_read_reply (struct nfsfile *nfs, struct rpc_t *pkt, void *buf, unsigned len)
+nfs_read_reply (struct nfsfile *nfs, struct rpc_t *pkt, unsigned len)
 {
 	int rlen;
 	
@@ -739,13 +745,14 @@ static void NfsHandler (struct nfsfile *nfs, struct rpc_t *pkt, void * buf,  uns
 		if (nfs_umountall_reply(nfs, pkt, n)) {
 			puts ("*** ERROR: Cannot umount\n");
 		} else {
-			puts ("\ndone\n");
+			puts ("done");
 		}
+		nfs->NfsState = STATE_DONE;
 		break;
 
 	case STATE_LOOKUP_REQ:
 		if (nfs_lookup_reply(nfs, pkt, n)) {
-			puts ("*** ERROR: File lookup fail\n");
+			printf ("*** ERROR: File lookup fail,umount..");
 			nfs->NfsState = STATE_UMOUNT_REQ;
 			NfsSend (nfs);
 		} else {
@@ -772,7 +779,7 @@ static void NfsHandler (struct nfsfile *nfs, struct rpc_t *pkt, void * buf,  uns
 		break;
 
 	case STATE_READ_REQ:
-		rlen = nfs_read_reply (nfs, pkt, buf, n);
+		rlen = nfs_read_reply (nfs, pkt, n);
 		if (rlen > 0) {
 			nfs_offset += rlen;
 		}
