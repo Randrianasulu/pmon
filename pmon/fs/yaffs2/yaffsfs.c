@@ -28,6 +28,7 @@
 
 #include "yaffsfs.h"
 #include "yaffs_guts.h"
+#include <machine/div64.h>
 
 #define YAFFSFS_MAX_SYMLINK_DEREFERENCES 5
 
@@ -946,7 +947,11 @@ static int yaffsfs_DoStat(yaffs_Object *obj,struct yaffs_stat *buf)
     	buf->st_rdev = obj->yst_rdev;
     	buf->st_size = yaffs_GetObjectFileLength(obj);
 		buf->st_blksize = obj->myDev->nDataBytesPerChunk;
-    	buf->st_blocks = (buf->st_size + buf->st_blksize -1)/buf->st_blksize;
+		{
+			off_t n = buf->st_size + buf->st_blksize -1;
+			do_div(n,buf->st_blksize);
+			buf->st_blocks = n;
+		}
     	buf->yst_atime = obj->yst_atime;
     	buf->yst_ctime = obj->yst_ctime;
     	buf->yst_mtime = obj->yst_mtime;
