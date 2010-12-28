@@ -87,8 +87,6 @@ subu v1,1;\
 bnez v1,78b;\
 nop;
 
-#define GPIOLED_SET(x)
-
 
 #define tmpsize		s1
 #define msize		s2
