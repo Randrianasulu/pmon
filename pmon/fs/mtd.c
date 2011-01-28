@@ -297,7 +297,7 @@ int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
 	rmp->index=mtdidx++;
 	rmp->part_offset=offset;
 	if(size) rmp->part_size=size;
-	else rmp->part_size=mtd->size;
+	else rmp->part_size=mtd->size - offset;
 	if(name)strcpy(rmp->name,name);
 	if(!mtdfiles.lh_first)
 	{

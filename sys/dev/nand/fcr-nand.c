@@ -10,7 +10,7 @@
 /*
  * MTD structure for fcr_soc board
  */
-struct mtd_info *fcr_soc_mtd = NULL;
+static struct mtd_info *fcr_soc_mtd = NULL;
 /*
  * Define partitions for flash device
  */
@@ -22,13 +22,6 @@ static const struct mtd_partition partition_info[] = {
 	 .size = 32 * 1024 * 1024}
 };
 #endif
-#define KERNEL_AREA_SIZE 32*1024*1024
- const struct mtd_partition partition_info[] = {
-//	{name ,size,offset,mask_flags }
-        {"kernel",KERNEL_AREA_SIZE,0,0},
-        {"os",0,KERNEL_AREA_SIZE,0},
-        {(void *)0,0,0,0}
-};
 
 
 
@@ -129,7 +122,6 @@ int fcr_soc_nand_init(void)
 		printk("Unable to allocate fcr_soc NAND MTD device structure.\n");
 		return -ENOMEM;
 	}
-
 	/* Get pointer to private data */
 	this = (struct nand_chip *)(&fcr_soc_mtd[1]);
 
@@ -149,7 +141,6 @@ int fcr_soc_nand_init(void)
 	/* 15 us command delay time */
 	this->chip_delay = 15;
 	this->ecc.mode = NAND_ECC_SOFT;
-
 	/* Scan to find existence of the device */
 	if (nand_scan(fcr_soc_mtd, 1)) {
 		kfree(fcr_soc_mtd);
@@ -160,9 +151,10 @@ int fcr_soc_nand_init(void)
 //	add_mtd_partitions(fcr_soc_mtd, partition_info, NUM_PARTITIONS);
 	add_mtd_device(fcr_soc_mtd,0,0,"total");
 	add_mtd_device(fcr_soc_mtd,0,0x2000000,"kernel");
-	add_mtd_device(fcr_soc_mtd,0x2000000,0,"os");
 
-	find_good_part(fcr_soc_mtd);
+	add_mtd_device(fcr_soc_mtd,0x2000000,0x2000000,"os");
+	
+        find_good_part(fcr_soc_mtd);
 
 
 	/* Return happy */
