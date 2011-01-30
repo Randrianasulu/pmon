@@ -23,11 +23,15 @@
 #include <include/linux/mtd/mtd.h>
 #include <sys/sys/stat.h>
 #include <sys/queue.h>
-#include <sys/dev/nand/fcr-nand.h>
+//#include <sys/dev/nand/fcr-nand.h>
 #include <mtdfile.h>
 
 #include "yaffsfs.h"
 #include "yaffs_guts.h"
+#include "yaffs_packedtags2.h"
+#include "yaffs_mtdif.h"
+#include "yaffs_mtdif2.h"
+
 #include <machine/div64.h>
 
 #define YAFFSFS_MAX_SYMLINK_DEREFERENCES 5
@@ -49,11 +53,7 @@ static yaffsfs_DeviceConfiguration *yaffsfs_configurationList;
 static yaffs_Object *yaffsfs_FindObject(yaffs_Object *relativeDirectory, const char *path, int symDepth);
 static void yaffsfs_RemoveObjectCallback(yaffs_Object *obj);
 
-
-// Handle management.
-//
-
-static int init_yaffs2  = 0; 
+//static int init_yaffs2  = 0; 
 unsigned int yaffs_wr_attempts;
 
 typedef struct
@@ -66,14 +66,21 @@ typedef struct
 	yaffs_Object *obj;	// the object
 }yaffsfs_Handle;
 
+typedef struct{
+    yaffs_Device *dev;
+    char part_name[YAFFS_MAX_NAME_LENGTH];
+} mtd_parts;
+
+#define MTD_PARTS_MAX  50
+mtd_parts * parts[MTD_PARTS_MAX]={0};
 
 static yaffsfs_Handle yaffsfs_handle[YAFFSFS_N_HANDLES];
 
 // yaffsfs_InitHandle
 /// Inilitalise handles on start-up.
-//
+
 static FileSystem yaffsfs = {
-	"yaffs",FS_FILE,
+	"fs/yaffs2",FS_FILE,
 	yaffs_open,
 	yaffs_read,
 	yaffs_write,
@@ -183,8 +190,8 @@ int yaffsfs_Match(char a, char b)
 // Curveball2 Might have "/x/ and "/x/y". Need to return the longest match
 static yaffs_Device *yaffsfs_FindDevice(const char *path, char **restOfPath)
 {
-	yaffsfs_DeviceConfiguration *cfg = yaffsfs_configurationList;
-	const char *leftOver;
+        int idx = 0,len=0;;
+        const char *leftOver;
 	const char *p;
 	yaffs_Device *retval = NULL;
 	int thisMatchLength;
@@ -193,32 +200,22 @@ static yaffs_Device *yaffsfs_FindDevice(const char *path, char **restOfPath)
 	// Check all configs, choose the one that:
 	// 1) Actually matches a prefix (ie /a amd /abc will not match
 	// 2) Matches the longest.
-	while(cfg && cfg->prefix && cfg->dev)
+	while(idx < MTD_PARTS_MAX  && parts[idx]->dev)
 	{
 		leftOver = path;
-		p = cfg->prefix;
+		p = parts[idx]->part_name;
+                len = strlen(p);
 		thisMatchLength = 0;
+        
+        if(! strncmp(p,path,len)){
+            retval = parts[idx]->dev;
+            *restOfPath = (char *)(path + len);
+            break;            
+        }
 
-		while(*p &&  //unmatched part of prefix
-		      strcmp(p,"/") && // the rest of the prefix is not / (to catch / at end)
-		      *leftOver &&
-		      yaffsfs_Match(*p,*leftOver))
-		{
-			p++;
-			leftOver++;
-			thisMatchLength++;
-		}
-		if((!*p || strcmp(p,"/") == 0) &&      // end of prefix
-		   (!*leftOver || *leftOver == '/') && // no more in this path name part
-		   (thisMatchLength > longestMatch))
-		{
-			// Matched prefix
-			*restOfPath = (char *)leftOver;
-			retval = cfg->dev;
-			longestMatch = thisMatchLength;
-		}
-		cfg++;
-	}
+        idx++;
+    }
+  
 	return retval;
 }
 
@@ -282,7 +279,6 @@ static yaffs_Object *yaffsfs_DoFindDirectory(yaffs_Object *startDir,const char *
 	{
 		dir = yaffsfs_FindRoot(path,&restOfPath);
 	}
-
 	while(dir)
 	{
 		// parse off /.
@@ -387,7 +383,73 @@ static yaffs_Object *yaffsfs_FindObject(yaffs_Object *relativeDirectory, const c
 
 	return dir;
 }
-/*  /dev/yaffs/kernel/xx  /dev/yaffs/os/xx */
+static void yaffs_dev_init(yaffs_Device *dev,mtdpriv *priv)
+{
+        mtdfile *info = priv->file;
+        struct mtd_info *mtd = info->mtd;
+        int nBlocks=0; 
+        dev->genericDevice = mtd;
+        
+        dev->nReservedBlocks = 2;
+	dev->nShortOpCaches = 0; // Use caches
+	dev->useNANDECC = 0; // do not use YAFFS's ECC
+        dev->writeChunkWithTagsToNAND = nandmtd2_WriteChunkWithTagsToNAND;
+        dev->readChunkWithTagsFromNAND = nandmtd2_ReadChunkWithTagsFromNAND;
+        dev->markNANDBlockBad = nandmtd2_MarkNANDBlockBad;
+        dev->queryNANDBlock = nandmtd2_QueryNANDBlock;
+        dev->spareBuffer = YMALLOC(mtd->oobsize);
+        dev->isYaffs2 = 1;
+        dev->isMounted = 0;
+#if 1 
+        //(LINUX_VERSION_CODE > KERNEL_VERSION(2,6,17))
+        dev->nDataBytesPerChunk = mtd->writesize;
+        dev->nChunksPerBlock = mtd->erasesize / mtd->writesize;
+#else
+        dev->nDataBytesPerChunk = mtd->oobblock;
+        dev->nChunksPerBlock = mtd->erasesize / mtd->oobblock;
+#endif
+        //printf("part_size=0x%08x,open_size=0x%08x,part_offset=0x%08x,open_offset=0x%08x",info->part_size,priv->open_size,info->part_offset,priv->open_offset);
+        nBlocks = priv->open_size  / mtd->erasesize;
+        dev->nCheckpointReservedBlocks = 0;
+        dev->startBlock = (info->part_offset + priv->open_offset) / mtd->erasesize ;
+        dev->endBlock = nBlocks + dev->startBlock - 1;
+	dev->eraseBlockInNAND = nandmtd_EraseBlockInNAND;
+	dev->initialiseNAND = nandmtd_InitialiseNAND;
+
+}
+static int mtd_parts_check_name(char *name)
+{
+    while(*name){
+        if(*name == '@' || *name == ',')
+            return 0;
+        name++;
+    }
+    return 1;
+}
+static int mtd_parts_check(char *name,mtdpriv *priv)
+{
+    int i=0;
+    yaffs_Device *dev;
+    for(i=0;i<MTD_PARTS_MAX;i++){
+        if(parts[i] == NULL)
+            break;
+        if(!strcmp(parts[i]->part_name,name))
+            return i;
+    }
+    parts[i] = malloc(sizeof(mtd_parts));
+    if(parts[i] == NULL)
+        return -1;
+//    if(mtd_parts_check_name(name))
+        strcpy(parts[i]->part_name,name);
+    dev = malloc(sizeof(yaffs_Device));
+    if(dev == NULL)
+        return -1;
+    memset(dev,0,sizeof(yaffs_Device));
+    yaffs_dev_init(dev,priv);
+    parts[i]->dev = dev;
+    return i;
+}
+/* /dev/fs/yaffs2@mtd1/xx */
 int yaffs_open(int fd,const char *path, int oflag, int mode)
 {
 	yaffs_Object *obj = NULL;
@@ -400,9 +462,11 @@ int yaffs_open(int fd,const char *path, int oflag, int mode)
 	int openDenied = 0;
 	int symDepth = 0;
 	int errorReported = 0;
-	int i;
+	int i,ret,fd_mtd = fd;
+//        mtdfile *info;
+        mtdpriv *priv;
         char mp[YAFFS_MAX_NAME_LENGTH]={0};
-        path += 10;
+        path += 15;
         if(!path[0])
             return -1;
         for(i=0;i < YAFFS_MAX_NAME_LENGTH;i++){
@@ -410,29 +474,25 @@ int yaffs_open(int fd,const char *path, int oflag, int mode)
                 break;
             mp[i] = path[i];
         }
-        if(!init_yaffs2){
-               yaffs_StartUp();
-            init_yaffs2 = 1;
-        }
-
+        mp[i]='/';
+        fd_mtd = open((char *)mp,0);
+        if(fd_mtd == -1)
+            return -1;
+        priv = _file[fd_mtd].data;
+        if((ret = mtd_parts_check((char *)mp,priv)) == -1)
+            return -1;
+        
+        close(fd_mtd);
+        
         yaffs_mount(mp);
 	yaffsfs_Lock();
 
 	handle = yaffsfs_GetHandle();
-
 	if(handle >= 0)
 	{
 
 		h = yaffsfs_GetHandlePointer(handle);
-		// try to find the exisiting object
 		obj = yaffsfs_FindObject(NULL,path,0);
-/*
-                if(obj && obj->variantType == YAFFS_OBJECT_TYPE_DIRECTORY)
-                {
-                    yaffs_open(path);
-
-                }
-*/
                 if(obj && obj->variantType == YAFFS_OBJECT_TYPE_SYMLINK)
 		{
 
@@ -596,6 +656,7 @@ int yaffs_read(int fd, void *buf, unsigned int nbyte)
 	int maxRead;
 
 	yaffsfs_Lock();
+
         h = ((struct yaffsfs_Handle *)(_file[fd].data));
         obj= h->obj;
 	if(!h || !obj)
@@ -659,7 +720,7 @@ int yaffs_write(int fd, const void *buf, unsigned int nbyte)
 	yaffsfs_Lock();
         h = ((struct yaffsfs_Handle *)(_file[fd].data));
         obj = h->obj;      
-	if(!h || !obj)
+        if(!h || !obj)
 	{
 		// bad handle
 		yaffsfs_SetError(-EBADF);
@@ -683,8 +744,6 @@ int yaffs_write(int fd, const void *buf, unsigned int nbyte)
 		{
 			pos = h->position;
 		}
-   
-//                pos = 0;
                 while(nbyte > 0) {
                     nToWrite = YAFFSFS_RW_SIZE- (pos & (YAFFSFS_RW_SIZE -1));
                     if(nToWrite > nbyte)
@@ -1136,7 +1195,7 @@ int yaffs_mount(const char *path)
 	{
 		if(!dev->isMounted)
 		{
-			result = yaffs_GutsInitialise(dev);
+                        result = yaffs_GutsInitialise(dev);
 			if(result == YAFFS_FAIL)
 			{
 				// todo error - mount failed

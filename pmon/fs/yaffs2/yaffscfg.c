@@ -75,6 +75,7 @@ void yaffsfs_LocalInitialisation(void)
 // are still disticnt "yaffs_Devices. You may think of these as "partitions"
 // using non-overlapping areas in the same device.
 //
+#if 0
 #include <linux/mtd/partitions.h>
 
 static int isMounted = 0;
@@ -84,7 +85,7 @@ static int isMounted = 0;
 #endif
 
 struct mtd_info *mtd_kernel = (void *)0,*mtd_os = (void *)0;
-extern struct mtd_info  *fcr_soc_mtd ;
+extern struct mtd_info  *_soc_mtd ;
 extern struct mtd_partition partition_info[];
 
  yaffsfs_DeviceConfiguration yaffsfs_config[] = {
@@ -103,7 +104,7 @@ static void yaffs_StartUppackdev(yaffs_Device **dev,struct mtd_info **mtd,int pa
         if( partition_info[partitionnum].size != 0)
             mtd_kernel->size = partition_info[partitionnum].size;
         else
-            mtd_kernel->size = fcr_soc_mtd->size - partition_info[partitionnum].offset;
+            mtd_kernel->size = _soc_mtd->size - partition_info[partitionnum].offset;
 
        	kernelDev->genericDevice = mtd_kernel;
 
@@ -144,8 +145,8 @@ int yaffs_StartUp(void)
         memset(kernelDev,0,2*sizeof(yaffs_Device));
         mtd_os = &mtd_kernel[1];
         osDev = &kernelDev[1];
-        memcpy(mtd_kernel,fcr_soc_mtd,sizeof(struct mtd_info));
-        memcpy(mtd_os,fcr_soc_mtd,sizeof(struct mtd_info));
+        memcpy(mtd_kernel,_soc_mtd,sizeof(struct mtd_info));
+        memcpy(mtd_os,_soc_mtd,sizeof(struct mtd_info));
        
 	yaffsfs_LocalInitialisation();
         
@@ -161,4 +162,4 @@ int yaffs_StartUp(void)
 
  
 
-
+#endif
