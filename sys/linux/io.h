@@ -1,7 +1,11 @@
 #ifndef __LINUXIO_H_
 #define __LINUXIO_H_
+
+#ifndef mips_io_port_base
 #if defined(FCRSOC)||defined(BONITOEL)
 #define mips_io_port_base 0xbfd00000
+#elif defined(LS1FSOC)
+#define mips_io_port_base 0xbc000000
 #else
 #ifdef CONFIG_PCI0_GAINT_MEM
 #define mips_io_port_base 0xbea00000
@@ -9,6 +13,8 @@
 #define mips_io_port_base 0xb0100000
 #endif
 #endif
+#endif
+
 #define __SLOW_DOWN_IO \
 	__asm__ __volatile__( \
 		"sb\t$0,0x80(%0)" \

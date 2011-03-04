@@ -16,7 +16,7 @@ makeoptions	ENDIAN=EL		# Little endian version.
 #
 option		SYSTYPE="\"FCR\""
 option		TARGETNAME="\"FCR\""
-option		FCRSOC
+option		LS1FSOC
 option		GS232_SOC
 
 #

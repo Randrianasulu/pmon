@@ -1,4 +1,5 @@
 #include <linux/types.h>
+#include <pio.h>
 
 #define KBD_STAT_OBF 		0x01	/* Keyboard output buffer full */
 #define KBD_STAT_IBF 		0x02	/* Keyboard input buffer full */
@@ -10,18 +11,22 @@
 #define KBD_STAT_PERR 		0x80	/* Parity error */
 
 #ifdef  FCRSOC
-#define KBD_STATUS_REG		(0xbf004044-0xbfd00000)	/* Status register (R) */
-#define KBD_CNTL_REG		(0xbf004044-0xbfd00000)	/* Controller command register (W) */
-#define KBD_DATA_REG		(0xbf004040-0xbfd00000)	/* Keyboard data register (R/W) */
+#define KBD_STATUS_REG		(0xbf004044)	/* Status register (R) */
+#define KBD_CNTL_REG		(0xbf004044)	/* Controller command register (W) */
+#define KBD_DATA_REG		(0xbf004040)	/* Keyboard data register (R/W) */
+#elif defined(LS1FSOC)
+#define KBD_STATUS_REG		(0xbfe60004)	/* Status register (R) */
+#define KBD_CNTL_REG		(0xbfe60004)	/* Controller command register (W) */
+#define KBD_DATA_REG		(0xbfe60000)	/* Keyboard data register (R/W) */
 #else
-#define KBD_STATUS_REG		0x64	/* Status register (R) */
-#define KBD_CNTL_REG		0x64	/* Controller command register (W) */
-#define KBD_DATA_REG		0x60	/* Keyboard data register (R/W) */
+#define KBD_STATUS_REG		(mips_io_port_base+0x64)	/* Status register (R) */
+#define KBD_CNTL_REG		(mips_io_port_base+0x64)	/* Controller command register (W) */
+#define KBD_DATA_REG		(mips_io_port_base+0x60)	/* Keyboard data register (R/W) */
 #endif
-#define kbd_read_input() linux_inb(KBD_DATA_REG)
-#define kbd_read_status() linux_inb(KBD_STATUS_REG)
-#define kbd_write_output(val) linux_outb(val, KBD_DATA_REG)
-#define kbd_write_command(val) linux_outb(val, KBD_CNTL_REG)
+#define kbd_read_input() inb(KBD_DATA_REG)
+#define kbd_read_status() inb(KBD_STATUS_REG)
+#define kbd_write_output(val) outb(KBD_DATA_REG,val)
+#define kbd_write_command(val) outb(KBD_CNTL_REG,val)
 
 #define MAX_DIACR	256
 
