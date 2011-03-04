@@ -1958,13 +1958,6 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
         cmd_setmac(p[0],p[1]);
         }
         break;
-       case SIOCRDEEPROM:
-                {
-                long *p=data;
-                myRTL = sc;
-                cmd_reprom(p[0],p[1]);
-                }
-                break;
        case SIOCWREEPROM:
                 {
                 long *p=data;
@@ -1973,6 +1966,32 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
                 }
                 break;
 */
+       case SIOCRDEEPROM:
+                {
+                long *p=data;
+		int ac;
+		char **av;
+                //myRTL = sc;
+                //cmd_reprom(p[0],p[1]);
+		int i;
+		int phybase;
+		unsigned data;
+		synopGMACdevice * gmacdev;
+		ac = p[0];
+		av = p[1];
+		gmacdev = (synopGMACdevice *)adapter->synopGMACdev;
+		if(ac<1)phybase = gmacdev->PhyBase;
+		else phybase = strtoul(av[1],0,0);
+		for(i=0;i<32;i++)
+		{
+		data = 0;
+		 synopGMAC_read_phy_reg(gmacdev->MacBase,phybase,i, &data);
+		if((i&0xf)==0)printf("\n%02x: ",i);
+		printf("%04x ",data);
+		}
+		printf("\n");
+                }
+                break;
 	default:
 		printf("===ioctl default\n");
 		dumpreg(regbase); 

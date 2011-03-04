@@ -76,7 +76,7 @@ synopGMACWriteReg(RegBase,GmacGmiiAddr,addr); //write the address from where the
         }
 //sw	
 #if SYNOP_REG_DEBUG
-	printf("read phy reg: offset = 0x%x\tdata = 0x%x",RegOffset,data);
+	printf("read phy reg: offset = 0x%x\tdata = 0x%x\n",RegOffset,*data);
 #endif
 
 return -ESYNOPGMACNOERR;
