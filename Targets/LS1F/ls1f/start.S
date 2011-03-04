@@ -195,6 +195,14 @@ exc_common:
 	mfc0	a0, COP_0_EXC_PC
 	bal	hexserial
 	nop
+
+	bal mydebug_main
+	nop
+1:
+	b 1b
+	nop
+
+
 	PRINTSTR("\r\nDERR0=")
 	cfc0	a0, COP_0_DERR_0
 	bal	hexserial
@@ -240,6 +248,110 @@ locate:
 	mtc0	t0,COP_0_STATUS_REG
         mtc0    zero,COP_0_CAUSE_REG
 	.set noreorder
+/*yang23-test*/
+/*spi speed*/
+    li a0,0xbfe80000
+    li a1,0x03
+    sb a1,0x4(a0)
+
+/*set gpu/pcix freq*/
+
+    li a0,0xbfd00000
+    li a1,0x2448
+    sw a1,0x414(a0)
+    li a1,0x2430
+    sw a1,0x424(a0)
+    
+#if 1/* to adjust the DDR frequency */
+    li  a0, 0xbfe78030
+    li  a1, 0xbb00   // 1fboard
+    //li  a1, 0x8800     // 2fboard
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    #li  a1, 0x8b00
+    #sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+    sw  a1, 0x0(a0)
+    nop
+#endif
 
 
 	bal	initserial
@@ -328,6 +440,20 @@ do_caches:
 
 
 PRINTSTR("begin test\r\n");
+
+###lcd soft_reset and panel config&timing
+	li a0,0xbc301240
+	li a1,0x00100000
+	sw a1,0x0(a0)
+	li a1,0x00000000
+	sw a1,0x0(a0)
+
+	li a0,0xbc3013c0
+	li a1,0x80001111
+	sw a1,0x0(a0)
+	li a1,0x33333333
+	sw a1,0x20(a0)
+
 
 
 #include "newtest.32/mydebug.S"
@@ -630,7 +756,8 @@ LEAF(initserial)
 // 	li	v1, 25000000/(16*57600)
 //zgj-2010-6-22 	li	v1, 40000000/(16*57600)
 // 	li	v1, 37000000/(16*57600)
- 	li	v1, 38000000/(16*57600)
+// 	li	v1, 24000000/(16*115200)
+ 	li	v1, ((8000000*6)/(2*16*115200))     // 8MHz crystal,   M[7:3]=6     1fboard
 //zgj-2010-7-1	li 	v1, 2
 	sb	v1, NSREG(NS16550_DATA)(v0)
 	srl	v1, 8
