@@ -1958,14 +1958,41 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
         cmd_setmac(p[0],p[1]);
         }
         break;
+*/
        case SIOCWREEPROM:
                 {
                 long *p=data;
-                myRTL = sc;
-                cmd_wrprom(p[0],p[1]);
-                }
+		int ac;
+		char **av;
+		int i;
+		int phybase;
+		unsigned data;
+		synopGMACdevice * gmacdev;
+		ac = p[0];
+		av = p[1];
+		gmacdev = (synopGMACdevice *)adapter->synopGMACdev;
+	if(ac>1)
+	{
+	 //offset:data,data
+	 int i;
+	 int offset;
+	 int data;
+	 for(i=1;i<ac;i++)
+	 {
+	 	char *p=av[i];
+		char *nextp;
+	 	int offset=strtoul(p,&nextp,0);
+		while(nextp!=p)
+		{
+		p=++nextp;
+		data=strtoul(p,&nextp,0);
+		if(nextp==p)break;
+		 synopGMAC_write_phy_reg(gmacdev->MacBase,phybase,offset, data);
+		}
+	 }
+	}
+		}
                 break;
-*/
        case SIOCRDEEPROM:
                 {
                 long *p=data;
