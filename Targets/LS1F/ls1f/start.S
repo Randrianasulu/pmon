@@ -404,6 +404,9 @@ locate:
 #ddr2config by cww 20090901
         li      msize,0x0f000000
         PRINTSTR("DDR2 config begin_2\r\n")
+        bal     ddr2_config_old
+        nop
+        PRINTSTR("DDR2 config begin_2\r\n")
         bal     ddr2_config
         nop
         PRINTSTR("DDR2 config end\r\n")
@@ -757,7 +760,7 @@ LEAF(initserial)
 //zgj-2010-6-22 	li	v1, 40000000/(16*57600)
 // 	li	v1, 37000000/(16*57600)
 // 	li	v1, 24000000/(16*115200)
- 	li	v1, ((8000000*6)/(2*16*115200))     // 8MHz crystal,   M[7:3]=6     1fboard
+ 	li	v1, ((8000000*6)/(2*16*9600))     // 8MHz crystal,   M[7:3]=6     1fboard
 //zgj-2010-7-1	li 	v1, 2
 	sb	v1, NSREG(NS16550_DATA)(v0)
 	srl	v1, 8
@@ -942,8 +945,41 @@ cache_init_finish:
     .set reorder
 	.end 	cache_init
 
+#define REG_ADDRESS 0x0
+#define CONFIG_BASE 0xaffffe00
+
+        .global ddr2_config_old
+        .ent    ddr2_config_old
+        .set    noreorder
+       # .set    mips3
+ddr2_config_old:
+    la      t0, ddr2_reg_data_old
+    addu    t0, t0, s0
+    li      t1, 0x1d
+    li      t2, CONFIG_BASE
+
+reg_write_old:
+    ld      a1, 0x0(t0)
+    sd      a1, REG_ADDRESS(t2)
+    subu    t1, t1, 0x1
+    addiu     t0, t0, 0x8
+    bne     t1, $0, reg_write_old
+    addiu     t2, t2, 0x10
+    
+    ############start##########
+    li      t2, CONFIG_BASE
+    la		t0,DDR2_CTL_start_DATA_LO_old
+    #la		t0,ddr2_start_reg
+    addu    	t0, t0, s0
+    ld      a1, 0x0(t0)
+    sd      a1, 0x30(t2)
+
+    jr      ra
+    nop
+    .end    ddr2_config_old
 #ddr2 by cww 20090901
 #if 1
 #include "ddr2fconfig.S"
+#include "ddr2fconfig.old.S"
 #endif
 
