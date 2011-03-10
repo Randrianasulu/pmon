@@ -267,7 +267,7 @@ locate:
     //li  a1, 0xbb00   // 1fboard
   //  li  a1, 0x8c8f   // 1fboard 25MHz
 #define CPU_MULT 8
-#define DDR_MULT 4
+#define DDR_MULT 5
 #define DDRCFG_DATA (0x8888|(CPU_MULT-1)|((DDR_MULT-3)<<8))
     li  a1, DDRCFG_DATA   // 1fboard 25MHz
     //li  a1, 0x8800     // 2fboard
