@@ -320,8 +320,8 @@ initmips(unsigned int memsz)
 int init_kbd()
 {
     int ldd;
-    // ldd = 3*33; /* 50us/(1/33333333) */ //9*33
-    ldd = 3*33;
+    //ldd 5us/(1/clk)=5*t
+    ldd = 5*48;
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLL, ldd & 0xff);
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLH, (ldd >> 8) & 0xff);
 	//pckbd_init_hw();
@@ -409,6 +409,7 @@ tgt_devconfig()
 	else{
 	init_kbd();
 	rc=kbd_initialize();
+	pckbd_leds(2);
 	}
 	if(!rc){ 
 		kbd_available=1;
@@ -593,8 +594,11 @@ _probe_frequencies()
         md_pipefreq = 300000000;        /* Defaults */
         md_cpufreq  = 66000000;
 #else
-        md_pipefreq = CPU_CLK;        /* NB FPGA*/
-        md_cpufreq  =  40000000;
+	{
+	int val= *(volatile int *)0xbfe78030;
+        md_pipefreq = ((val&7)+1)*APB_CLK;        /* NB FPGA*/
+        md_cpufreq  =  (((val>>8)&7)+3)*APB_CLK;
+	}
 #endif
 
         clk_invalid = 1;
