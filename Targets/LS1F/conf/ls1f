@@ -73,13 +73,8 @@ select		cmd_shell		# Shell commands, vers, help, eval
 #
 select		mod_uart_ns16550	# Standard UART driver
 option		APB_CLK=33333333
-#option		APB_CLK=11111111
-#option		CPU_CLK=20000000
-option		CPU_CLK=40000000
-#option		CPU_CLK=33333333
-#option		CPU_CLK=33000000
-#option		APB_CLK=80000000
-#option		CPU_CLK=250000000
+option 		CPU_MULT=8
+option 		DDR_MULT=5
 option		CONS_BAUD=B115200
 select		ext2
 select 		yaffsfs
@@ -88,7 +83,7 @@ select 		yaffsfs
 option 	    MY40IO
 #option 		GC300
 #select      gpu300_compile
-#select 		mod_framebuffer
+select 		mod_framebuffer
 #select		mod_x86emu_int10
 select		mod_vgacon
 option		NOPCINAMES		# Save some space for x86emu
@@ -205,7 +200,7 @@ select loop
 select raw_ether
 #option VGA_MEM_BASE=0xb5000000
 #option VGA_MEM_BASE=0xb7f00000
-option		X640x480
+#option		X640x480
 #option		X640x640
 #option		X640x768
 #option		X640x800
@@ -217,7 +212,7 @@ option		X640x480
 #option		X1024x480
 #option		X1024x600
 #option		X1024x640
-#option		X1024x768
+option		X1024x768
 #option 		CONFIG_VIDEO_12BPP
 #option 		CONFIG_VIDEO_15BPP
 option 	CONFIG_VIDEO_16BPP

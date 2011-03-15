@@ -253,25 +253,46 @@ locate:
     li  t1, 0x17  // div 4, fast_read + burst_en + memory_en
     sb  t1, 0x4(t0) // sfc_param
 
-/*set gpu/pcix freq*/
 
-    li a0,0xbfd00000
-    li a1,0x2448
-    sw a1,0x414(a0)
-    li a1,0x2430
-    sw a1,0x424(a0)
 
-    
+	bal	initserial
+	nop
+	
+
+	PRINTSTR("\r\nPMON2000 MIPS Initializing. Standby...\r\n")
+	PRINTSTR("ERRORPC=")
+	mfc0	a0, COP_0_ERROR_PC
+	bal	hexserial
+	nop
+
+	PRINTSTR(" CONFIG=")
+	mfc0	a0, COP_0_CONFIG
+	bal	hexserial
+	nop
+	PRINTSTR("\r\n")
+	
+	PRINTSTR(" PRID=")
+	mfc0	a0, COP_0_PRID
+	bal	hexserial
+	nop
+	PRINTSTR("\r\n")
+
+	bnez s0,1f
+	nop
+	li a0,128
+	jal initmips
+	nop
+1:
+
+	/* 
+	 * Now determine DRAM configuration and size by
+	 * reading the I2C EEROM on the DIMMS
+	 */
+
 #if 1/* to adjust the DDR frequency */
     li  a0, 0xbfe78030
-    //li  a1, 0xbb00   // 1fboard
-  //  li  a1, 0x8c8f   // 1fboard 25MHz
-#define CPU_MULT 8
-#define DDR_MULT 5
 #define DDRCFG_DATA (0x8888|(CPU_MULT-1)|((DDR_MULT-3)<<8))
     li  a1, DDRCFG_DATA   // 1fboard 25MHz
-    //li  a1, 0x8800     // 2fboard
-    //li  a1, 0x9900     // 2fboard new, 12MHz * 4
     sw  a1, 0x0(a0)
     nop
     sw  a1, 0x0(a0)
@@ -311,11 +332,6 @@ locate:
     sw  a1, 0x0(a0)
     nop
     sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    #li  a1, 0x8b00
-    #sw  a1, 0x0(a0)
     nop
     sw  a1, 0x0(a0)
     nop
@@ -358,53 +374,6 @@ locate:
     sw  a1, 0x0(a0)
     nop
 #endif
-
-
-	bal	initserial
-	nop
-/*
-1:	
-	li	a0, 255
-2:
-	bal	tgt_putchar	
-	nop
-	addi	a0, -1
-	beqz	a0, 1b
-	nop
-	b	2b
-	nop
-*/
-	
-
-	PRINTSTR("\r\nPMON2000 MIPS Initializing. Standby...\r\n")
-	PRINTSTR("ERRORPC=")
-	mfc0	a0, COP_0_ERROR_PC
-	bal	hexserial
-	nop
-
-	PRINTSTR(" CONFIG=")
-	mfc0	a0, COP_0_CONFIG
-	bal	hexserial
-	nop
-	PRINTSTR("\r\n")
-	
-	PRINTSTR(" PRID=")
-	mfc0	a0, COP_0_PRID
-	bal	hexserial
-	nop
-	PRINTSTR("\r\n")
-
-	bnez s0,1f
-	nop
-	li a0,128
-	jal initmips
-	nop
-1:
-
-	/* 
-	 * Now determine DRAM configuration and size by
-	 * reading the I2C EEROM on the DIMMS
-	 */
 
 
 #ddr2config by cww 20090901
@@ -759,15 +728,7 @@ LEAF(initserial)
 	sb	v1, NSREG(NS16550_FIFO)(v0)
 	li	v1, CFCR_DLAB
 	sb	v1, NSREG(NS16550_CFCR)(v0)
-// 	li	v1, NS16550HZ/(16*CONS_BAUD)
-// 	li	v1, (NS16550HZ*4)/(16*CONS_BAUD)
-// 	li	v1, 16666666/(16*57600)
-// 	li	v1, 25000000/(16*57600)
-//zgj-2010-6-22 	li	v1, 40000000/(16*57600)
-// 	li	v1, 37000000/(16*57600)
-// 	li	v1, 24000000/(16*115200)
- 	li	v1, ((APB_CLK*DDR_MULT)/(2*16*9600))     // 8MHz crystal,   M[7:3]=6     1fboard
-//zgj-2010-7-1	li 	v1, 2
+ 	li	v1, ((APB_CLK*DDR_MULT)/(2*16*115200))     // 8MHz crystal,   M[7:3]=6     1fboard
 	sb	v1, NSREG(NS16550_DATA)(v0)
 	srl	v1, 8
 	sb	v1, NSREG(NS16550_IER)(v0)

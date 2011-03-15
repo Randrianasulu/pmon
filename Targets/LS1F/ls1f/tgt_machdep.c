@@ -320,26 +320,13 @@ initmips(unsigned int memsz)
 int init_kbd()
 {
     int ldd;
-    //ldd 5us/(1/clk)=5*t
-    ldd = 5*48;
+    //ldd 5us/(1/clk)=5*t, kbdclk is ddrclk/2/ldd
+    ldd = 5*APB_CLK/1000000*DDR_MULT/2;
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLL, ldd & 0xff);
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLH, (ldd >> 8) & 0xff);
 	//pckbd_init_hw();
    return 1;
 
-#if 0
-    for (ldd = 67; ldd > 0; ldd--)
-    {
-    	KSEG1_STORE8(FCR_PS2_BASE+PS2_DLL, ldd & 0xff);
-    	KSEG1_STORE8(FCR_PS2_BASE+PS2_DLH, (ldd >> 8) & 0xff);
-    	if (pckbd_init_hw())
-	{
-		printf("\n\n enable key board ok ldd = %d\n\n", ldd);
-		break;
-	}
-    }
-#endif
-    return 1;
 }
 
 /*
@@ -414,7 +401,7 @@ tgt_devconfig()
 	if(!rc){ 
 		kbd_available=1;
 	}
-	//psaux_init();
+	psaux_init();
    
 #endif
    printf("devconfig done.\n");

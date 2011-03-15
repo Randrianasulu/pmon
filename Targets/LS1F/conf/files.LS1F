@@ -5,7 +5,6 @@
 file	Targets/LS1F/ls1f/dc.c
 file	Targets/LS1F/pci/pci_machdep.c
 file	Targets/LS1F/ls1f/tgt_machdep.c
-file	Targets/LS1F/dev/lcd.c
 file	Targets/LS1F/dev/i2c.c
 file	Targets/LS1F/dev/spi.c
 file	Targets/LS1F/dev/ac97.c
