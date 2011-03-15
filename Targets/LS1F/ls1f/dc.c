@@ -92,6 +92,10 @@ int dc_init()
    int  print_addr;
    int print_data;
    printf("enter dc_init...\n");
+   /*gpu pll ctrl*/
+   *(volatile int *)0xbfd00414 = 0x1518;
+   /*pix pll ctrl */
+   *(volatile int *)0xbfd00424 = 0x1510;
 
 #if defined(CONFIG_VIDEO_32BPP)
 MEM_SIZE = PIXEL_COUNT * 4;
@@ -547,10 +551,10 @@ line_length = FB_XSIZE * 4;
 
   printf("framebuffer Cursor Configuration\n");
 #ifdef DC_FB0
-  write_reg((0xbc301520  +0x00),0x00020202);
+  write_reg((0xbc301520  +0x00),0x00020200);
 #endif
 #ifdef DC_FB1
-  write_reg((0xbc301520  +0x00),0x00020212);
+  write_reg((0xbc301520  +0x00),0x00020210);
 #endif
   printf("framebuffer Cursor Address\n");
   write_reg((0xbc301530  +0x00),ADDR_CURSOR);
@@ -824,16 +828,17 @@ line_length = FB_XSIZE * 4;
   write_reg((0xbc301410  +0xa0),0x42840281);
   #endif
 #elif defined(X1024x768)  //1024x768
-#if 0
-  printf(" write_reg((0xbc301410  +0x00),0x04D00400); 1024x768\n");
+#ifdef DC_FB1
+  printf(" write_reg((0xbc301400  +0x00),0x04D00400); 1024x768\n");
   write_reg((0xbc301410  +0x00),0x04D00400);
-  printf(" write_reg((0xbc301410  +0x20),0x44680408);\n");
+  printf(" write_reg((0xbc301400  +0x20),0x44680408);\n");
   write_reg((0xbc301410  +0x20),0x44680408);
-  printf(" write_reg((0xbc301410  +0x80),0x030E0300);\n");
+  printf(" write_reg((0xbc301400  +0x80),0x030E0300);\n");
   write_reg((0xbc301410  +0x80),0x030E0300);
-  printf(" write_reg((0xbc301410  +0xa0),0x43040301);\n");
+  printf(" write_reg((0xbc301400  +0xa0),0x43040301);\n");
   write_reg((0xbc301410  +0xa0),0x43040301);
-#else
+#endif
+#ifdef DC_FB0
   printf(" write_reg((0xbc301410  +0x00),0x05400400); 1024x768\n");
   write_reg((0xbc301410  +0x00),0x05400400);
   printf(" write_reg((0xbc301410  +0x20),0x44A00438);\n");
