@@ -42,25 +42,7 @@ typedef unsigned long dma_addr_t;
 
 #define RANDOM_HEIGHT_Z 37
 
-/*
-void write_reg(int REG_ADDR,int REG_DATA )
-{
-   int *REG_ADDR_ptr = (int *)malloc(sizeof(int));
-   if(REG_ADDR_ptr == NULL)
-   {
-       printf("malloc failed!\n");
-   }
-   else
-   {
-       REG_ADDR_ptr = REG_ADDR;
-       *REG_ADDR_ptr = REG_DATA;  
-       printf("addr:%x  data:%x\n",REG_ADDR_ptr,(*REG_ADDR_ptr));
-   }
 
-}
-*/
-
-//   char MEM_ptr[0x30c000];
     char *MEM_ptr = 0xA2000000;
     char *ADDR_CURSOR = 0xA6000000;
 #ifdef DC_FB1 
@@ -86,9 +68,6 @@ int dc_init()
 
     int line_length=0;
    
-   //debug for dc malloc
-//   char *MEM_ptr =(volatile u8*)(MEM_ADDR); 
- //  char *MEM_ptr[MEM_SIZE+0xc000];
    int  print_addr;
    int print_data;
    printf("enter dc_init...\n");
@@ -113,407 +92,27 @@ line_length = FB_XSIZE * 2;
 MEM_SIZE = PIXEL_COUNT * 4;
 line_length = FB_XSIZE * 4;
 #endif
-  //////////////////////////////////////////////////////////////
-   //MEM_ptr = (char *)malloc(MEM_SIZE+0xC000,M_MBUF, 0x1);
-   //MEM_ptr = (char *)malloc(MEM_SIZE+0xC000,M_MBUF, 0x1);
-  //  MEM_ptr = (char *)malloc(MEM_SIZE+0xC000);
-  // MEM_ptr = (char *)0x8b200000;
-  // char *MEM_ptr = (char *)malloc(MEM_SIZE);
 
-    if( MEM_ptr >= 0xA0000000)
-        MEM_ADDR = MEM_ptr-0xA0000000;
-    else
-        MEM_ADDR = MEM_ptr ;
+        MEM_ADDR = (long)MEM_ptr&0x0fffffff;
+
 #ifdef DC_FB1 
-    if( MEM_ptr_1 >= 0xA0000000)
-        MEM_ADDR_1 = MEM_ptr_1-0xA0000000;
-    else
-        MEM_ADDR_1 = MEM_ptr_1 ;
+        MEM_ADDR_1 = (long)MEM_ptr_1&0x0fffffff;
 #endif
-   // MEM_ADDR |= 0xA0000000;
-  ///////////////////////////////////////////////////////////////
+
    if(MEM_ptr == NULL)
    {
        printf("frame buffer memory malloc failed!\n ");
        exit(0);
    }
-   else
-   {
-#if 0 //2010-4-6
-
-
-#if 0
-#if 1
-#if 0 //zgj
-        //for (i=0;i<MEM_SIZE;i+=4)
-        for (i=0;i<MEM_SIZE;i+=4)
-        {
-           if((i%2560) < 0x300)
-           {
-           //paint ARGB 0 255 0 0 high <- low
-          // *(MEM_ptr+i-1) = 255 ;
-          #if 0
-           *(MEM_ptr+i) = 255  ;
-           *(MEM_ptr+i+1) = 255  ;
-           *(MEM_ptr+i+2) = 255  ;
-           *(MEM_ptr+i+3) = 0  ;
-           #endif
-        //   t = i%3 ;
-          //  if(i%3 == 0)
-            *(volatile unsigned int *)(MEM_ptr + i) = 0x00ffffff;
-           }
-           else
-           {
-            *(volatile unsigned int *)(MEM_ptr + i) = 0;
-           }
-        }
-#else
-#if 0
-        for (i=0;i<MEM_SIZE;i+=0xA00)
-        {
-           // t = i%2560 ;
-           //if(t<0x300)
-           {
-                if((i/2560)%3 ==0)
-                    for(ii=0;ii<0x300; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff0000;
-                else if((i/2560)%3 ==1)
-                    for(ii=0;ii<0x300; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-                else
-                    for(ii=0;ii<0x300; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x000000ff;
-           }
-          // else if((t>=0x300) && (t<0x600))
-           {
-                if((i/2560)%3 ==0)
-                    for(ii=0x300;ii<0x600; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-                else if((i/2560)%3 ==1)
-                    for(ii=0x300;ii<0x600; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x000000ff;
-                else
-                    for(ii=0x300;ii<0x600; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff0000;
-                //for(ii=0;ii<0x300; ii+=4)
-                  //  *(volatile unsigned int *)(MEM_ptr + ii) = 0x00ff0000;
-           }
-          // else
-           {
-                if((i/2560)%3 ==0)
-                    for(ii=0x600;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x000000ff;
-                else if((i/2560)%3 ==1)
-                    for(ii=0x600;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff0000;
-                else
-                    for(ii=0x600;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-            //*(volatile unsigned int *)(MEM_ptr + i) = 0;
-           }
-        }
-#endif
-        for (i=0;i<MEM_SIZE;i+=0xA00)
-        {
-                if((i/2560)%10 ==0)
-                {
-                    for(ii=0;ii<0x300; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff0000;
-                    for(ii=0x300;ii<0x600; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-                    for(ii=0x600;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x000000ff;
-                }
-                else if((i/2560)%10 ==1)
-                {
-                    for(ii=0;ii<0x300; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-                    for(ii=0x300;ii<0x600; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x000000ff;
-                    for(ii=0x600;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff0000;
-                }
-                else if((i/2560)%10 ==2)
-                {
-                    for(ii=0;ii<0x300; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x000000ff;
-                    for(ii=0x300;ii<0x600; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff0000;
-                    for(ii=0x600;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-                }
-                else
-                { 
-                    for(ii=0x0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00000000;
-                }
-        }
-#endif
-#else
-        for (i=1;i<MEM_SIZE;i+=2)
-        {
-           //paint ARGB 0 255 0 0 high <- low
-           *(MEM_ptr+i-1) = 255 ;
-           *(MEM_ptr+i) = 255  ;
-        }
-#endif
-#endif
-#if 0
-        for (i=MEM_SIZE;i< (MEM_SIZE+0xA0000);i+=0xA00)
-        {
-                if((i/2560)%18 ==0)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff0000;
-                }
-                else if((i/2560)%18 ==1)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-                }
-                else if((i/2560)%18 ==2)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x000000ff;
-                }
-                else if((i/2560)%18 ==3)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ffff00;
-                }
-                else if((i/2560)%18 ==4)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ffff;
-                }
-                else if((i/2560)%18 ==5)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff00ff;
-                }
-                else if((i/2560)%18 ==6)
-                { 
-                    for(ii=0x0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00000000;
-                }
-                else if((i/2560)%18 ==7)
-                { 
-                    for(ii=0x0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ffffff;
-                }
-                if((i/2560)%18 ==8)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00808080;
-                }
-                else if((i/2560)%18 ==9)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x005a5a5a;
-                }
-                else if((i/2560)%18 ==10)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00a5a5a5;
-                }
-                else if((i/2560)%18 ==11)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00333333;
-                }
-                else if((i/2560)%18 ==12)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x008008ff;
-                }
-                else if((i/2560)%18 ==13)
-                {
-                    for(ii=0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00cccccc;
-                }
-                else if((i/2560)%18 ==14)
-                { 
-                    for(ii=0x0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00123456;
-                }
-                else if((i/2560)%18 ==15)
-                { 
-                    for(ii=0x0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00654321;
-                }
-                else if((i/2560)%18 ==16)
-                { 
-                    for(ii=0x0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0077bb22;
-                }
-                else if((i/2560)%18 ==17)
-                { 
-                    for(ii=0x0;ii<0xA00; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00cc2288;
-                }
-      }
- #endif
-
- #if defined(CONFIG_VIDEO_32BPP)
-        //for (i=MEM_SIZE;i< (MEM_SIZE+0xC000);i+=line_length)
-        for (i=0;i< MEM_SIZE; i += line_length)
-        {
-                if((i/line_length)%2 ==1)
-                {
-                    for(ii=0;ii<line_length; ii+=4)
-                        *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00000000;
-                }
-                else 
-                {
-                    if((i/line_length)%RANDOM_HEIGHT_Z ==2)
-                    {
-                        for(ii=0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x0000ff00;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==4)
-                    {
-                        for(ii=0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ffff00;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==6)
-                    {
-                        for(ii=0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ff00ff;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==8)
-                    { 
-                        for(ii=0x0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00808080;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==10)
-                    {
-                        for(ii=0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x005a5a5a;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==12)
-                    {
-                        for(ii=0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00333333;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==14)
-                    {
-                        for(ii=0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00cccccc;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==16)
-                    { 
-                        for(ii=0x0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00654321;
-                    }
-                    else if((i/line_length)%RANDOM_HEIGHT_Z ==RANDOM_HEIGHT_Z)
-                    { 
-                        for(ii=0x0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00cc2288;
-                    }
-                }
-                    if((i/line_length)%RANDOM_HEIGHT_Z ==15)
-                    {
-                        for(ii=0;ii<line_length; ii+=4)
-                            *(volatile unsigned int *)(MEM_ptr + ii + i) = 0x00ffffff;
-                    }
-            }
-
-
-#elif defined(CONFIG_VIDEO_16BPP)
-        //for (i=MEM_SIZE;i< (MEM_SIZE+0xC000);i+=0xA00)
-        for (i=0;i< MEM_SIZE; i += line_length)
-        {
-                if((i/line_length) % 2 ==1)
-                {
-                    tmp = i + line_length - ( i%line_length );
-                    for(ii=0;ii< line_length ; ii+=2)
-                        *(volatile unsigned short *)(MEM_ptr + ii + tmp) = 0x0000;
-                }
-                else 
-                {
-                    if((i/line_length)%90 ==2)
-                    {
-                    tmp = i + line_length - ( i % line_length );
-                        for(ii=0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + tmp) = 0x07e0;
-                    }
-                    else if((i/line_length)%90 ==4)
-                    {
-                    tmp = i + line_length - ( i%line_length );
-                        for(ii=0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + tmp) = 0xffe0;
-                    }
-                    #if 0
-                    else if((i/line_length)%90 ==6)
-                    {
-                        for(ii=0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + i) = 0xf81f;
-                    }
-                    else if((i/line_length)%90 ==8)
-                    { 
-                        for(ii=0x0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + i) = 0x8010;
-                    }
-                    else if((i/line_length)%90 ==10)
-                    {
-                        for(ii=0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + i) = 0x5a5a;
-                    }
-                    #endif
-                    else if((i/line_length)%90 ==12)
-                    {
-                    tmp = i + line_length - ( i%line_length );
-                        for(ii=0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + tmp) = 0x3333;
-                    }
-                    
-                    else if((i/line_length)%90 ==14)
-                    {
-                    tmp = i + line_length - ( i%line_length );
-                        for(ii=0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + tmp) = 0xf800;  // 0xcccc;
-                    }
-                    #if 0
-                    else if((i/line_length)%90 ==16)
-                    { 
-                        for(ii=0x0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + i) = 0x4321;
-                    }
-                    #endif
-                    else if((i/line_length)%90 ==89)
-                    { 
-                    tmp = i + line_length - ( i%line_length );
-                        for(ii=0x0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + tmp) = 0x001f; //  0x2288;
-                    }
-                }
-                    if((i/line_length)%90 ==15)
-                    {
-                    tmp = i + line_length - ( i%line_length );
-                        for(ii=0;ii<line_length; ii+=2)
-                            *(volatile unsigned short *)(MEM_ptr + ii + tmp) = 0xffff;
-                    }
-            }
-#endif
-            #endif
-
-        }
  
         for(ii=0;ii<0x1000; ii+=4)
            *(volatile unsigned int *)(ADDR_CURSOR + ii) = 0x88f31f4f;
-        if(ADDR_CURSOR>= 0xA0000000)
-              ADDR_CURSOR -= 0xA0000000;
+        
+	ADDR_CURSOR = (long)ADDR_CURSOR & 0x0fffffff;
 
    printf("frame buffer addr: %x \n",(MEM_ADDR+0x00));
-  //write_reg(0x501030,0x23456789);
-  //int *ptr = (int *)malloc(sizeof(int));
-  //*ptr = (int *)0x501030;
-  ////ptr = 0x501030;
-  //*ptr = 0x23456789;
-  //printf("addr:%x  data:%x",ptr,(*ptr));
 
    printf("frame buffer data: %x \n",readl((MEM_ptr+0x00)));
-//   printf("frame buffer %p  , data : %x \n",(MEM_ADDR+MEM_SIZE),readl((MEM_ADDR+MEM_SIZE+0x00)));
   
   //config display controller reg 
   printf("Disable the panel 0\n");
@@ -567,21 +166,7 @@ line_length = FB_XSIZE * 4;
 //==================panel 1========================
 //  printf(" write_reg((DC_BASE_ADDR_1+0x00),0x00100000);\n");
 //  write_reg((DC_BASE_ADDR_1+0x00),0x00100000);
-#if 0  //16bit
-//  printf("write_reg((DC_BASE_ADDR_1+0x00),0x00000003);\n");
-//  write_reg((DC_BASE_ADDR_1+0x00),0x00000003);
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640\n");
-  write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
-#else  //32Bit
-//  printf("write_reg((DC_BASE_ADDR_1+0x00),0x00000004);\n"); //rgb8 24bit
-//  write_reg((DC_BASE_ADDR_1+0x00),0x00000004);              //rgb8 24bit
-//  printf("write_reg((DC_BASE_ADDR_1+0x00),0x00000004);\n");   //16bit
-//  write_reg((DC_BASE_ADDR_1+0x00),0x00000004);                //16bit
-//  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640\n"); //640 24bit
-//  write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640
-//  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000a00); //640\n");   //640 16bit
-//  write_reg((DC_BASE_ADDR_1+0x40),0x00000a00); //640
-#endif
+
   #ifdef DC_FB1
   printf(" write_reg((DC_BASE_ADDR_1+0x20),MEM_ADDR  );\n");
   write_reg((DC_BASE_ADDR_1+0x20),MEM_ADDR_1  );
@@ -1457,90 +1042,6 @@ printf("display controller reg config complete!\n");
   printf("reg addr:%x,reg data:%x\n",(0xbc301560  +0x00),(readl((0xbc301560  +0x00))));
   printf("reg addr:%x,reg data:%x\n",(DC_BASE_ADDR_1+0x00),(readl((DC_BASE_ADDR_1+0x00))));
   printf("========reg addr:%x,reg data:%x\n",0xbc301590,readl(0xbc301590));
-#if 0
-  printf("read frame buffer begin...\n");
-  for(j=0;j<DIS_HEIGHT;j+=50)
-  {
-       printf("line %d;\n",j);
-       for (i=1;i<DIS_WIDTH;i+=4)
-       {
-         printf("%x %x %x %x \t",*(MEM_ptr+j+i-1),*(MEM_ptr+j+i),*(MEM_ptr+j+i+1),*(MEM_ptr+j+i+2)); 
-       }
-       printf("\n\n\n\n");
-  }
-       printf("BLACK\n\n\n\n\n");
-        for (i=0;i<MEM_SIZE_3*3;i+=4)
-        {
-           //paint ARGB 0 255 0 0 high <- low
-           *(MEM_ptr+i-1) = 0 ;
-           *(MEM_ptr+i) = 0  ;
-           *(MEM_ptr+i+1) = 0  ;
-           *(MEM_ptr+i+2) = 0  ;
-        }
-        for(j=0;j<5000;j++)
-	       printf(".................");
-  #endif
-  /*
-       printf("Blue\n\n\n\n\n");
-        for (i=MEM_SIZE_3+1;i<MEM_SIZE_3*2;i+=4)
-        {
-           //paint ARGB 0 255 0 0 high <- low
-           *(MEM_ptr+i-1) = 255 ;
-           *(MEM_ptr+i) = 0  ;
-           *(MEM_ptr+i+1) = 0  ;
-           *(MEM_ptr+i+2) = 0  ;
-        }
-
-       printf("Green\n\n\n\n\n");
-        for (i=MEM_SIZE_3*3+1;i<MEM_SIZE_3*4;i+=4)
-        {
-           //paint ARGB 0 255 0 0 high <- low
-           *(MEM_ptr+i-1) = 0 ;
-           *(MEM_ptr+i) = 255  ;
-           *(MEM_ptr+i+1) = 0  ;
-           *(MEM_ptr+i+2) = 0  ;
-        }
-
-
-       printf("Red\n\n\n\n\n");
-        for (i=MEM_SIZE_3*5+1;i<MEM_SIZE_3*6;i+=4)
-        {
-           //paint ARGB 0 255 0 0 high <- low
-           *(MEM_ptr+i-1) = 0 ;
-           *(MEM_ptr+i) = 0  ;
-           *(MEM_ptr+i+1) = 255  ;
-           *(MEM_ptr+i+2) = 0  ;
-        }
-        for(j=0;j<5000;j++)
-	       printf(".................");
-	       */
-/*
-      while (1)
-      {
-          for(init_R=5;init_R<=255;init_R+=50)
-          for(init_G=5;init_G<=255;init_G+=50)
-          for(init_B=5;init_B<=255;init_B+=50)
-	  {
-            printf("\n\n\n\n\n\n\n\n\n\n\n");
-            printf("======================Now the color change");
-            printf("chang color : %d  %d  %d\n",init_R,init_G,init_B);
-            for (i=1;i<MEM_SIZE;i+=4)
-            {
-              //paint ARGB 0 255 0 0
-              *(MEM_ptr+i-1) = init_B ;
-              *(MEM_ptr+i) = init_G  ;
-              *(MEM_ptr+i+1) = init_R   ;
-              *(MEM_ptr+i+2) = 0   ;
-
-	    }
-            for(j=0;j<5000;j++)
-	       printf("wait");
-          }
-      } 
-      */
-
-//   return (MEM_ptr + 48*1*16*4);
-   //return (MEM_ptr + 48*8*16*4);
     #ifdef DC_FB1
     return MEM_ptr_1;
     #endif
