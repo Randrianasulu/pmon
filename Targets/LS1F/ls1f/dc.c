@@ -19,11 +19,11 @@ typedef signed char  s8;
 typedef int bool;
 typedef unsigned long dma_addr_t;
 
-#define TEST_800x600 1
-//#undef TEST_800x600
+//#define TEST_800x600 1
+#undef TEST_800x600
 #define DC_FB0 1
-//#undef DC_FB0 
-#define DC_FB1 1
+#undef DC_FB1
+//#define DC_FB1 1
 
 #define writeb(val, addr) (*(volatile u8*)(addr) = (val))
 #define writew(val, addr) (*(volatile u16*)(addr) = (val))
@@ -71,10 +71,12 @@ int dc_init()
    int  print_addr;
    int print_data;
    printf("enter dc_init...\n");
+#ifdef LS1FSOC
    /*gpu pll ctrl*/
    *(volatile int *)0xbfd00414 = 0x1518;
    /*pix pll ctrl */
    *(volatile int *)0xbfd00424 = 0x1510;
+#endif
 
 #if defined(CONFIG_VIDEO_32BPP)
 MEM_SIZE = PIXEL_COUNT * 4;
@@ -137,17 +139,6 @@ line_length = FB_XSIZE * 4;
   //write_reg((0xbc301360  +0x80),0x33333333);
 #endif
 
-#if 0
-  printf("framebuffer HDisplay\n");
-  write_reg((0xbc301400  +0x00),0x014f0140);
-  printf("framebuffer HSync\n");
-  write_reg((0xbc301400  +0x20),0x414a0145);
-  printf("framebuffer VDisplay\n");
-  write_reg((0xbc301400  +0x80),0x00fa00f0);
-  printf("framebuffer VSync\n");
-  write_reg((0xbc301400  +0xa0),0x40f700f5);
-#endif
-
   printf("framebuffer Cursor Configuration\n");
 #ifdef DC_FB0
   write_reg((0xbc301520  +0x00),0x00020200);
@@ -186,25 +177,6 @@ line_length = FB_XSIZE * 4;
   // write_reg((0xbc301370  +0x80),0x33333333);
   #endif
 
-//800x600@60
-    #if 0
-    write_reg((0xbc301410  +0x00),0x04000320);
-    write_reg((0xbc301410  +0x20),0x43900340);
-    write_reg((0xbc301410  +0x80),0x026e0258);
-    write_reg((0xbc301410  +0xa0),0x425c0259);
-    #endif
-
-//  write_reg((0xbc301410  +0x00),0x04000320);
-//  write_reg((0xbc301410  +0x20),0x43900340);
-//  write_reg((0xbc301410  +0x80),0x026E0258);
-//  write_reg((0xbc301410  +0xa0),0x425C0259);
-//  
-/*704x598  
-  write_reg((0xbc301410  +0x00),0x038002C0);
-  write_reg((0xbc301410  +0x20),0x432002D8);
-  write_reg((0xbc301410  +0x80),0x026B0256);
-  write_reg((0xbc301410  +0xa0),0x425A0257);
-*/
 
 // 640x480@59.9hz    25.18Mhz by wangchao.
 #if defined(X640x480)
@@ -413,7 +385,7 @@ line_length = FB_XSIZE * 4;
   write_reg((0xbc301410  +0xa0),0x42840281);
   #endif
 #elif defined(X1024x768)  //1024x768
-#ifdef DC_FB1
+#ifdef DC_FB0
   printf(" write_reg((0xbc301400  +0x00),0x04D00400); 1024x768\n");
   write_reg((0xbc301410  +0x00),0x04D00400);
   printf(" write_reg((0xbc301400  +0x20),0x44680408);\n");
@@ -423,7 +395,7 @@ line_length = FB_XSIZE * 4;
   printf(" write_reg((0xbc301400  +0xa0),0x43040301);\n");
   write_reg((0xbc301410  +0xa0),0x43040301);
 #endif
-#ifdef DC_FB0
+#ifdef DC_FB1
   printf(" write_reg((0xbc301410  +0x00),0x05400400); 1024x768\n");
   write_reg((0xbc301410  +0x00),0x05400400);
   printf(" write_reg((0xbc301410  +0x20),0x44A00438);\n");
@@ -977,23 +949,6 @@ line_length = FB_XSIZE * 4;
 
 #endif
 
-#if 0 //double fb test
-  #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x05000400); DVI FB0 1024x480\n");
-  write_reg((0xbc301400  +0x00),0x05000400);
-  printf(" write_reg((0xbc301400  +0x20),0x44800418);\n");
-  write_reg((0xbc301400  +0x20),0x44800418);
-  printf(" write_reg((0xbc301400  +0x80),0x01F101E0);\n");
-  write_reg((0xbc301400  +0x80),0x01F101E0);
-  printf(" write_reg((0xbc301400  +0xa0),0x41E401E1);\n");
-  write_reg((0xbc301400  +0xa0),0x41E401E1);
-  
-  printf(" write_reg((DC_BASE_ADDR+0x00),0x00100104); X8R8G8B8 \n");
-  write_reg((DC_BASE_ADDR+0x00),0x00100104);
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x480\n");
-  write_reg((DC_BASE_ADDR+0x40),0x00001000); //1024
-  #endif
-#endif
 printf("display controller reg config complete!\n");
 
   printf("read reg addr begin...\n");
