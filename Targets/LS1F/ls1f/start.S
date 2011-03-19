@@ -341,13 +341,12 @@ locate:
     li  a0, 0xbfe78030
     li  a1, 0x22b03
     sw a1,(a0);
-    li a1,(0x90000000|(1<<25)|(4<<20)|(1<<19)|((4<<14)))
-    sw a1,4(a0)
+    li v1,(0x90000000|(1<<25)|(4<<20)|(1<<19)|((4<<14)))
+    sw v1,4(a0)
 
-    li a1,10000
 1:
-   addiu a1,-1
-   bnez a1,1b
+   lw v1,(a0)
+   bne a1,v1,1b
    nop
 	
 #endif
@@ -758,7 +757,7 @@ LEAF(initserial)
 	lw	a1,4(a0)
 	srl	a1,14
 	andi    a2,a1,0x20
-	beqz    a1,1f
+	beqz    a2,1f
 	nop
 	andi    a1,0x1f
 	divu    v1,a1
@@ -769,10 +768,7 @@ LEAF(initserial)
 	srl v1,1	
 2:
 	li a1,2*16*9600
-	divu v1,a1
-	mflo v1
-
-// 	li	v1, (77000000/(2*16*9600))     // 8MHz crystal,   M[7:3]=6     1fboard
+	divu v1,v1,a1
 #endif
 	sb	v1, NSREG(NS16550_DATA)(v0)
 	srl	v1, 8
