@@ -76,10 +76,12 @@ int dc_init()
    int print_data;
    printf("enter dc_init...\n");
 #ifdef LS1FSOC
-   /*gpu pll ctrl*/
-   *(volatile int *)0xbfd00414 = 0x1518;
-   /*pix pll ctrl */
-   *(volatile int *)0xbfd00424 = 0x1510;
+   /*inner gpu dc logic fifo pll ctrl,must large then outclk*/
+   *(volatile int *)0xbfd00414 = 0xc5d6641f;
+   /*output pix1 clock  pll ctrl*/
+   *(volatile int *)0xbfd00410 = 0xc5d6641e;
+   /*output pix2 clock pll ctrl */
+   *(volatile int *)0xbfd00424 = 0xc5d6641e;
 #endif
 
 #if defined(CONFIG_VIDEO_32BPP)
@@ -391,13 +393,13 @@ line_length = FB_XSIZE * 4;
 #elif defined(X1024x768)  //1024x768
 #ifdef DC_FB0
   printf(" write_reg((0xbc301400  +0x00),0x04D00400); 1024x768\n");
-  write_reg((0xbc301410  +0x00),0x04D00400);
+  write_reg((0xbc301400  +0x00),0x04D00400);
   printf(" write_reg((0xbc301400  +0x20),0x44680408);\n");
-  write_reg((0xbc301410  +0x20),0x44680408);
+  write_reg((0xbc301400  +0x20),0x44680408);
   printf(" write_reg((0xbc301400  +0x80),0x030E0300);\n");
-  write_reg((0xbc301410  +0x80),0x030E0300);
+  write_reg((0xbc301400  +0x80),0x030E0300);
   printf(" write_reg((0xbc301400  +0xa0),0x43040301);\n");
-  write_reg((0xbc301410  +0xa0),0x43040301);
+  write_reg((0xbc301400  +0xa0),0x43040301);
 #endif
 #ifdef DC_FB1
   printf(" write_reg((0xbc301410  +0x00),0x05400400); 1024x768\n");
