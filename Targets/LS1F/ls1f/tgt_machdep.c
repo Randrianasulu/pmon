@@ -390,7 +390,7 @@ tgt_devconfig()
     configure();
    
     printf("====before init ps/2 kbd\n");
-#if NMOD_VGACON >0
+#if (NMOD_VGACON >0) && defined(LS1FSOC)
         if(getenv("nokbd")) 
 	rc=1;
 	else{
@@ -577,14 +577,22 @@ _probe_frequencies()
         SBD_DISPLAY ("FREQ", CHKPNT_FREQ);
                                                                                
                                                                                
-#if 0
-        md_pipefreq = 300000000;        /* Defaults */
-        md_cpufreq  = 66000000;
-#else
+/*clock manager register*/
+#define PLL_FREQ_REG(x) *(volatile unsigned int *)(0xbfe78030+x)
+#ifdef LS1FSOC
 	{
-	int val= *(volatile int *)0xbfe78030;
+	int val= PLL_FREQ_REG(0);
         md_pipefreq = ((val&7)+1)*APB_CLK;        /* NB FPGA*/
         md_cpufreq  =  (((val>>8)&7)+3)*APB_CLK;
+	}
+#else
+	{
+	int pll,ctrl,clk;
+	pll=PLL_FREQ_REG(0);
+	ctrl=PLL_FREQ_REG(4);
+	clk=(12+(pll&0x3f))*33333333/2 + ((pll>>7)&0x3ff)*33333333/2/1024;
+        md_pipefreq = (ctrl&(1<<25))?clk/((ctrl>>20)&0x1f):clk/2;
+        md_cpufreq  = (ctrl&(1<<19))?clk/((ctrl>>14)&0x1f):clk/2;
 	}
 #endif
 
