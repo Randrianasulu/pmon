@@ -21,9 +21,13 @@ typedef unsigned long dma_addr_t;
 
 //#define TEST_800x600 1
 #undef TEST_800x600
+#ifdef LS1FSOC
+#define DC_FB1 1
+#undef DC_FB0
+#else
 #define DC_FB0 1
 #undef DC_FB1
-//#define DC_FB1 1
+#endif
 
 #define writeb(val, addr) (*(volatile u8*)(addr) = (val))
 #define writew(val, addr) (*(volatile u16*)(addr) = (val))
