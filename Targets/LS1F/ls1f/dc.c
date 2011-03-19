@@ -187,228 +187,140 @@ line_length = FB_XSIZE * 4;
 // 640x480@59.9hz    25.18Mhz by wangchao.
 #if defined(X640x480)
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x03200280); 640x480\n");
   write_reg((0xbc301410  +0x00),0x03200280);
-  printf(" write_reg((0xbc301410  +0x20),0x42F00290);\n");
   write_reg((0xbc301410  +0x20),0x42F00290);
-  printf(" write_reg((0xbc301410  +0x80),0x020D01E0);\n");
   write_reg((0xbc301410  +0x80),0x020D01E0);
-  printf(" write_reg((0xbc301410  +0xa0),0x41EC01EA);\n");
   write_reg((0xbc301410  +0xa0),0x41EC01EA);
   #endif
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x03200280); 640x480\n");
   write_reg((0xbc301400  +0x00),0x03200280);
-  printf(" write_reg((0xbc301400  +0x20),0x42F00290);\n");
   write_reg((0xbc301400  +0x20),0x42F00290);
-  printf(" write_reg((0xbc301400  +0x80),0x020D01E0);\n");
   write_reg((0xbc301400  +0x80),0x020D01E0);
-  printf(" write_reg((0xbc301400  +0xa0),0x41EC01EA);\n");
   write_reg((0xbc301400  +0xa0),0x41EC01EA);
   #endif
 #elif defined(X640x640)
-  printf(" write_reg((0xbc301410  +0x00),0x03400280); 640x640\n");
   write_reg((0xbc301410  +0x00),0x03400280);
-  printf(" write_reg((0xbc301410  +0x20),0x42E00290);\n");
   write_reg((0xbc301410  +0x20),0x42E00290);
-  printf(" write_reg((0xbc301410  +0x80),0x02970280);\n");
   write_reg((0xbc301410  +0x80),0x02970280);
-  printf(" write_reg((0xbc301410  +0xa0),0x42840281);\n");
   write_reg((0xbc301410  +0xa0),0x42840281);
 #elif defined(X640x768)
-  printf(" write_reg((0xbc301410  +0x00),0x03400280); 640x768\n");
   write_reg((0xbc301410  +0x00),0x03400280);
-  printf(" write_reg((0xbc301410  +0x20),0x42E00290);\n");
   write_reg((0xbc301410  +0x20),0x42E00290);
-  printf(" write_reg((0xbc301410  +0x80),0x02970300);\n");
   write_reg((0xbc301410  +0x80),0x031B0300);
-  printf(" write_reg((0xbc301410  +0xa0),0x43040301);\n");
   write_reg((0xbc301410  +0xa0),0x43040301);
 #elif defined(X640x800)
-  printf(" write_reg((0xbc301410  +0x00),0x03500280); 640x800\n");
   write_reg((0xbc301410  +0x00),0x03500280);
-  printf(" write_reg((0xbc301410  +0x20),0x42E802A8);\n");
   write_reg((0xbc301410  +0x20),0x42E802A8);
-  printf(" write_reg((0xbc301410  +0x80),0x033C0320);\n");
   write_reg((0xbc301410  +0x80),0x033C0320);
-  printf(" write_reg((0xbc301410  +0xa0),0x43240321);\n");
   write_reg((0xbc301410  +0xa0),0x43240321);
 #elif defined(X800x480)  //800x480
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x03E00320); 800x480\n");
   write_reg((0xbc301400  +0x00),0x03E00320);
-  printf(" write_reg((0xbc301400  +0x20),0x43800330);\n");
   write_reg((0xbc301400  +0x20),0x43800330);
-  printf(" write_reg((0xbc301400  +0x80),0x01F101E0);\n");
   write_reg((0xbc301400  +0x80),0x01F101E0);
-  printf(" write_reg((0xbc301400  +0xa0),0x41E401E1);\n");
   write_reg((0xbc301400  +0xa0),0x41E401E1);
   #endif
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x03E00320); 800x480\n");
   write_reg((0xbc301410  +0x00),0x03E00320);
-  printf(" write_reg((0xbc301410  +0x20),0x43800330);\n");
   write_reg((0xbc301410  +0x20),0x43800330);
-  printf(" write_reg((0xbc301410  +0x80),0x01F101E0);\n");
   write_reg((0xbc301410  +0x80),0x01F101E0);
-  printf(" write_reg((0xbc301410  +0xa0),0x41E401E1);\n");
   write_reg((0xbc301410  +0xa0),0x41E401E1);
   #endif
 #elif defined(X800x600)  //1024x768
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x04000320); 800x600\n");
   write_reg((0xbc301400  +0x00),0x04000320);
-  printf(" write_reg((0xbc301400  +0x20),0x43800338);\n");
   write_reg((0xbc301400  +0x20),0x43800338);
-  printf(" write_reg((0xbc301400  +0x80),0x02710258);\n");
   write_reg((0xbc301400  +0x80),0x02710258);
-  printf(" write_reg((0xbc301400  +0xa0),0x425B0259);\n");
   write_reg((0xbc301400  +0xa0),0x425B0259);
   #endif
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x04000320); 800x600\n");
   write_reg((0xbc301410  +0x00),0x04000320);
-  printf(" write_reg((0xbc301410  +0x20),0x43800338);\n");
   write_reg((0xbc301410  +0x20),0x43800338);
-  printf(" write_reg((0xbc301410  +0x80),0x02710258);\n");
   write_reg((0xbc301410  +0x80),0x02710258);
-  printf(" write_reg((0xbc301410  +0xa0),0x425B0259);\n");
   write_reg((0xbc301410  +0xa0),0x425B0259);
   #endif
 #elif defined(X800x640)  //800x640
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x04000320); 800x640\n");
   write_reg((0xbc301400  +0x00),0x04000320);
-  printf(" write_reg((0xbc301400  +0x20),0x43900340);\n");
   write_reg((0xbc301400  +0x20),0x43900340);
-  printf(" write_reg((0xbc301400  +0x80),0x02970280);\n");
   write_reg((0xbc301400  +0x80),0x02970280);
-  printf(" write_reg((0xbc301400  +0xa0),0x42840281);\n");
   write_reg((0xbc301400  +0xa0),0x42840281);
   #endif
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x04000320); 800x640\n");
   write_reg((0xbc301410  +0x00),0x04000320);
-  printf(" write_reg((0xbc301410  +0x20),0x43900340);\n");
   write_reg((0xbc301410  +0x20),0x43900340);
-  printf(" write_reg((0xbc301410  +0x80),0x02970280);\n");
   write_reg((0xbc301410  +0x80),0x02970280);
-  printf(" write_reg((0xbc301410  +0xa0),0x42840281);\n");
   write_reg((0xbc301410  +0xa0),0x42840281);
   #endif
 #elif defined(X832x600)  //832x600
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x04300340); 832x600\n");
   write_reg((0xbc301400  +0x00),0x04300340);
-  printf(" write_reg((0xbc301400  +0x20),0x43B80360);\n");
   write_reg((0xbc301400  +0x20),0x43B80360);
-  printf(" write_reg((0xbc301400  +0x80),0x026E0258);\n");
   write_reg((0xbc301400  +0x80),0x026E0258);
-  printf(" write_reg((0xbc301400  +0xa0),0x425B0259);\n");
   write_reg((0xbc301400  +0xa0),0x425C0259);
   #endif
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x04300340); 832x600\n");
   write_reg((0xbc301410  +0x00),0x04300340);
-  printf(" write_reg((0xbc301410  +0x20),0x43B80360);\n");
   write_reg((0xbc301410  +0x20),0x43B80360);
-  printf(" write_reg((0xbc301410  +0x80),0x026E0258);\n");
   write_reg((0xbc301410  +0x80),0x026E0258);
-  printf(" write_reg((0xbc301410  +0xa0),0x425B0259);\n");
   write_reg((0xbc301410  +0xa0),0x425C0259);
   #endif
 #elif defined(X832x608)  //832x600
-  printf(" write_reg((0xbc301410  +0x00),0x04300340); 832x608\n");
   write_reg((0xbc301410  +0x00),0x04300340);
-  printf(" write_reg((0xbc301410  +0x20),0x43B80360);\n");
   write_reg((0xbc301410  +0x20),0x43B80360);
-  printf(" write_reg((0xbc301410  +0x80),0x02760260);\n");
   write_reg((0xbc301410  +0x80),0x02760258);
-  printf(" write_reg((0xbc301410  +0xa0),0x42640261);\n");
   write_reg((0xbc301410  +0xa0),0x42640261);
 #elif defined(X1024x480)  //1024x480
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x05000400); 1024x480\n");
   write_reg((0xbc301400  +0x00),0x05000400);
-  printf(" write_reg((0xbc301400  +0x20),0x44800418);\n");
   write_reg((0xbc301400  +0x20),0x44800418);
-  printf(" write_reg((0xbc301400  +0x80),0x01F101E0);\n");
   write_reg((0xbc301400  +0x80),0x01F101E0);
-  printf(" write_reg((0xbc301400  +0xa0),0x41E401E1);\n");
   write_reg((0xbc301400  +0xa0),0x41E401E1);
   #endif
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x05000400); 1024x480\n");
   write_reg((0xbc301410  +0x00),0x05000400);
-  printf(" write_reg((0xbc301410  +0x20),0x44800418);\n");
   write_reg((0xbc301410  +0x20),0x44800418);
-  printf(" write_reg((0xbc301410  +0x80),0x01F101E0);\n");
   write_reg((0xbc301410  +0x80),0x01F101E0);
-  printf(" write_reg((0xbc301410  +0xa0),0x41E401E1);\n");
   write_reg((0xbc301410  +0xa0),0x41E401E1);
   #endif
 
 #elif defined(X1024x600)  //1024x600
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x05200400); 1024x600\n");
   write_reg((0xbc301400  +0x00),0x05200400);
-  printf(" write_reg((0xbc301400  +0x20),0x49000428);\n");
   write_reg((0xbc301400  +0x20),0x49000428);
-  printf(" write_reg((0xbc301400  +0x80),0x026E0258);\n");
   write_reg((0xbc301400  +0x80),0x026E0258);
-  printf(" write_reg((0xbc301400  +0xa0),0x425C0259);\n");
   write_reg((0xbc301400  +0xa0),0x425C0259);
   #endif
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x05200400); 1024x600\n");
   write_reg((0xbc301410  +0x00),0x05200400);
-  printf(" write_reg((0xbc301410  +0x20),0x49000428);\n");
   write_reg((0xbc301410  +0x20),0x49000428);
-  printf(" write_reg((0xbc301410  +0x80),0x026E0258);\n");
   write_reg((0xbc301410  +0x80),0x026E0258);
-  printf(" write_reg((0xbc301410  +0xa0),0x425C0259);\n");
   write_reg((0xbc301410  +0xa0),0x425C0259);
   #endif
 #elif defined(X1024x640)  //1024x600
   #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x05300400); 1024x640\n");
   write_reg((0xbc301400  +0x00),0x05300400);
-  printf(" write_reg((0xbc301400  +0x20),0x49800430);\n");
   write_reg((0xbc301400  +0x20),0x49800430);
-  printf(" write_reg((0xbc301400  +0x80),0x02970280);\n");
   write_reg((0xbc301400  +0x80),0x02970280);
-  printf(" write_reg((0xbc301400  +0xa0),0x42840281);\n");
   write_reg((0xbc301400  +0xa0),0x42840281);
   #endif
   #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x05300400); 1024x640\n");
   write_reg((0xbc301410  +0x00),0x05300400);
-  printf(" write_reg((0xbc301410  +0x20),0x49800430);\n");
   write_reg((0xbc301410  +0x20),0x49800430);
-  printf(" write_reg((0xbc301410  +0x80),0x02970280);\n");
   write_reg((0xbc301410  +0x80),0x02970280);
-  printf(" write_reg((0xbc301410  +0xa0),0x42840281);\n");
   write_reg((0xbc301410  +0xa0),0x42840281);
   #endif
 #elif defined(X1024x768)  //1024x768
 #ifdef DC_FB0
-  printf(" write_reg((0xbc301400  +0x00),0x04D00400); 1024x768\n");
   write_reg((0xbc301400  +0x00),0x04D00400);
-  printf(" write_reg((0xbc301400  +0x20),0x44680408);\n");
   write_reg((0xbc301400  +0x20),0x44680408);
-  printf(" write_reg((0xbc301400  +0x80),0x030E0300);\n");
   write_reg((0xbc301400  +0x80),0x030E0300);
-  printf(" write_reg((0xbc301400  +0xa0),0x43040301);\n");
   write_reg((0xbc301400  +0xa0),0x43040301);
 #endif
 #ifdef DC_FB1
-  printf(" write_reg((0xbc301410  +0x00),0x05400400); 1024x768\n");
   write_reg((0xbc301410  +0x00),0x05400400);
-  printf(" write_reg((0xbc301410  +0x20),0x44A00438);\n");
   write_reg((0xbc301410  +0x20),0x44A00438);
-  printf(" write_reg((0xbc301410  +0x80),0x031B0300);\n");
   write_reg((0xbc301410  +0x80),0x031B0300);
-  printf(" write_reg((0xbc301410  +0xa0),0x43040301);\n");
   write_reg((0xbc301410  +0xa0),0x43040301);
 #endif
 #endif
@@ -425,264 +337,190 @@ line_length = FB_XSIZE * 4;
   write_reg((0xbc301560  +0x00),0x00aaaaaa);
 */
 #ifdef DC_FB0
-  printf(" write_reg(0xbc301580,0x%x  );\n",MEM_ADDR);
   write_reg(0xbc301580,MEM_ADDR );
 #if defined(CONFIG_VIDEO_32BPP)
-  printf(" write_reg((DC_BASE_ADDR+0x00),0x00100104); X8R8G8B8 \n");
   write_reg((DC_BASE_ADDR+0x00),0x00100104);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x768\n");
   write_reg((DC_BASE_ADDR+0x40),0x00001000); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00001000); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00001000); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x480\n");
   write_reg((DC_BASE_ADDR+0x40),0x00001000); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000D00); 832x608 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000D00); //832
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000D00); 832x600 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000D00); //832
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000D00); 800x600 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000D00); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000C80); 800x640 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000C80); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000D00); 800x600 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000D00); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000C80); 800x600 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000C80); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000C00); 800x600 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000D00); //800
   #else
   printf(" write_reg((DC_BASE_ADDR+0x40),0x00000C80); 800x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000C80); //640
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000A00); 640x800 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000A00); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000A00); 640x768 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000A00); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000A00); 640x640 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000A00); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000A00); 640x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000A00); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000A00); 640x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000A00); //640
 #endif //1024x768
 
 #elif defined(CONFIG_VIDEO_16BPP)
-  printf(" write_reg((DC_BASE_ADDR+0x00),0x00100103); R5G6B5 \n");
   write_reg((DC_BASE_ADDR+0x00),0x00100103);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x768\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x480\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000680); 832x608\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000680); //800
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000680); 832x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000680); //832
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x480\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x800\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x768\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x480\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #endif  //1024x768
 
 #elif defined(CONFIG_VIDEO_15BPP)
-  printf(" write_reg((DC_BASE_ADDR+0x00),0x00100102); R5G5B5\n");
   write_reg((DC_BASE_ADDR+0x00),0x00100102);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800);1024x768\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x480\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000680); 832x608\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000680); //832
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000680); 832x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000680); //800
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x640 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x800\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x768\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #endif  //1024x768
 
 #elif defined(CONFIG_VIDEO_12BPP)
-  printf(" write_reg((DC_BASE_ADDR+0x00),0x00100101); R4G4B4\n");
   write_reg((DC_BASE_ADDR+0x00),0x00100101);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x768 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000800); 1024x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00001000); 1024x480\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000800); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000680); 832x608\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000680); //800
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000680); 832x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000680); //800
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x640 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000640); 800x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000640); //800
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x800\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x768\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x640\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR+0x40),0x00000500); //640
 #endif  //1024x768
 
 #else  //640x480-32Bits
-  printf(" write_reg((DC_BASE_ADDR+0x00),0x00100104);\n");
   write_reg((DC_BASE_ADDR+0x00),0x00100104);
-  printf(" write_reg((DC_BASE_ADDR+0x40),0x00000A00);\n");
   write_reg((DC_BASE_ADDR+0x40),0x00000A00); //640
 #endif //32Bits
 
@@ -691,265 +529,190 @@ line_length = FB_XSIZE * 4;
 
 
 #ifdef DC_FB1
-  printf(" write_reg(0xbc301590,0x%x  );\n",MEM_ADDR_1);
   write_reg(0xbc301590,MEM_ADDR_1 );
 
 #if defined(CONFIG_VIDEO_32BPP)
-  printf(" write_reg((DC_BASE_ADDR_1+0x00),0x00100104); X8R8G8B8 \n");
   write_reg((DC_BASE_ADDR_1+0x00),0x00100104);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00001000); 1024x768\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00001000); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00001000); 1024x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00001000); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00001000); 1024x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00001000); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00001000); 1024x480\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00001000); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000D00); 832x608 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000D00); //832
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000D00); 832x600 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000D00); //832
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000C00); 800x600 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000D00); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000C80); 800x640 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000C80); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000C00); 800x600 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000D00); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000C80); 800x600 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000C80); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000C00); 800x600 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000D00); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000C80); 800x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000C80); //640
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); 640x800 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); 640x768 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); 640x640 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); 640x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); 640x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640
 #endif //1024x768
 
 #elif defined(CONFIG_VIDEO_16BPP)
-  printf(" write_reg((DC_BASE_ADDR_1+0x00),0x00100103); R5G6B5 \n");
   write_reg((DC_BASE_ADDR_1+0x00),0x00100103);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00001000); 1024x768\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x480\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000680); 832x608\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000680); //800
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000680); 832x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000680); //832
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x480\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x800\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x768\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x480\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #endif  //1024x768
 
 #elif defined(CONFIG_VIDEO_15BPP)
-  printf(" write_reg((DC_BASE_ADDR_1+0x00),0x00100102); R5G5B5\n");
   write_reg((DC_BASE_ADDR_1+0x00),0x00100102);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800);1024x768\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00001000); 1024x480\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000680); 832x608\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000680); //832
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000680); 832x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000680); //800
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x640 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x800\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x768\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #endif  //1024x768
 
 #elif defined(CONFIG_VIDEO_12BPP)
-  printf(" write_reg((DC_BASE_ADDR_1+0x00),0x00100101); R4G4B4\n");
   write_reg((DC_BASE_ADDR_1+0x00),0x00100101);
 
 #if defined(X1024x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x768 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000800); 1024x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X1024x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00001000); 1024x480\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000800); //1024
 #elif defined(X832x608)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000680); 832x608\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000680); //800
 #elif defined(X832x600)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000680); 832x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000680); //800
 #elif defined(X800x640)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x640 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X800x600)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X800x480)
   #ifdef TEST_800x600
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000600); 800x600\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000700); //800
   #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000640); 800x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000640); //800
   #endif
 #elif defined(X640x800)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x800\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x768)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x768\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x640)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x640\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #elif defined(X640x480)
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #else
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000500); 640x480 \n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000500); //640
 #endif  //1024x768
 
 #else  //640x480-32Bits
-  printf(" write_reg((DC_BASE_ADDR_1+0x00),0x00100104);\n");
   write_reg((DC_BASE_ADDR_1+0x00),0x00100104);
-  printf(" write_reg((DC_BASE_ADDR_1+0x40),0x00000A00);\n");
   write_reg((DC_BASE_ADDR_1+0x40),0x00000A00); //640
 #endif //32Bits
 
