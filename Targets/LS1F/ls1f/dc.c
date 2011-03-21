@@ -54,6 +54,29 @@ static char *MEM_ptr_1 = 0xA2000000;
 static int MEM_ADDR_1 =0;
 #endif
 
+struct vga_struc{
+           float pclk;
+           int hr,hss,hse,hfl;
+	   int vr,vss,vse,vfl;
+}
+vgamode[] =
+{{/*"640x480_60.00"*/	23.86,	640,	656,	720,	800,	480,	481,	484,	497,	},
+{/*"640x640_60.00"*/	33.10,	640,	672,	736,	832,	640,	641,	644,	663,	},
+{/*"640x768_60.00"*/	39.69,	640,	672,	736,	832,	768,	769,	772,	795,	},
+{/*"640x800_60.00"*/	42.13,	640,	680,	744,	848,	800,	801,	804,	828,	},
+{/*"800x480_60.00"*/	29.58,	800,	816,	896,	992,	480,	481,	484,	497,	},
+{/*"800x600_60.00"*/	38.22,	800,	832,	912,	1024,	600,	601,	604,	622,	},
+{/*"800x640_60.00"*/	40.73,	800,	832,	912,	1024,	640,	641,	644,	663,	},
+{/*"832x600_60.00"*/	40.01,	832,	864,	952,	1072,	600,	601,	604,	622,	},
+{/*"832x608_60.00"*/	40.52,	832,	864,	952,	1072,	608,	609,	612,	630,	},
+{/*"1024x480_60.00"*/	38.17,	1024,	1048,	1152,	1280,	480,	481,	484,	497,	},
+{/*"1024x600_60.00"*/	48.96,	1024,	1064,	1168,	1312,	600,	601,	604,	622,	},
+{/*"1024x640_60.00"*/	52.83,	1024,	1072,	1176,	1328,	640,	641,	644,	663,	},
+{/*"1024x768_60.00"*/	64.11,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
+{/*"1024x768_60.00"*/	64.11,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
+{/*"1024x768_60.00"*/	64.11,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
+};
+
 enum{
 OF_BUF_CONFIG=0,
 OF_BUF_ADDR=0x20,
@@ -88,6 +111,7 @@ int config_cursor()
 
 int config_fb(unsigned long base)
 {
+int i,got;
 //  Disable the panel 0
   write_reg((base+OF_BUF_CONFIG),0x00000000);
 // framebuffer configuration RGB565
@@ -100,73 +124,23 @@ int config_fb(unsigned long base)
   write_reg((base+OF_PAN_CONFIG),0x80001311);
   write_reg((base+OF_PAN_TIMING),0x00000000);
 
-// 640x480@59.9hz    25.18Mhz by wangchao.
-#if defined(X640x480)
-  write_reg((base+OF_HDISPLAY),0x03200280);
-  write_reg((base+OF_HSYNC),0x42F00290);
-  write_reg((base+OF_VDISPLAY),0x020D01E0);
-  write_reg((base+OF_VSYNC),0x41EC01EA);
-#elif defined(X640x640)
-  write_reg((base+OF_HDISPLAY),0x03400280);
-  write_reg((base+OF_HSYNC),0x42E00290);
-  write_reg((base+OF_VDISPLAY),0x02970280);
-  write_reg((base+OF_VSYNC),0x42840281);
-#elif defined(X640x768)
-  write_reg((base+OF_HDISPLAY),0x03400280);
-  write_reg((base+OF_HSYNC),0x42E00290);
-  write_reg((base+OF_VDISPLAY),0x031B0300);
-  write_reg((base+OF_VSYNC),0x43040301);
-#elif defined(X640x800)
-  write_reg((base+OF_HDISPLAY),0x03500280);
-  write_reg((base+OF_HSYNC),0x42E802A8);
-  write_reg((base+OF_VDISPLAY),0x033C0320);
-  write_reg((base+OF_VSYNC),0x43240321);
-#elif defined(X800x480)  //800x480
-  write_reg((base+OF_HDISPLAY),0x03E00320);
-  write_reg((base+OF_HSYNC),0x43800330);
-  write_reg((base+OF_VDISPLAY),0x01F101E0);
-  write_reg((base+OF_VSYNC),0x41E401E1);
-#elif defined(X800x600)  //1024x768
-  write_reg((base+OF_HDISPLAY),0x04000320);
-  write_reg((base+OF_HSYNC),0x43800338);
-  write_reg((base+OF_VDISPLAY),0x02710258);
-  write_reg((base+OF_VSYNC),0x425B0259);
-#elif defined(X800x640)  //800x640
-  write_reg((base+OF_HDISPLAY),0x04000320);
-  write_reg((base+OF_HSYNC),0x43900340);
-  write_reg((base+OF_VDISPLAY),0x02970280);
-  write_reg((base+OF_VSYNC),0x42840281);
-#elif defined(X832x600)  //832x600
-  write_reg((base+OF_HDISPLAY),0x04300340);
-  write_reg((base+OF_HSYNC),0x43B80360);
-  write_reg((base+OF_VDISPLAY),0x026E0258);
-  write_reg((base+OF_VSYNC),0x425C0259);
-#elif defined(X832x608)  //832x600
-  write_reg((base+OF_HDISPLAY),0x04300340);
-  write_reg((base+OF_HSYNC),0x43B80360);
-  write_reg((base+OF_VDISPLAY),0x02760258);
-  write_reg((base+OF_VSYNC),0x42640261);
-#elif defined(X1024x480)  //1024x480
-  write_reg((base+OF_HDISPLAY),0x05000400);
-  write_reg((base+OF_HSYNC),0x44800418);
-  write_reg((base+OF_VDISPLAY),0x01F101E0);
-  write_reg((base+OF_VSYNC),0x41E401E1);
-#elif defined(X1024x600)  //1024x600
-  write_reg((base+OF_HDISPLAY),0x05200400);
-  write_reg((base+OF_HSYNC),0x49000428);
-  write_reg((base+OF_VDISPLAY),0x026E0258);
-  write_reg((base+OF_VSYNC),0x425C0259);
-#elif defined(X1024x640)  //1024x600
-  write_reg((base+OF_HDISPLAY),0x05300400);
-  write_reg((base+OF_HSYNC),0x49800430);
-  write_reg((base+OF_VDISPLAY),0x02970280);
-  write_reg((base+OF_VSYNC),0x42840281);
-#elif defined(X1024x768)  //1024x768
-  write_reg((base+OF_HDISPLAY),0x04D00400);
-  write_reg((base+OF_HSYNC),0x44680408);
-  write_reg((base+OF_VDISPLAY),0x030E0300);
-  write_reg((base+OF_VSYNC),0x43040301);
-#endif
+  for(i=0,got=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
+  {
+	  if(vgamode[i].hr == FB_XSIZE && vgamode[i].vr == FB_YSIZE){
+		  got=1;
+		  write_reg((base+OF_HDISPLAY),(vgamode[i].hfl<<16)|vgamode[i].hr);
+		  write_reg((base+OF_HSYNC),0x40000000|(vgamode[i].hse<<16)|vgamode[i].hss);
+		  write_reg((base+OF_VDISPLAY),(vgamode[i].vfl<<16)|vgamode[i].vr);
+		  write_reg((base+OF_VSYNC),0x40000000|(vgamode[i].vse<<16)|vgamode[i].vss);
+		  break;
+	  }
+  }
+
+  if(!got)
+  {
+	  printf("\n\n\nunsupported framebuffer resolution\n\n\n");
+	  return;
+  }
 
 #if defined(CONFIG_VIDEO_32BPP)
   write_reg((base+0x00),0x00100104);
