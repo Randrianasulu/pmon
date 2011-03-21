@@ -55,26 +55,26 @@ static int MEM_ADDR_1 =0;
 #endif
 
 struct vga_struc{
-           float pclk;
+           long pclk;
            int hr,hss,hse,hfl;
 	   int vr,vss,vse,vfl;
 }
 vgamode[] =
-{{/*"640x480_60.00"*/	23.86,	640,	656,	720,	800,	480,	481,	484,	497,	},
-{/*"640x640_60.00"*/	33.10,	640,	672,	736,	832,	640,	641,	644,	663,	},
-{/*"640x768_60.00"*/	39.69,	640,	672,	736,	832,	768,	769,	772,	795,	},
-{/*"640x800_60.00"*/	42.13,	640,	680,	744,	848,	800,	801,	804,	828,	},
-{/*"800x480_60.00"*/	29.58,	800,	816,	896,	992,	480,	481,	484,	497,	},
-{/*"800x600_60.00"*/	38.22,	800,	832,	912,	1024,	600,	601,	604,	622,	},
-{/*"800x640_60.00"*/	40.73,	800,	832,	912,	1024,	640,	641,	644,	663,	},
-{/*"832x600_60.00"*/	40.01,	832,	864,	952,	1072,	600,	601,	604,	622,	},
-{/*"832x608_60.00"*/	40.52,	832,	864,	952,	1072,	608,	609,	612,	630,	},
-{/*"1024x480_60.00"*/	38.17,	1024,	1048,	1152,	1280,	480,	481,	484,	497,	},
-{/*"1024x600_60.00"*/	48.96,	1024,	1064,	1168,	1312,	600,	601,	604,	622,	},
-{/*"1024x640_60.00"*/	52.83,	1024,	1072,	1176,	1328,	640,	641,	644,	663,	},
-{/*"1024x768_60.00"*/	64.11,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
-{/*"1024x768_60.00"*/	64.11,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
-{/*"1024x768_60.00"*/	64.11,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
+{{/*"640x480_60.00"*/	23860,	640,	656,	720,	800,	480,	481,	484,	497,	},
+{/*"640x640_60.00"*/	33100,	640,	672,	736,	832,	640,	641,	644,	663,	},
+{/*"640x768_60.00"*/	39690,	640,	672,	736,	832,	768,	769,	772,	795,	},
+{/*"640x800_60.00"*/	42130,	640,	680,	744,	848,	800,	801,	804,	828,	},
+{/*"800x480_60.00"*/	29580,	800,	816,	896,	992,	480,	481,	484,	497,	},
+{/*"800x600_60.00"*/	38220,	800,	832,	912,	1024,	600,	601,	604,	622,	},
+{/*"800x640_60.00"*/	40730,	800,	832,	912,	1024,	640,	641,	644,	663,	},
+{/*"832x600_60.00"*/	40010,	832,	864,	952,	1072,	600,	601,	604,	622,	},
+{/*"832x608_60.00"*/	40520,	832,	864,	952,	1072,	608,	609,	612,	630,	},
+{/*"1024x480_60.00"*/	38170,	1024,	1048,	1152,	1280,	480,	481,	484,	497,	},
+{/*"1024x600_60.00"*/	48960,	1024,	1064,	1168,	1312,	600,	601,	604,	622,	},
+{/*"1024x640_60.00"*/	52830,	1024,	1072,	1176,	1328,	640,	641,	644,	663,	},
+{/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
+{/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
+{/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
 };
 
 enum{
@@ -94,6 +94,38 @@ OF_VSYNC=0x260,
 OF_DBLBUF=0x340,
 };
 
+#define MYDBG printf(":%d\n",__LINE__);
+
+int caclulatefreq(long long XIN,long long PCLK)
+{
+long long  N=4,NO=4,OD=2,M,FRAC;
+int flag=0;
+long  out;
+long long MF;
+printf("PCLK=%lld\n",PCLK);
+
+while(flag==0){
+flag=1;
+printf("N=%lld\n",N);
+if(XIN/N<5000) {N--;flag=0;}
+if(XIN/N>50000) {N++;flag=0;}
+}
+flag=0;
+while(flag==0){
+flag=1;
+if(PCLK*NO<200000) {NO*=2;OD++;flag=0;}
+if(PCLK*NO>700000) {NO/=2;OD--;flag=0;}
+}
+MF=PCLK*N*NO*262144/XIN;
+MF %= 262144;
+M=PCLK*N*NO/XIN;
+FRAC=(int)(MF);
+out = (FRAC<<14)+(OD<<12)+(N<<8)+M;
+
+printf("in this case, M=%llx ,N=%llx, OD=%llx, FRAC=%llx\n",M,N,OD,FRAC);
+return out;
+}
+
 int config_cursor()
 {
   printf("framebuffer Cursor Configuration\n");
@@ -111,7 +143,34 @@ int config_cursor()
 
 int config_fb(unsigned long base)
 {
-int i,got;
+int i,mode=-1;
+
+  for(i=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
+  {
+	  int out;
+	  if(vgamode[i].hr == FB_XSIZE && vgamode[i].vr == FB_YSIZE){
+		  mode=i;
+#ifdef LS1FSOC
+		  out = caclulatefreq(33333,vgamode[i].pclk);
+		  printf("out=%x\n",out);
+   /*inner gpu dc logic fifo pll ctrl,must large then outclk*/
+   *(volatile int *)0xbfd00414 = out+1;
+   /*output pix1 clock  pll ctrl*/
+   *(volatile int *)0xbfd00410 = out;
+   /*output pix2 clock pll ctrl */
+   *(volatile int *)0xbfd00424 = out;
+#endif
+		  break;
+	  }
+  }
+
+  if(mode<0)
+  {
+	  printf("\n\n\nunsupported framebuffer resolution\n\n\n");
+	  return;
+  }
+
+
 //  Disable the panel 0
   write_reg((base+OF_BUF_CONFIG),0x00000000);
 // framebuffer configuration RGB565
@@ -124,23 +183,10 @@ int i,got;
   write_reg((base+OF_PAN_CONFIG),0x80001311);
   write_reg((base+OF_PAN_TIMING),0x00000000);
 
-  for(i=0,got=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
-  {
-	  if(vgamode[i].hr == FB_XSIZE && vgamode[i].vr == FB_YSIZE){
-		  got=1;
-		  write_reg((base+OF_HDISPLAY),(vgamode[i].hfl<<16)|vgamode[i].hr);
-		  write_reg((base+OF_HSYNC),0x40000000|(vgamode[i].hse<<16)|vgamode[i].hss);
-		  write_reg((base+OF_VDISPLAY),(vgamode[i].vfl<<16)|vgamode[i].vr);
-		  write_reg((base+OF_VSYNC),0x40000000|(vgamode[i].vse<<16)|vgamode[i].vss);
-		  break;
-	  }
-  }
-
-  if(!got)
-  {
-	  printf("\n\n\nunsupported framebuffer resolution\n\n\n");
-	  return;
-  }
+  write_reg((base+OF_HDISPLAY),(vgamode[mode].hfl<<16)|vgamode[mode].hr);
+  write_reg((base+OF_HSYNC),0x40000000|(vgamode[mode].hse<<16)|vgamode[mode].hss);
+  write_reg((base+OF_VDISPLAY),(vgamode[mode].vfl<<16)|vgamode[mode].vr);
+  write_reg((base+OF_VSYNC),0x40000000|(vgamode[mode].vse<<16)|vgamode[mode].vss);
 
 #if defined(CONFIG_VIDEO_32BPP)
   write_reg((base+0x00),0x00100104);
@@ -180,14 +226,6 @@ int dc_init()
    int  print_addr;
    int print_data;
    printf("enter dc_init...\n");
-#ifdef LS1FSOC
-   /*inner gpu dc logic fifo pll ctrl,must large then outclk*/
-   *(volatile int *)0xbfd00414 = 0xc5d6641f;
-   /*output pix1 clock  pll ctrl*/
-   *(volatile int *)0xbfd00410 = 0xc5d6641e;
-   /*output pix2 clock pll ctrl */
-   *(volatile int *)0xbfd00424 = 0xc5d6641e;
-#endif
 
 #if defined(CONFIG_VIDEO_32BPP)
 MEM_SIZE = PIXEL_COUNT * 4;
