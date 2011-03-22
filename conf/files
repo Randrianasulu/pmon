@@ -360,6 +360,8 @@ define usbbus {}
 device usb: disk 
 attach usb at usbbus
 
+define ahcibus {} 
+
 file sys/dev/usb/usb.c			  mod_usb
 file sys/dev/usb/usb_storage.c    mod_usb_storage needs-flag
 file sys/dev/usb/part.c     	  mod_usb_storage

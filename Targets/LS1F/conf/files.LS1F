@@ -71,6 +71,12 @@ device  gt: ether, ifnet, ifmedia
 attach  gt at localbus
 file    sys/dev/ic/if_gt.c			gt
 
+device lohci: usbbus 
+attach lohci at localbus
+
+device	lahci {[channel = -1]} :ahcibus
+attach	lahci at localbus
+
 #
 # Media Indepedent Interface (mii)
 #

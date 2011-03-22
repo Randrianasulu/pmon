@@ -26,6 +26,7 @@
 #include <sys/kernel.h>
 #include <sys/socket.h>
 #include <sys/syslog.h>
+#include <autoconf.h>
 
 #include <ctype.h>
 
@@ -168,6 +169,50 @@ static void ahci_attach(struct device * parent, struct device * self, void *aux)
 
 	printf("\n~~~~~~~~~~~~~~~~~ahcisata_attach~~~~~~~~~~~~~~~~~~\n");
 }
+#if 1
+static int lahci_match(
+                struct device *parent,
+                void   *match,
+                void * aux
+                )
+{
+ return 1;
+}
+
+static void lahci_attach(struct device * parent, struct device * self, void *aux)
+{
+	struct confargs *cf = aux;
+	bus_space_handle_t regbase;
+	int i;
+	u32 linkmap;
+	ahci_sata_info_t info;
+
+		
+	regbase = (bus_space_handle_t)cf->ca_baseaddr;;
+	if(ahci_init_one(regbase)){
+		printf("ahci_init_one failed.\n");
+	}
+	
+	linkmap = probe_ent->link_port_map;
+	printf("linkmap=%x\n",linkmap);
+	for (i = 0; i < 1; i++) {
+		if (((linkmap >> i) & 0x01)) {
+			info.sata_reg_base = regbase + 100 + i * 0x80;
+			info.flags = i;
+			info.aa_link.aa_type=0xff; //just for not match ide
+			config_found(self,(void *)&info,NULL);
+		}
+	}
+}
+
+struct cfattach lahci_ca = {
+        sizeof(ahci_sata_t),lahci_match, lahci_attach,
+};
+
+struct cfdriver lahci_cd = {
+        NULL, "ahci", DV_DULL
+};
+#endif
 
 static void ahci_enable_ahci(void *mmio)
 {
