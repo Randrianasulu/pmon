@@ -1,15 +1,9 @@
 //Created by xiexin for Display Controller pmon test 
 //Oct 6th,2009
-
-
-
+#include <pmon.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/malloc.h>
-//#include <sys/mbuf.h>
-
-
-
 typedef unsigned long  u32;
 typedef unsigned short u16;
 typedef unsigned char  u8;
@@ -60,11 +54,12 @@ struct vga_struc{
 	   int vr,vss,vse,vfl;
 }
 vgamode[] =
-{{/*"640x480_60.00"*/	23860,	640,	656,	720,	800,	480,	481,	484,	497,	},
+{
+{/*"640x480_70.00"*/    28560,  640,    664,    728,    816,    480,    481,    484,    500,    },
 {/*"640x640_60.00"*/	33100,	640,	672,	736,	832,	640,	641,	644,	663,	},
 {/*"640x768_60.00"*/	39690,	640,	672,	736,	832,	768,	769,	772,	795,	},
 {/*"640x800_60.00"*/	42130,	640,	680,	744,	848,	800,	801,	804,	828,	},
-{/*"800x480_60.00"*/	29580,	800,	816,	896,	992,	480,	481,	484,	497,	},
+{/*"800x480_70.00"*/    35840,  800,    832,    912,    1024,   480,    481,    484,    500,    },
 {/*"800x600_60.00"*/	38220,	800,	832,	912,	1024,	600,	601,	604,	622,	},
 {/*"800x640_60.00"*/	40730,	800,	832,	912,	1024,	640,	641,	644,	663,	},
 {/*"832x600_60.00"*/	40010,	832,	864,	952,	1072,	600,	601,	604,	622,	},
@@ -75,6 +70,11 @@ vgamode[] =
 {/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
 {/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
 {/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
+{/*"1152x764_60.00"*/   71380,  1152,   1208,   1328,   1504,   764,    765,    768,    791,    },
+{/*"1280x800_60.00"*/   83460,  1280,   1344,   1480,   1680,   800,    801,    804,    828,    },
+{/*"1280x1024_55.00"*/  98600,  1280,   1352,   1488,   1696,   1024,   1025,   1028,   1057,   },
+{/*"1440x800_60.00"*/   93800,  1440,   1512,   1664,   1888,   800,    801,    804,    828,    },
+{/*"1440x900_67.00"*/   120280, 1440,   1528,   1680,   1920,   900,    901,    904,    935,    },
 };
 
 enum{
@@ -193,7 +193,7 @@ int i,mode=-1;
   write_reg((base+OF_BUF_STRIDE),FB_XSIZE*4); //1024
 #elif defined(CONFIG_VIDEO_16BPP)
   write_reg((base+0x00),0x00100103);
-  write_reg((base+OF_BUF_STRIDE),FB_XSIZE*2); //1024
+  write_reg((base+OF_BUF_STRIDE),(FB_XSIZE*2+255)&~255); //1024
 #elif defined(CONFIG_VIDEO_15BPP)
   write_reg((base+0x00),0x00100102);
   write_reg((base+OF_BUF_STRIDE),FB_XSIZE*2); //1024
@@ -279,5 +279,41 @@ return MEM_ptr_1;
 #endif
 
 return MEM_ptr;
+}
+
+static int cmd_dc_freq(int argc,char **argv)
+{
+	int out;
+	long sysclk;
+	long pclk;
+	if(argc<2)return -1;
+	pclk=strtoul(argv[1],0,0);
+	if(argc>2) sysclk=strtoul(argv[2],0,0);
+	else sysclk=33333;
+	out = caclulatefreq(sysclk,pclk);
+	printf("out=%x\n",out);
+	/*inner gpu dc logic fifo pll ctrl,must large then outclk*/
+	*(volatile int *)0xbfd00414 = out+1;
+	/*output pix1 clock  pll ctrl*/
+	*(volatile int *)0xbfd00410 = out;
+	/*output pix2 clock pll ctrl */
+	*(volatile int *)0xbfd00424 = out;
+
+	return 0;
+}
+
+static const Cmd Cmds[] =
+{
+	{"MyCmds"},
+	{"dc_freq"," pclk sysclk", 0, "config dc clk(khz)",cmd_dc_freq, 0, 99, CMD_REPEAT},
+	{0, 0}
+};
+
+static void init_cmd __P((void)) __attribute__ ((constructor));
+
+static void
+init_cmd()
+{
+	cmdlist_expand(Cmds, 1);
 }
 
