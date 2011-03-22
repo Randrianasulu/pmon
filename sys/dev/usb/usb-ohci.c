@@ -75,6 +75,7 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcidevs.h>
 #include <sys/device.h>
+#include <autoconf.h>
 
 #include "usb.h"
 #include "usb-ohci.h"
@@ -610,6 +611,60 @@ SM502_HC:
     usb_new_device(ohci->rdev);
     
 }
+
+
+static int lohci_match(struct device *parent, void *match, void *aux)
+{
+	return 1;
+}
+
+static void lohci_attach(struct device *parent, struct device *self, void *aux)
+{
+	struct ohci *ohci = (struct ohci*)self;
+	static int ohci_dev_index = 0;
+	struct confargs *cf = aux;
+
+	/* Or we just return false in the match function */
+	if(ohci_dev_index >= MAX_OHCI_C) {
+		printf("Exceed max controller limits\n");
+		return;
+	}
+
+	usb_ohci_dev[ohci_dev_index++] = ohci;
+
+	ohci->sc_sh = (bus_space_handle_t)cf->ca_baseaddr;;
+
+	usb_lowlevel_init(ohci);
+	ohci->hc.uop = &ohci_usb_op;
+	/*
+	 * Now build the device tree
+	 */
+	TAILQ_INSERT_TAIL(&host_controller, &ohci->hc, hc_list);
+
+#if 0
+	usb_scan_devices(ohci);
+#else
+	ohci->sc_ih = pci_intr_establish(pc, ih, IPL_BIO, hc_interrupt, ohci,
+	   self->dv_xname);
+#endif
+	ohci->rdev = usb_alloc_new_device(ohci);
+
+    /*do the enumeration of  the USB devices attached to the USB HUB(here root hub) 
+    ports.*/
+    usb_new_device(ohci->rdev);
+}
+
+struct cfattach lohci_ca = {
+	.ca_devsize = sizeof(struct ohci),
+	.ca_match 	= lohci_match,
+	.ca_attach 	= lohci_attach,
+};
+
+struct cfdriver lohci_cd = {
+	.cd_devs = NULL,
+	.cd_name = "ohci",
+	.cd_class = DV_DULL,
+};
 
 #define NOTUSBIRQ -0x100
 /* AMD-756 (D2 rev) reports corrupt register contents in some cases.
@@ -1431,7 +1486,7 @@ static void td_submit_job (struct usb_device *dev, unsigned long pipe, void
 	else
 #endif
 	{
-		pci_sync_cache(ohci->sc_pc, (vm_offset_t)CACHED_TO_UNCACHED(buffer), transfer_len, SYNC_W);
+		pci_sync_cache(ohci->sc_pc, (vm_offset_t)buffer, transfer_len, SYNC_W);
 	}
 
 	if(usb_gettoggle(dev, usb_pipeendpoint(pipe), usb_pipeout(pipe))) {
