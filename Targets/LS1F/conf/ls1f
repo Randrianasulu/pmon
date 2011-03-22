@@ -164,6 +164,11 @@ usb*		 at usbbus ?
 ahci*		at pci? dev ? function ?
 ahcisata*	at ahci?
 
+
+lahci*		at localbus0 base 0xbfe30000
+ahcisata*	at lahci?
+
+
 select      mod_usb
 select  	mod_usb_storage
 #select      mod_usb_uhci
@@ -213,9 +218,10 @@ select raw_ether
 #option		X1024x480
 #option		X1024x600
 #option		X1024x640
-option		X1024x768
-#option		X1280x1024
+#option		X1152x764
+#option		X1024x768
 #option		X1280x800
+option		X1440x900
 #option 		CONFIG_VIDEO_12BPP
 #option 		CONFIG_VIDEO_15BPP
 option  CONFIG_VIDEO_LOGO
