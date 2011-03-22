@@ -310,6 +310,9 @@ static int ahci_exec_polled_cmd(int port, int pmp, int is_cmd, u16 flags,
 	memcpy((unsigned char *)pp->cmd_tbl, fis, 20);
 	ahci_fill_cmd_slot(pp, cmd_fis_len | flags | (pmp << 12));
 
+	CPU_IOFlushDCache(pp->cmd_slot, 32, SYNC_W); /*32~256*/
+	CPU_IOFlushDCache(pp->cmd_tbl, 0x60, SYNC_W);
+	CPU_IOFlushDCache(pp->rx_fis,AHCI_RX_FIS_SZ,SYNC_R);
 	/*issue & wait */
 	writel_with_flush(1, port_mmio + PORT_CMD_ISSUE);
 
@@ -521,6 +524,11 @@ static void ahci_set_feature(u8 port)
 
 	memcpy((unsigned char *)pp->cmd_tbl, fis, 20);
 	ahci_fill_cmd_slot(pp, cmd_fis_len);
+
+	CPU_IOFlushDCache(pp->cmd_slot, 32, SYNC_W); /*32~256*/
+	CPU_IOFlushDCache(pp->cmd_tbl, 0x60, SYNC_W);
+	CPU_IOFlushDCache(pp->rx_fis,AHCI_RX_FIS_SZ,SYNC_R);
+
 	writel_with_flush(1, port_mmio + PORT_CMD_ISSUE);
 	readl(port_mmio + PORT_CMD_ISSUE);
 
@@ -600,7 +608,7 @@ static int ahci_port_start(u8 port)
 }
 
 static int get_ahci_device_data(u8 port, u8 *fis, int fis_len, u8 *buf,
-		int buf_len, u8 *cdb)
+		int buf_len, u8 *cdb,int is_write)
 {
 
 	struct ahci_ioports *pp = &(probe_ent->port[port]);
@@ -642,6 +650,12 @@ static int get_ahci_device_data(u8 port, u8 *fis, int fis_len, u8 *buf,
 		opts |= AHCI_CMD_ATAPI | AHCI_CMD_PREFETCH;
 	}
 	ahci_fill_cmd_slot(pp, opts);
+
+	CPU_IOFlushDCache(pp->cmd_slot, 32, SYNC_W); /*32~256*/
+	CPU_IOFlushDCache(pp->cmd_tbl, 0x60, SYNC_W);
+	CPU_IOFlushDCache(pp->cmd_tbl_sg, sg_count*16 , SYNC_W);
+	CPU_IOFlushDCache(pp->rx_fis,AHCI_RX_FIS_SZ,SYNC_R);
+	CPU_IOFlushDCache(buf,buf_len,is_write?SYNC_W:SYNC_R);
 
 	/* [31:0]CI
 	 * This field is bit significant. Each bit corresponds to a command
@@ -717,7 +731,7 @@ static int ata_scsiop_inquiry(int port)
 	}
 
 	if (!get_ahci_device_data(port, (u8 *) & fis, 20,
-			tmpid, sizeof(hd_driveid_t), NULL)) {
+			tmpid, sizeof(hd_driveid_t), NULL, 0)) {
 		printf("scsi_ahci: SCSI inquiry command failure.\n");
 		return -EIO;
 	}
@@ -822,7 +836,7 @@ static u32 ahci_sata_rw_cmd_ext(int dev, u32 start, u32 blkcnt, u8 *buffer, int 
 	}
 
 	//atp_sata_exec_cmd(sata, cfis, CMD_ATA, 0, buffer, ATA_SECT_SIZE * blkcnt);
-	get_ahci_device_data(dev, (u8 *)cfis, sizeof(struct cfis), buffer, ATA_SECT_SIZE * blkcnt, pc);
+	get_ahci_device_data(dev, (u8 *)cfis, sizeof(struct cfis), buffer, ATA_SECT_SIZE * blkcnt, pc, is_write);
 	return blkcnt;
 }
 
@@ -894,7 +908,7 @@ static u32 ahci_sata_rw_cmd(int dev, u32 start, u32 blkcnt, u8 *buffer, int is_w
 	}
 
 	//atp_sata_exec_cmd(sata, cfis, CMD_ATA, 0, buffer, ATA_SECT_SIZE * blkcnt);
-	get_ahci_device_data(dev, (u8 *)cfis, sizeof(struct cfis), buffer, ATA_SECT_SIZE * blkcnt, pc);
+	get_ahci_device_data(dev, (u8 *)cfis, sizeof(struct cfis), buffer, ATA_SECT_SIZE * blkcnt, pc, is_write);
 	return blkcnt;
 }
 
