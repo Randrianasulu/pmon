@@ -386,6 +386,15 @@ tgt_devconfig()
 #endif
     config_init();
 
+    /*end usb reset*/
+#if LS1FSOC
+	/*ls1f usb reset stop*/
+	*(volatile int *)0xbff10204 = 0x40000000;
+#else
+	/*ls1g usb reset stop*/
+	*(volatile int *)0xbfd00424 = 0x80000000;
+#endif
+
     printf("====before configure\n");
     configure();
    
