@@ -151,7 +151,7 @@ int i,mode=-1;
 	  if(vgamode[i].hr == FB_XSIZE && vgamode[i].vr == FB_YSIZE){
 		  mode=i;
 #ifdef LS1FSOC
-		  out = caclulatefreq(33333,vgamode[i].pclk);
+		  out = caclulatefreq(APB_CLK/1000,vgamode[i].pclk);
 		  printf("out=%x\n",out);
    /*inner gpu dc logic fifo pll ctrl,must large then outclk*/
    *(volatile int *)0xbfd00414 = out+1;
@@ -189,21 +189,39 @@ int i,mode=-1;
   write_reg((base+OF_VSYNC),0x40000000|(vgamode[mode].vse<<16)|vgamode[mode].vss);
 
 #if defined(CONFIG_VIDEO_32BPP)
-  write_reg((base+0x00),0x00100104);
+  write_reg((base+OF_BUF_CONFIG),0x00100104);
   write_reg((base+OF_BUF_STRIDE),FB_XSIZE*4); //1024
 #elif defined(CONFIG_VIDEO_16BPP)
-  write_reg((base+0x00),0x00100103);
+  write_reg((base+OF_BUF_CONFIG),0x00100103);
   write_reg((base+OF_BUF_STRIDE),(FB_XSIZE*2+255)&~255); //1024
 #elif defined(CONFIG_VIDEO_15BPP)
-  write_reg((base+0x00),0x00100102);
+  write_reg((base+OF_BUF_CONFIG),0x00100102);
   write_reg((base+OF_BUF_STRIDE),FB_XSIZE*2); //1024
 #elif defined(CONFIG_VIDEO_12BPP)
-  write_reg((base+0x00),0x00100101);
+  write_reg((base+OF_BUF_CONFIG),0x00100101);
   write_reg((base+OF_BUF_STRIDE),FB_XSIZE*2); //1024
 #else  //640x480-32Bits
   write_reg((base+OF_BUF_CONFIG),0x00100104);
   write_reg((base+OF_BUF_STRIDE),FB_XSIZE*4); //640
 #endif //32Bits
+
+#ifdef LG1FSOC
+/*fix ls1g dc
+ *first switch to tile mode
+ *change origin register to 0
+ *goback nomal mode
+ */
+  {
+  int val;
+  val = readl((base+OF_BUF_CONFIG));
+  write_reg((base+OF_BUF_CONFIG),val|0x10);
+  write_reg((base+OF_BUF_ORIG),0);
+  readl((base+OF_BUF_ORIG));
+  delay(1000000);
+  readl((base+OF_BUF_CONFIG));
+  write_reg((base+OF_BUF_CONFIG),val);
+  }
+#endif
 
 }
 
