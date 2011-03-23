@@ -95,10 +95,12 @@ OF_DBLBUF=0x340,
 };
 
 #define MYDBG printf(":%d\n",__LINE__);
+#define PLL_FREQ_REG(x) *(volatile unsigned int *)(0xbfe78030+x)
 
+#ifdef LS1FSOC
 int caclulatefreq(long long XIN,long long PCLK)
 {
-long long  N=4,NO=4,OD=2,M,FRAC;
+long N=4,NO=4,OD=2,M,FRAC;
 int flag=0;
 long  out;
 long long MF;
@@ -125,6 +127,62 @@ out = (FRAC<<14)+(OD<<12)+(N<<8)+M;
 printf("in this case, M=%llx ,N=%llx, OD=%llx, FRAC=%llx\n",M,N,OD,FRAC);
 return out;
 }
+
+#else
+
+#define abs(x) ((x<0)?(-x):x)
+#define min(a,b) ((a<b)?a:b)
+
+int caclulatefreq(long long XIN,long long PCLK)
+{
+	int i;
+	long long clk,clk1;
+	int start,end;
+	int mi;
+	int pll,ctrl,div,div1,frac;
+	pll=PLL_FREQ_REG(0);
+	ctrl=PLL_FREQ_REG(4);
+	start=-1;
+	end=1;
+
+	for(i=start;i<=end;i++)
+	{
+	clk=(12+i+(pll&0x3f))*33333333/2;
+	div=clk/(long)PCLK/1000;
+	clk1=(12+i+1+(pll&0x3f))*33333333/2;
+	div1=clk1/(long)PCLK/1000;
+	if(div!=div1)break;
+	}
+
+	if(div!=div1)
+	{
+	frac=((PCLK*1000*div1)*2*1024/33333333 - (12+i+(pll&0x3f))*1024)&0x3ff;
+	pll = (pll & ~0x3ff3f)|(frac<<8)|((pll&0x3f)+i);
+	ctrl = ctrl&~(0x1f<<26)|(div1<<26)|(1<<31);
+	}
+	else
+	{
+	clk=(12+start+(pll&0x3f))*33333333/2;
+	clk1=(12+end+(pll&0x3f))*33333333/2;
+	if(abs((long)clk/div/1000-PCLK)<abs((long)clk1/(div+1)/1000-PCLK))
+	{
+	pll = (pll & ~0x3ff3f)|((pll&0x3f)+start);
+	ctrl = ctrl&~(0x1f<<26)|(div<<26)|(1<<31);
+	}
+	else
+	{
+	pll = (pll & ~0x3ff3f)|((pll&0x3f)+end);
+	ctrl = ctrl&~(0x1f<<26)|((div+1)<<26)|(1<<31);
+	}
+	}
+
+	PLL_FREQ_REG(0) = pll;
+	PLL_FREQ_REG(4) = ctrl;
+	initserial();
+	return 0;
+}
+
+#endif
 
 int config_cursor()
 {
@@ -159,6 +217,8 @@ int i,mode=-1;
    *(volatile int *)0xbfd00410 = out;
    /*output pix2 clock pll ctrl */
    *(volatile int *)0xbfd00424 = out;
+#else
+		  caclulatefreq(APB_CLK/1000,vgamode[i].pclk);
 #endif
 		  break;
 	  }
@@ -205,7 +265,7 @@ int i,mode=-1;
   write_reg((base+OF_BUF_STRIDE),FB_XSIZE*4); //640
 #endif //32Bits
 
-#ifdef LG1FSOC
+#ifdef LS1GSOC
 /*fix ls1g dc
  *first switch to tile mode
  *change origin register to 0
