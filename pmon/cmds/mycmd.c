@@ -555,47 +555,43 @@ static int getdata(char *str)
 {
 	static char buf[17];
 	char *pstr;
-	int sign=1;
+	int negative=0;
 	int radix=10;
+	unsigned long long result;
+	int digit,c;
 	pstr=strtok(str," \t\x0a\x0d");
 
-		if(pstr)
-		{
+	if(pstr)
+	{
 		if(pstr[0]=='q')return -1;
-		memset(buf,'0',16); buf[17]=0;
 		if(pstr[0]=='-')
 		{
-		sign=-1;
-		pstr++;
-		}
-		else if(pstr[0]=='+')
-		{
+			negative=1;
 			pstr++;
 		}
+		else if(pstr[0]=='+')
+			pstr++;
 
 		if(pstr[0]!='0'){radix=10;}
 		else if(pstr[1]=='x'){radix=16;pstr=pstr+2;}
-		else {radix=8;pstr++;}
-			
-		memcpy(buf+16-strlen(pstr),pstr,strlen(pstr));
-		pstr=buf;
-		pstr[16]=pstr[8];pstr[8]=0;
-		mydata.data8[1]=nr_strtol(pstr,0,radix);
-		pstr[8]=pstr[16];pstr[16]=0;
-		mydata.data8[0]=nr_strtol(&pstr[8],0,radix);
-		if(sign==-1)
-		{
-		long x=mydata.data8[0];
-			mydata.data8[0]=-mydata.data8[0];
-			if(x<0)
-			mydata.data8[1]=-mydata.data8[1];
-			else mydata.data8[1]=~mydata.data8[1];
-			
-		}
-		return 1;
-		}
-		return 0;
 
+		result=0;
+
+		while ((c = *pstr++) != 0) {
+			if(c>='0' && c<='9') digit= c - '0';
+			if(c>='a' && c<='f') digit= c - 'a' + 0xa;
+			if(c>='A' && c<='F') digit= c - 'A' + 0xa;
+			result = result*radix + digit;
+		}
+
+		if(negative) result = -result;
+
+		memcpy(mydata.data8,&result,8);
+
+
+		return 1;
+	}
+	return 0;
 }
 
 static int modify(int argc,char **argv)
