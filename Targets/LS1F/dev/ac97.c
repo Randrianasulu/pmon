@@ -63,23 +63,23 @@ static struct desc *DMA_DESC_BASE;
 static struct desc *dma_desc2_addr;
 
 static u32 play_desc1[7]={
-	0x0,                       //need to be filled
-	(DMA_BUF|0xa0000000)&0x1fffffff,     
+	0x1,                       //need to be filled
+	DMA_BUF&0x1fffffff,     
 	0xdfe72420,                    //(ac97_base&0x9fffffff)+0x20,           //9fffffff?fun
 	
 	0x8,
 	0x0,
-	0x4000,
+	(BUF_SIZE/8/4),
 	0x00001001
 };
 
 static u32 play_desc2[7]={
-	0x00001200,
-	(DMA_BUF|0xa0000000)&0x1fffffff,
+	0x00001,
+	DMA_BUF&0x1fffffff,
 	0xdfe72420,                                //( ac97_base&0x9fffffff)+0x20,
 	0x6,
 	0x0,
-	0x30,
+	(BUF_SIZE/8/6/2),
 	0x00001001	
 };
 
@@ -240,24 +240,14 @@ void dma_config(void){
 	int i=10000;
 	u32 addr;
 	u32 addr2;
-	/*do{
-		*(volatile u32*)(confreg_base+0x1160)=0x0001000b;
-	}while(0);
-	delay(10);
-	printf("==========write first\n");
-	printf("======dma_config:%x\n",*(volatile u32*)(confreg_base+0x1160));*/
 	
 	DMA_DESC_BASE=(struct desc*)malloc(sizeof(struct desc)+32);
-	addr=(u32)(*(&DMA_DESC_BASE));
-	DMA_DESC_BASE=(struct desc*)((((addr>>5)<<5)+32)|0xa0000000);
+	addr = DMA_DESC_BASE=((u32)DMA_DESC_BASE+31)&~31;
 			
 	printf("======addr:%x\n",DMA_DESC_BASE);
-	addr=(u32)(*(&DMA_DESC_BASE));
 	dma_desc2_addr=(struct desc*)malloc(sizeof(struct desc)+32);
-	addr2=(u32)(*(&dma_desc2_addr));
-	dma_desc2_addr=(struct desc*)((((addr2>>5)<<5)+32)|0xa0000000);
+	addr2 = dma_desc2_addr = ((u32)dma_desc2_addr+31)&~31;
 	printf("===addr2:%x\n",dma_desc2_addr);
-	addr2=(u32)(*(&dma_desc2_addr));
 	
      if (AC97_PLAY==ac97_rw) //play
       {
@@ -273,7 +263,7 @@ void dma_config(void){
 	 
 	 printf("====desc:%x;%x,%x,%x,%x\n",DMA_DESC_BASE->ordered,DMA_DESC_BASE->saddr,DMA_DESC_BASE->daddr,DMA_DESC_BASE->length,DMA_DESC_BASE->step_times);	 
 	 printf("====mem desc:%x,%x\n",*(volatile unsigned int*)(addr),*(volatile unsigned int*)(addr+4));
-	 dma_desc2_addr->ordered=play_desc2[0];
+	 dma_desc2_addr->ordered=play_desc2[0]|(addr&0x1fffffff);
 	 dma_desc2_addr->saddr=play_desc2[1];//0x00001000;//addr2&0x1fffffff;                     //play_desc2[1];
 	 dma_desc2_addr->daddr=play_desc2[2];
 	 dma_desc2_addr->length=play_desc2[3];
@@ -293,7 +283,7 @@ void dma_config(void){
 	     delay(1000000);	
              printf("dma register:%x\n",(*(volatile u32*)(confreg_base+0x1160)));
 	  
-          }while(--i);
+          }while(0);
       }
      else       //record
      {	    
