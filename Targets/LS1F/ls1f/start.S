@@ -339,10 +339,11 @@ locate:
     nop
 #else
     li  a0, 0xbfe78030
-    li  a1, 0x22b03
-    sw a1,(a0);
-    li v1,(0x90000000|(1<<25)|(4<<20)|(1<<19)|((4<<14)))
+    /*31:dc_div_en,30-26:dc_div,25:cpu_div_en,24-20:cpu_div,19:ddr_div_en,18-14:ddr_div*/
+    li v1,(1<<31)|(4<<26)|(1<<25)|(1<<20)|(1<<19)|(2<<14)
     sw v1,4(a0)
+    li  a1, 4
+    sw a1,(a0);
 
 1:
    lw v1,(a0)
@@ -767,6 +768,12 @@ LEAF(initserial)
 1:
 	srl v1,1	
 2:
+#if 1
+/*save div,for serial debug*/
+	.set mips32
+	mtc0 v1,$25,1
+	.set mips0
+#endif
 	li a1,2*16*9600
 	divu v1,v1,a1
 #endif
