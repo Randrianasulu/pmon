@@ -1190,6 +1190,32 @@ LEAF(hexserial)
 	nop
 END(hexserial)
 
+#if 1  
+/*for 2f devbd
+GPIO 0: scl out -- parport pin15  (pp 0x379's bit 3)
+GPIO 1: sda out -- parport pin13  (pp 0x379's bit 4)
+GPIO 2: scl in  -- parport pin4   (pp 0x378's bit 2)
+GPIO 3: scl in  -- parport pin5   (pp 0x378's bit 3)
+see tools/gpioserial/
+nice -n -30 ./gpioserial
+*/
+#define GPIOSERIAL_DIR 0x3
+
+/*notice: r0 low 12bit can not change*/
+#define SW_GPIOSERIAL_DATA(r0,r1) \
+	li  	r1, 0xbfe0011c; \     		   
+	sw 	r0, 0(r1); \                       
+#else
+/*for 2fsb testbd
+#define GPIOSERIAL_DIR 0xc
+
+#define SW_GPIO_DATA(r0,r1) \
+	li  	r1, 0xbfe0011c; \     		   
+	sll r0,2;\
+	sw 	r0, 0(r1); \                       
+	srl r0,2;\
+#endif
+
 LEAF(tgt_putchar)
 	.set noat
 	move AT,ra
@@ -1218,8 +1244,7 @@ LEAF(tgt_putchar)
 //set led all lighted
 	
 	li	v0, 2			//put 2
-	li  	v1, 0xbfe0011c	      		   
-	sw 	v0, 0(v1)                        
+	SW_GPIOSERIAL_DATA(v0,v1)
 	move 	v1, ra				//4rd code begin
 	srl     v1, v1, 28
 	and 	v1, v1, 1
@@ -1232,8 +1257,7 @@ LEAF(tgt_putchar)
 	nop				//put 2 end
 	
 	li	v0, 3			//put 3
-	li  	v1, 0xbfe0011c	      		   
-	sw 	v0, 0(v1)                        
+	SW_GPIOSERIAL_DATA(v0,v1)
 	move 	v1, ra				//4rd code begin
 	srl     v1, v1, 28
 	and 	v1, v1, 1
@@ -1247,8 +1271,8 @@ LEAF(tgt_putchar)
 	
 
 	li	v0, 1			//put 1
-	li  	v1, 0xbfe0011c	      		   
-	sw 	v0, 0(v1)                        
+
+	SW_GPIOSERIAL_DATA(v0,v1)
 	move 	v1, ra				//4rd code begin
 	srl     v1, v1, 28
 	and 	v1, v1, 1
@@ -1262,8 +1286,7 @@ LEAF(tgt_putchar)
 	
 	
 	li	v0, 0			//put 0 to just wave
-	li  	v1, 0xbfe0011c	      		   
-	sw 	v0, 0(v1)                        
+	SW_GPIOSERIAL_DATA(v0,v1)
 	li      v1, ROMPUTCDELAY
 1466:	
 	addu	v1, v1, -1
@@ -1281,8 +1304,7 @@ LEAF(tgt_putchar)
 1431:
 	sll     a0, a0, 4                //4th edit
 	or 	a0, a0, v1
-	li  	v1, 0xbfe0011c	      		  //light on 
-	sw 	a0, 0(v1)                        //put data at clk = 0 
+	SW_GPIOSERIAL_DATA(a0,v1)
 	move 	v1, ra				//3rd code begin
 	srl     v1, v1, 28
 	and 	v1, v1, 1
@@ -1303,8 +1325,8 @@ LEAF(tgt_putchar)
 #endif
 
 	addu    a0, a0, 1
-	li      v1, 0xbfe0011c                    //light on
-        sw      a0, 0(v1)               //maintain data at clk = 1  
+
+	SW_GPIOSERIAL_DATA(a0,v1)
 	
 	move 	v1, ra				//3rd code begin
 	srl     v1, v1, 28
@@ -1321,8 +1343,8 @@ LEAF(tgt_putchar)
 
 	
 	addu    a0, a0, -1
-	li      v1, 0xbfe0011c                    //light on
-        sw      a0, 0(v1)               //maintain data at clk =0  
+
+	SW_GPIOSERIAL_DATA(a0,v1)
 	nop
 
 #if  0
@@ -1392,7 +1414,7 @@ LEAF(initserial)
 	li 	v0, 0xbfe0011c         //init led light
 	lw 	v1, 4(v0) 
 	or 	v1, 0xf
-	xor 	v1,0x3
+	xor 	v1,GPIOSERIAL_DIR
 	sw 	v1, 4(v0)
 #endif
 	jr AT
