@@ -82,9 +82,11 @@ struct callvectors {
 	errinval,
 	errinval,
 #endif
+#ifndef NOPCI
 	_pci_conf_readn,
 	_pci_conf_writen,
 	_pci_make_tag,
+#endif
 };
 
 struct callvectors *callvec = &callvectors;

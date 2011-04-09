@@ -310,6 +310,7 @@ if(argc<3)return -1;
 return 0;
 }
 
+#ifndef NOPCI
 static int __pcisyscall1(int type,unsigned long long addr,union commondata *mydata)
 {
 switch(type)
@@ -334,6 +335,7 @@ case 8:break;
 }
 return -1;
 }
+#endif
 
 #if __mips >= 3
 #define MYASM asm
@@ -421,7 +423,6 @@ case 8:
 return 0;
 }
 
-
 int mypcs(int ac,char **av)
 {
 	int bus;
@@ -429,6 +430,7 @@ int mypcs(int ac,char **av)
 	int func;
     int tmp;
 
+#ifndef NOPCI
 if(ac==4)
 {
 	bus=nr_strtol(av[1],0,0);
@@ -438,7 +440,9 @@ if(ac==4)
 	syscall1=(void *)__pcisyscall1;
 	syscall2=(void *)__pcisyscall2;
 }
-else if(ac==2)
+else 
+#endif
+if(ac==2)
 {
 	syscall_addrtype=nr_strtol(av[1],0,0);
 	syscall1=__syscall1;
@@ -452,11 +456,13 @@ int i;
 for(i=0;i>-4;i--)
 printf("pcs %d : select select normal memory access %s\n",i,str2addmsg[(unsigned)i%4]);
 printf("pcs bus dev func : select pci configuration space access with bus dev func\n");
+#ifndef NOPCI
 if(mytag!=-1)
 {
 	_pci_break_tag(mytag,&bus,&dev,&func);
 	printf("pci select bus=%d,dev=%d,func=%d\n",bus,dev,func);
 }
+#endif
 }
 
 	return (0);
@@ -1569,7 +1575,7 @@ addr=addr&0x1f;
 #else
 *p=MFC0(2,addr,cp0s_sel);
 #endif
-pci_sync_cache(0,(long)mycp0ins&~31UL,32,1);
+CPU_IOFlushDCache((long)mycp0ins&~31UL,32,1);
 CPU_FlushICache((long)mycp0ins&~31UL,32);
 
  asm(".global mycp0ins;mycp0ins:mfc0 $2,$0;move %0,$2" :"=r"(data8)::"$2");
@@ -1590,7 +1596,7 @@ addr=addr&0x1f;
 #else
 *p=MTC0(2,addr,cp0s_sel);
 #endif
-pci_sync_cache(0,(long)mycp0ins1&~31UL,32,1);
+CPU_IOFlushDCache((long)mycp0ins1&~31UL,32,1);
 CPU_FlushICache((long)mycp0ins1&~31UL,32);
 
  asm(".global mycp0ins1;move $2,%0;mycp0ins1:mtc0 $2,$0;"::"r"(*(long *)mydata->data8):"$2");
@@ -1660,7 +1666,7 @@ asm("\n"
 		::"r"(status));
 
 #else
-pci_sync_cache(0,addr,size,rw);
+CPU_IOFlushDCache(addr,size,rw);
 #endif
 }
 

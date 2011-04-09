@@ -327,7 +327,7 @@ addr=strtoul(argv[1],0,0);
 size=strtoul(argv[2],0,0);
 rw=strtoul(argv[3],0,0);
 
-pci_sync_cache(0,addr,size,rw);
+CPU_IOFlushDCache(addr,size,rw);
 return 0;
 }
 

@@ -38,7 +38,7 @@ void *plat_alloc_consistent_dmaable_memory(struct pci_dev *pcidev, u32 size, u32
 {
 void *buf;
      buf = (void*)malloc((size_t)size, M_DEVBUF, M_DONTWAIT);
-    pci_sync_cache(pcidev, buf,size, SYNC_W);
+    CPU_IOFlushDCache( buf,size, SYNC_W);
 
     *addr =gmac_dmamap(buf,size);
     buf = (unsigned char *)CACHED_TO_UNCACHED(buf);
@@ -77,7 +77,7 @@ dma_addr_t plat_dma_map_single(void *hwdev, void *ptr,
 		                    size_t size, int direction)
 {
 	    unsigned long addr = (unsigned long) ptr;
-pci_sync_cache(hwdev,addr,size, direction);
+CPU_IOFlushDCache(addr,size, direction);
 return gmac_dmamap(addr,size);
 }
 /**

@@ -16,17 +16,21 @@
 
 int Pci_conf_read(int bus,int dev,int func,int reg,int width,ulong *paddr)
 {
+#ifndef NOPCI
 	pcitag_t tag;
 	tag=_pci_make_tag(bus,dev,func);
 	*paddr=_pci_conf_readn(tag, reg, width); 
+#endif
 	return 0;
 }
 
 void  Pci_conf_write(int bus,int dev,int func,int reg,int width,int data)
 {
+#ifndef NOPCI
 pcitag_t tag;
 tag=_pci_make_tag(bus,dev,func);
 _pci_conf_writen(tag,reg,data,width);
+#endif
 }
 
 void support();
