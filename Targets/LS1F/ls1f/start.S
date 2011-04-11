@@ -382,6 +382,48 @@ locate:
 	nop
 1:
 
+// use only 8wins
+#define CPU_WIN_BASE 0xbfd00000
+#define CPU_WIN_MASK 0xbfd00040
+#define CPU_WIN_MMAP 0xbfd00080
+
+#define set_cpu_window(id, base, mask, mmap) \
+        li      t0, CPU_WIN_BASE          ;  \
+        sw      $0, 0x80+id*8(t0)         ;  \
+        li      t1, base                  ;  \
+        sw      t1, 0x00+id*8(t0)         ;  \
+        sw      $0, 0x04+id*8(t0)         ;  \
+        li      t1, mask                  ;  \
+        sw      t1, 0x40+id*8(t0)         ;  \
+        sw      $0, 0x44+id*8(t0)         ;  \
+        li      t1, mmap                  ;  \
+        sw      t1, 0x80+id*8(t0)         ;  \
+        sw      $0, 0x84+id*8(t0)
+
+#if 1 /* fixup cpu window */
+cpu_win_fixup:
+        //
+        // hit         = (paddr & mask) == (mmap & mask)
+        // mapped_addr =  paddr &~mask | mmap & mask
+        //
+        // mmap[7] -> enable
+        // mmap[4] -> cachable
+        // mmap[1:0] -> destination
+        //
+        // NOTE: the address windows has priority, win0 > win1 > ... > win7
+        set_cpu_window(0, 0x1fc00000, 0xfff00000, 0x1fc000f3) // boot rom
+        set_cpu_window(1, 0x10000000, 0xf8000000, 0x10000001) // PCI mem0, mem1,    disabled
+        set_cpu_window(2, 0x18000000, 0xfc000000, 0x18000001) // PCI mem2           disabled
+        set_cpu_window(3, 0x1c000000, 0xffe00000, 0x1c000001) // PCI cfg/IO/header  disabled
+        set_cpu_window(4, 0x1c200000, 0xffe00000, 0x1c2000d2) // gpu 1c2 /dc 1c3
+        set_cpu_window(5, 0x1f000000, 0xff000000, 0x1f0000d3) // AXIMUX
+        set_cpu_window(6, 0x40000000, 0xc0000000, 0x000000f0) // DDR 1GB
+        set_cpu_window(7, 0x00000000, 0x00000000, 0x000000f0) // everything else
+        // after this fixup, the kernel code should be compiled with
+        // uncached instruction fetch patch
+#endif 
+
+
 	/* 
 	 * Now determine DRAM configuration and size by
 	 * reading the I2C EEROM on the DIMMS
