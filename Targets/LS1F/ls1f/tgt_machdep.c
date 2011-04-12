@@ -92,6 +92,12 @@ int vga_available=0;
 //#include "vgarom.c"
 #endif
 
+#define REG_TOY_READ0 0xbfe6402c
+#define REG_TOY_READ1 0xbfe64030
+#define REG_TOY_WRITE0 0xbfe64024
+#define REG_TOY_WRITE1 0xbfe64028
+#define REG_CNTRCTL 0xbfe64040
+
 extern struct trapframe DBGREG;
 
 extern void *memset(void *, int, size_t);
@@ -126,8 +132,6 @@ void ad_err1(unsigned long *adr1, unsigned long *adr2, unsigned long good, unsig
 void mv_error(unsigned long *adr, unsigned long good, unsigned long bad);
 
 void print_err( unsigned long *adr, unsigned long good, unsigned long bad, unsigned long xor);
-static inline unsigned char CMOS_READ(unsigned char addr);
-static inline void CMOS_WRITE(unsigned char val, unsigned char addr);
 static void init_legacy_rtc(void);
 
 ConfigEntry	ConfigTable[] =
@@ -321,7 +325,7 @@ int init_kbd()
 {
     int ldd;
     //ldd 5us/(1/clk)=5*t, kbdclk is ddrclk/2/ldd
-    ldd = 5*APB_CLK/1000000*DDR_MULT/2;
+    ldd = 10*APB_CLK/1000000*DDR_MULT/2;
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLL, ldd & 0xff);
     KSEG1_STORE8(FCR_PS2_BASE+PS2_DLH, (ldd >> 8) & 0xff);
 	//pckbd_init_hw();
@@ -534,53 +538,35 @@ tgt_logo()
 static void init_legacy_rtc(void)
 {
         int year, month, date, hour, min, sec;
-        CMOS_WRITE(DS_CTLA_DV1, DS_REG_CTLA);
-        CMOS_WRITE(DS_CTLB_24 | DS_CTLB_DM | DS_CTLB_SET, DS_REG_CTLB);
-        CMOS_WRITE(0, DS_REG_CTLC);
-        CMOS_WRITE(0, DS_REG_CTLD);
-        year = CMOS_READ(DS_REG_YEAR);
-        month = CMOS_READ(DS_REG_MONTH);
-        date = CMOS_READ(DS_REG_DATE);
-        hour = CMOS_READ(DS_REG_HOUR);
-        min = CMOS_READ(DS_REG_MIN);
-        sec = CMOS_READ(DS_REG_SEC);
-        if( (year > 99) || (month < 1 || month > 12) ||
+	unsigned int v;
+
+	outl(REG_CNTRCTL,0x2d00);
+	v=inl(REG_TOY_READ0);
+        year = inl(REG_TOY_READ1) - 1900;
+        month = (v>>26)&0xf;
+        date = (v>>21)&0x1f;
+        hour = (v>>16)&0x1f;
+        min =  (v>>10)&0x3f;
+        sec = (v>>4)&0x3f;
+        if( (year > 200) || (month < 1 || month > 12) ||
                 (date < 1 || date > 31) || (hour > 23) || (min > 59) ||
                 (sec > 59) ){
-                /*
-                printf("RTC time invalid, reset to epoch.\n");*/
-                CMOS_WRITE(3, DS_REG_YEAR);
-                CMOS_WRITE(1, DS_REG_MONTH);
-                CMOS_WRITE(1, DS_REG_DATE);
-                CMOS_WRITE(0, DS_REG_HOUR);
-                CMOS_WRITE(0, DS_REG_MIN);
-                CMOS_WRITE(0, DS_REG_SEC);
+                tgt_printf("RTC time invalid, reset to epoch.\n");
+
+        	outl(REG_TOY_WRITE1,2011);
+		v=((4+1)<<26)|(20<<21)|(10<<16)|(1<<10)|(0);
+		outl(REG_TOY_WRITE0,v);
         }
-        CMOS_WRITE(DS_CTLB_24 | DS_CTLB_DM, DS_REG_CTLB);
                                                                                
-	//printf("RTC: %02d-%02d-%02d %02d:%02d:%02d\n",
-	//    year, month, date, hour, min, sec);
 }
 
-static inline unsigned char CMOS_READ(unsigned char addr)
-{
-        unsigned char val;
-        linux_outb_p(addr, 0x70);
-        val = linux_inb_p(0x71);
-        return val;
-}
                                                                                
-static inline void CMOS_WRITE(unsigned char val, unsigned char addr)
-{
-        linux_outb_p(addr, 0x70);
-        linux_outb_p(val, 0x71);
-}
-
 static void
 _probe_frequencies()
 {
 #ifdef HAVE_TOD
         int i, timeout, cur, sec, cnt;
+	unsigned int v;
 #endif
                                                                                
         SBD_DISPLAY ("FREQ", CHKPNT_FREQ);
@@ -599,7 +585,7 @@ _probe_frequencies()
 	int pll,ctrl,clk;
 	pll=PLL_FREQ_REG(0);
 	ctrl=PLL_FREQ_REG(4);
-	clk=(12+(pll&0x3f))*33333333/2 + ((pll>>7)&0x3ff)*33333333/2/1024;
+	clk=(12+(pll&0x3f))*33333333/2 + ((pll>>8)&0x3ff)*33333333/2/1024;
         md_pipefreq = (ctrl&(1<<25))?clk/((ctrl>>20)&0x1f):clk/2;
         md_cpufreq  = (ctrl&(1<<19))?clk/((ctrl>>14)&0x1f):clk/2;
 	}
@@ -618,15 +604,14 @@ _probe_frequencies()
         for(i = 2;  i != 0; i--) {
                 cnt = CPU_GetCOUNT();
                 timeout = 10000000;
-                while(CMOS_READ(DS_REG_CTLA) & DS_CTLA_UIP);
+		v=inl(REG_TOY_READ0);
+                sec = (v>>4)&0x3f;
                                                                                
-                sec = CMOS_READ(DS_REG_SEC);
                                                                                
                 do {
                         timeout--;
-                        while(CMOS_READ(DS_REG_CTLA) & DS_CTLA_UIP);
-                                                                               
-                        cur = CMOS_READ(DS_REG_SEC);
+			v=inl(REG_TOY_READ0);
+			cur = (v>>4)&0x3f;
                 } while(timeout != 0 && cur == sec);
                                                                                
                 cnt = CPU_GetCOUNT() - cnt;
@@ -679,27 +664,23 @@ time_t
 tgt_gettime()
 {
         struct tm tm;
-        int ctrlbsave;
         time_t t;
 
-	/*gx 2005-01-17 */
-	//return 0;
-                                                                               
 #ifdef HAVE_TOD
+	unsigned int year,v;
+
         if(!clk_invalid) {
-                ctrlbsave = CMOS_READ(DS_REG_CTLB);
-                CMOS_WRITE(ctrlbsave | DS_CTLB_SET, DS_REG_CTLB);
+		v=inl(REG_TOY_READ0);
+		year = inl(REG_TOY_READ1);
                                                                                
-                tm.tm_sec = CMOS_READ(DS_REG_SEC);
-                tm.tm_min = CMOS_READ(DS_REG_MIN);
-                tm.tm_hour = CMOS_READ(DS_REG_HOUR);
-                tm.tm_wday = CMOS_READ(DS_REG_WDAY);
-                tm.tm_mday = CMOS_READ(DS_REG_DATE);
-                tm.tm_mon = CMOS_READ(DS_REG_MONTH) - 1;
-                tm.tm_year = CMOS_READ(DS_REG_YEAR);
+                tm.tm_sec = (v>>4)&0x3f;
+                tm.tm_min = (v>>10)&0x3f;
+                tm.tm_hour = (v>>16)&0x1f;
+                tm.tm_wday = 0;
+                tm.tm_mday = (v>>21)&0x1f;
+                tm.tm_mon = ((v>>26)&0xf) - 1;
+                tm.tm_year = year - 1900;
                 if(tm.tm_year < 50)tm.tm_year += 100;
-                                                                               
-                CMOS_WRITE(ctrlbsave & ~DS_CTLB_SET, DS_REG_CTLB);
                                                                                
                 tm.tm_isdst = tm.tm_gmtoff = 0;
                 t = gmmktime(&tm);
@@ -719,25 +700,16 @@ void
 tgt_settime(time_t t)
 {
         struct tm *tm;
-        int ctrlbsave;
 
-	//return ;
-                                                                               
 #ifdef HAVE_TOD
+	unsigned int year,v;
         if(!clk_invalid) {
                 tm = gmtime(&t);
-                ctrlbsave = CMOS_READ(DS_REG_CTLB);
-                CMOS_WRITE(ctrlbsave | DS_CTLB_SET, DS_REG_CTLB);
+
+        	outl(REG_TOY_WRITE1,tm->tm_year + 1900);
+		v=((tm->tm_mon+1)<<26)|(tm->tm_mday<<21)|(tm->tm_hour<<16)|(tm->tm_min<<10)|(tm->tm_sec);
+		outl(REG_TOY_WRITE0,v);
                                                                                
-                CMOS_WRITE(tm->tm_year % 100, DS_REG_YEAR);
-                CMOS_WRITE(tm->tm_mon + 1, DS_REG_MONTH);
-                CMOS_WRITE(tm->tm_mday, DS_REG_DATE);
-                CMOS_WRITE(tm->tm_wday, DS_REG_WDAY);
-                CMOS_WRITE(tm->tm_hour, DS_REG_HOUR);
-                CMOS_WRITE(tm->tm_min, DS_REG_MIN);
-                CMOS_WRITE(tm->tm_sec, DS_REG_SEC);
-                                                                               
-                CMOS_WRITE(ctrlbsave & ~DS_CTLB_SET, DS_REG_CTLB);
         }
 #endif
 }
