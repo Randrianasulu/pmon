@@ -213,7 +213,7 @@ static int bcm54xx_config_init(synopGMACdevice *gmacdev)
 #endif
 
 
-static int rtl8211_config_init(synopGMACdevice *gmacdev)
+static int rtl88e1111_config_init(synopGMACdevice *gmacdev)
 {
 	int retval, err;
 	u16 data;
@@ -1719,16 +1719,15 @@ void set_phy_manu(synopGMACdevice * gmacdev)
 #endif
 
 
-int init_phy(struct synopGMACdevice *gmacdev)
+int init_phy(synopGMACdevice *gmacdev)
 {
-	int retval;
+	u16 data;
 	
-	//retval = bcm54xx_config_init(gmacdev);
-
-	retval = rtl8211_config_init(gmacdev);
-//	synopGMAC_phy_loopback(gmacdev, SYNOP_PHY_LOOPBACK);
-	//if(retval != 0)
-		return retval;
+	synopGMAC_read_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,2,&data);
+	/*set 88e1111 clock phase delay*/
+	if(data == 0x141)
+	 rtl88e1111_config_init(gmacdev);
+		return 0;
 }
 
 
