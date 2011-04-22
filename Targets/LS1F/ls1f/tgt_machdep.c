@@ -114,7 +114,7 @@ static int md_cpufreq = 0;
 static int clk_invalid = 0;
 static int nvram_invalid = 0;
 static int cksum(void *p, size_t s, int set);
-static void _probe_frequencies(void);
+void _probe_frequencies(void);
 
 #ifndef NVRAM_IN_FLASH
 void nvram_get(char *);
@@ -561,7 +561,7 @@ static void init_legacy_rtc(void)
 }
 
                                                                                
-static void
+void
 _probe_frequencies()
 {
 #ifdef HAVE_TOD

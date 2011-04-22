@@ -64,6 +64,12 @@
 #define	PRINTSTR(x) \
 	.rdata;98: .asciz x; .text; la a0, 98b; bal stringserial; nop
 
+/* Delay macro */
+#define	DELAY(count)	\
+	li v0, count;	\
+99:			\
+	bnez	v0, 99b;\
+	addiu	v0, -1
 
 #define tmpsize		s1
 #define msize		s2
@@ -340,7 +346,7 @@ locate:
 #else
     li  a0, 0xbfe78030
     /*31:dc_div_en,30-26:dc_div,25:cpu_div_en,24-20:cpu_div,19:ddr_div_en,18-14:ddr_div*/
-    li v1,(1<<31)|(4<<26)|(1<<25)|(1<<20)|(1<<19)|(3<<14)
+    li v1,(1<<31)|(4<<26)|(1<<25)|(1<<20)|(1<<19)|(3<<14)|0x2a00
     sw v1,4(a0)
     li  a1, 4
     sw a1,(a0);
@@ -353,6 +359,7 @@ locate:
 #endif
 
 
+	li a0,0
 	bal	initserial
 	nop
 	
@@ -407,6 +414,7 @@ cpu_win_fixup:
         // mapped_addr =  paddr &~mask | mmap & mask
         //
         // mmap[7] -> enable
+	// mmap[5] -> block trans enable
         // mmap[4] -> cachable
         // mmap[1:0] -> destination
         //
@@ -786,7 +794,16 @@ LEAF(initserial)
 #ifdef LS1FSOC
  	li	v1, ((APB_CLK*DDR_MULT)/(2*16*115200))     // 8MHz crystal,   M[7:3]=6     1fboard
 #else
+	move	v1,a0
+	bnez	v1,2f
+	nop
+	li	v1,33333333
 	li	a0,0xbfe78030
+	lw	a1,4(a0)
+	li	a2,0xc00
+	and	a1,a2
+	beq 	a1,a2,2f
+	nop
 	lw	a1,(a0)
 	andi	a2,a1,0x3f
 	addiu	a2,12
@@ -810,7 +827,7 @@ LEAF(initserial)
 1:
 	srl v1,1	
 2:
-#if 1
+#if 0
 /*save div,for serial debug*/
 	.set mips32
 	mtc0 v1,$25,1
@@ -864,12 +881,6 @@ hexchar:
  *   SDRAM modules. This code must be entirely PIC and RAM independent.
  */
 
-/* Delay macro */
-#define	DELAY(count)	\
-	li v0, count;	\
-99:			\
-	bnz	vo, 99b;\
-	addiu	v0, -1
 
 
 

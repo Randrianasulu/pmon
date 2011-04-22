@@ -140,6 +140,8 @@ int caclulatefreq(long long XIN,long long PCLK)
 	int pll,ctrl,div,div1,frac;
 	pll=PLL_FREQ_REG(0);
 	ctrl=PLL_FREQ_REG(4);
+	printf("pll=0x%x,ctrl=0x%x\n",pll,ctrl);
+	printf("cpu freq is %d\n",tgt_pipefreq());
 	start=-1;
 	end=1;
 
@@ -174,9 +176,14 @@ int caclulatefreq(long long XIN,long long PCLK)
 	}
 	}
 
+	printf("new pll=%x: ctrl=%x\n",pll,ctrl);
+	ctrl |= 0x2a00;
+	PLL_FREQ_REG(4) = ctrl; 
 	PLL_FREQ_REG(0) = pll;
-	PLL_FREQ_REG(4) = ctrl;
-	initserial();
+	delay(1000);
+	initserial(0);
+	_probe_frequencies();
+	printf("cpu freq is %d\n",tgt_pipefreq());
 	return 0;
 }
 
@@ -378,10 +385,25 @@ static int cmd_dc_freq(int argc,char **argv)
 	return 0;
 }
 
+static int cmd_caclfreq(int argc,char **argv)
+{
+	_probe_frequencies();
+	printf("freq is %d\n",tgt_pipefreq());
+	return 0;
+}
+
+static int cmd_initserial(int argc,char **argv)
+{
+	initserial(argc>1?strtoul(argv[1],0,0):0);
+	return 0;
+}
+
 static const Cmd Cmds[] =
 {
 	{"MyCmds"},
 	{"dc_freq"," pclk sysclk", 0, "config dc clk(khz)",cmd_dc_freq, 0, 99, CMD_REPEAT},
+	{"caclfreq","", 0, "cacl freq",cmd_caclfreq, 0, 99, CMD_REPEAT},
+	{"initserial","[ddrclk]", 0, "cacl freq",cmd_initserial, 0, 99, CMD_REPEAT},
 	{0, 0}
 };
 
