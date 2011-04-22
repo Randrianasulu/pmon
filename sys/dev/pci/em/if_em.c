@@ -205,7 +205,7 @@ void netdev_init(struct net_device *netdev,struct pci_attach_args *pa)
 	netdev->priv=kmalloc(sizeof(struct e1000_adapter),GFP_KERNEL);//&netdev->em;
 	memset(netdev->priv,0,sizeof(struct e1000_adapter));
 	netdev->addr_len=6;
-	netdev->pcidev.irq=irq++;
+	netdev->irq = netdev->pcidev.irq=irq++;
 }
 
 static int e1000_ether_ioctl(struct ifnet *ifp,FXP_IOCTLCMD_TYPE cmd,caddr_t data);
