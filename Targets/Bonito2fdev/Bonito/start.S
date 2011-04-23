@@ -1190,7 +1190,7 @@ LEAF(hexserial)
 	nop
 END(hexserial)
 
-#if 1  
+#if 1
 /*for 2f devbd
 GPIO 0: scl out -- parport pin15  (pp 0x379's bit 3)
 GPIO 1: sda out -- parport pin13  (pp 0x379's bit 4)
@@ -1204,16 +1204,16 @@ nice -n -30 ./gpioserial
 /*notice: r0 low 12bit can not change*/
 #define SW_GPIOSERIAL_DATA(r0,r1) \
 	li  	r1, 0xbfe0011c; \     		   
-	sw 	r0, 0(r1); \                       
+	sw 	r0, 0(r1); 
 #else
-/*for 2fsb testbd
+/*for 2fsb testbd*/
 #define GPIOSERIAL_DIR 0xc
 
 #define SW_GPIO_DATA(r0,r1) \
 	li  	r1, 0xbfe0011c; \     		   
 	sll r0,2;\
 	sw 	r0, 0(r1); \                       
-	srl r0,2;\
+	srl r0,2;
 #endif
 
 LEAF(tgt_putchar)
