@@ -281,7 +281,7 @@ LEAF(exception_handler)
 1:
 	addu	sp, k0, -64		/* Get a new stack */
 
-	and     t0, a0, ~(SR_COP_1_BIT | SR_EXL | SR_KSU_MASK | SR_INT_ENAB)
+	and     t0, a0, ~(SR_EXL | SR_KSU_MASK | SR_INT_ENAB)
 	mtc0	t0, COP_0_STATUS_REG
 	NOP8
 	la	gp, _gp
