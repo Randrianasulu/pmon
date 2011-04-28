@@ -1090,8 +1090,8 @@ s32 synopGMAC_mac_init(synopGMACdevice * gmacdev)
 		synopGMACSetBits(gmacdev->DmaBase,DmaControl, DmaStoreAndForward );
 		synopGMACSetBits(gmacdev->DmaBase,DmaControl, DmaFwdErrorFrames );
 //sw: put it in the end
-//		synopGMAC_tx_enable(gmacdev);	
-//		synopGMAC_rx_enable(gmacdev);
+		synopGMAC_tx_enable(gmacdev);	
+		synopGMAC_rx_enable(gmacdev);
 
 
 		if(gmacdev->Speed == SPEED1000)
