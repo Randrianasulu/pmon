@@ -1132,7 +1132,6 @@ s32 synopGMAC_mac_init(synopGMACdevice * gmacdev)
 
 		/*To set PHY register to enable CRS on Transmit*/
 	}
-		gmacdev->LinkState = gmacdev->LinkState0; 
 	return 0;
 }
 
@@ -1166,9 +1165,14 @@ s32 synopGMAC_check_phy_init (synopGMACdevice * gmacdev)
 	if(status)
 		return status;
 
+		gmacdev->LinkState = data; 
+
         if((data & Mii_phy_status_link_up) == 0){
 		TR("No Link\n");
-		//return -ESYNOPGMACPHYERR;
+               gmacdev->DuplexMode = FULLDUPLEX;
+               gmacdev->Speed      =   SPEED100;
+
+		return -ESYNOPGMACPHYERR;
 	}
 	else{
 		TR("Link UP\n");
@@ -1178,7 +1182,6 @@ s32 synopGMAC_check_phy_init (synopGMACdevice * gmacdev)
 //		printf("check phy init 2: status = 0x%x\n",status);
 	if(status)
 		return status;
-		gmacdev->LinkState0 = data; 
 	
 
 

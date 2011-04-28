@@ -74,8 +74,6 @@ u32 synop_pci_using_dac = 0;
 
 //u32 regbase = 0xbfe10000;	//sw:	for debug only
 u64 regbase = 0x90000d0000000000;	// this is of no use in this driver! liyifu on 2010-01-12
-//char mac_addr[6] = {0xF7,0x7D,0xB5,0x7B,0x55,0x00};
-char mac_addr[6] = {0x00,0x55,0x7B,0xB5,0x7D,0xF7};
 
 void dumppkghd(struct ether_header *eh,int tp);
 int set_lpmode(synopGMACdevice * gmacdev);
@@ -296,7 +294,6 @@ status = synopGMAC_read_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,PHY_SPECIFIC_S
 
 if((data & Mii_phy_status_link_up) == 0){
 	TR("No Link: %08x\n",data);
-  	gmacdev->LinkState = 0;
 	gmacdev->DuplexMode = 0;
 	gmacdev->Speed = 0;
 	gmacdev->LoopBackMode = 0; 
@@ -304,12 +301,13 @@ if((data & Mii_phy_status_link_up) == 0){
 }
 else{
 	TR("Link UP: %08x\n",data);
-	if(!gmacdev->LinkState){
+	if(gmacdev->LinkState != data){
 		status = synopGMAC_check_phy_init(gmacdev);
 		synopGMAC_mac_init(gmacdev);
 
 	}
 }
+  	gmacdev->LinkState = data;
 	
 }
 
@@ -961,15 +959,6 @@ int synopGMAC_intr_handler(struct synopGMACNetworkAdapter * tp)
 	if(dma_status_reg == 0)
 		return 0;
 
-	//if(dma_status_reg & 0x04)	//sw: dbg
-	//	printf("Tx Desc Unavailable! 0x%x \n",dma_status_reg);
-	
-	if(dma_status_reg == 0x660004)	//sw: dbg
-		return 0;
-	
-//sw: check phy status	
-//	synopGMAC_linux_cable_unplug_function(tp);
-	
         synopGMAC_disable_interrupt_all(gmacdev);
 
 //	dumpreg(regbase);
@@ -1232,6 +1221,7 @@ unsigned long synopGMAC_linux_open(struct synopGMACNetworkAdapter *tp)
 	  such as Mac base, configuration base, phy base address(out of 32 possible phys )*/
 	//	synopGMAC_attach(synopGMACadapter->synopGMACdev,(u32) synopGMACMappedAddr + MACBASE,(u32) synopGMACMappedAddr + DMABASE, DEFAULT_PHY_BASE);
 	//synopGMAC_attach(adapter->synopGMACdev,(u64) synopGMACMappedAddr + MACBASE,(u64) synopGMACMappedAddr + DMABASE, DEFAULT_PHY_BASE,PInetdev->dev_addr);
+	synopGMAC_set_mac_addr(gmacdev,GmacAddr0High,GmacAddr0Low, PInetdev->dev_addr); 
 	
 	/*Lets read the version of ip in to device structure*/	
 	synopGMAC_read_version(gmacdev);
