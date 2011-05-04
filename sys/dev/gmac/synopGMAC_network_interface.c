@@ -1971,7 +1971,7 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
 	 	char *p=av[i];
 		char *nextp;
 	 	int offset=strtoul(p,&nextp,0);
-		while(nextp!=p)
+		while(*nextp && nextp!=p)
 		{
 		p=++nextp;
 		data=strtoul(p,&nextp,0);
