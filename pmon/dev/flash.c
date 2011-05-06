@@ -247,7 +247,7 @@ fl_find_map(void *base)
  *  Try to figure out what kind of flash there is on given address.
  */
 struct fl_device *
-fl_devident(void *base, struct fl_map **m)
+  __attribute__((weak))fl_devident(void *base, struct fl_map **m)
 {
 	struct fl_device *dev;
 	struct fl_map *map;
@@ -320,7 +320,7 @@ fl_devident(void *base, struct fl_map **m)
  *  Erase the flash device(s) addressed.
  */
 int
-fl_erase_device(void *base, int size, int verbose)
+  __attribute__((weak))fl_erase_device(void *base, int size, int verbose)
 {
 	struct fl_map *map;
 	struct fl_device *dev;
@@ -513,7 +513,7 @@ int fl_program(void *fl_base, void *data_base, int data_size, int verbose)
  *  Program a flash device. Assumed that the area is erased already.
  */
 int
-fl_program_device(void *fl_base, void *data_base, int data_size, int verbose)
+  __attribute__((weak))fl_program_device(void *fl_base, void *data_base, int data_size, int verbose)
 {
 	struct fl_map *map;
 	struct fl_device *dev;
@@ -655,25 +655,10 @@ fl_verify_device(void *fl_base, void *data_base, int data_size, int verbose)
 			{
 				tgt_flashwrite_enable();
 				printf("Erasing all FLASH blocks. ");
-				(*dev->functions->erase_chip)(map, dev);
-				delay(1000);
-				for(timeout = 0 ;
-					((ok = (*dev->functions->isbusy)(map, dev, 0xffffffff,0, TRUE)) == 1)
-						&& (timeout < PFLASH_MAX_TIMEOUT); timeout++) {
-						delay(1000);
-					if(verbose) {
-						dotik(256, 0);
-					}
-				}
-				delay(1000);
-
-				if(!(timeout < PFLASH_MAX_TIMEOUT)) {
-					(*dev->functions->erase_suspend)(map, dev);
-				}
-				(*dev->functions->reset)(map, dev);
+				fl_erase_device(map->fl_map_base,map->fl_map_size,FALSE);
 				tgt_flashwrite_disable();
 			}
-		   }
+			}
 			break;
 		}
 		else if(verbose) {

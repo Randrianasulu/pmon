@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <pmon.h>
 #include <include/types.h>
+#include <pflash.h>
 
 #define SPI_BASE  0x1fe80000
 #define PMON_ADDR 0xa1000000
@@ -530,6 +531,42 @@ int spi_read_area(int flashaddr,char *buffer,int size)
         SET_SPI(SOFTCS,0x11);
 	delay(10);
 	return 0;
+}
+
+struct fl_device myflash = {
+	.fl_name="spiflash",
+	.fl_size=0x100000,
+	.fl_secsize=0x10000,
+};
+
+struct fl_device *fl_devident(void *base, struct fl_map **m)
+{
+	if(m)
+	*m = fl_find_map(base);
+	return &myflash;
+}
+
+int fl_program_device(void *fl_base, void *data_base, int data_size, int verbose)
+{
+	struct fl_map *map;
+	int off;
+	map = fl_find_map(fl_base);
+	off = (int)(fl_base - map->fl_map_base) + map->fl_map_offset;
+	spi_write_area(off,data_base,data_size);
+	spi_initr();
+	return 0;
+}
+
+
+int fl_erase_device(void *fl_base, int size, int verbose)
+{
+	struct fl_map *map;
+	int off;
+	map = fl_find_map(fl_base);
+	off = (int)(fl_base - map->fl_map_base) + map->fl_map_offset;
+	spi_erase_area(off,off+size,0x10000);
+	spi_initr();
+return 0;
 }
 
 static const Cmd Cmds[] =
