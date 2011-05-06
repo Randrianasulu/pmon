@@ -286,7 +286,7 @@ initmips(unsigned int memsz)
 	SBD_DISPLAY("BEV0",0);
 	
 	printf("BEV in SR set to zero.\n");
-	//fcr_soc_nand_init();
+	ls1g_soc_nand_init();
 
 #ifdef  MEMSCAN	
 	memscan();

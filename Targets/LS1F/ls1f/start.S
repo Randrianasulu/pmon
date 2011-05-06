@@ -346,7 +346,7 @@ locate:
 #else
     li  a0, 0xbfe78030
     /*31:dc_div_en,30-26:dc_div,25:cpu_div_en,24-20:cpu_div,19:ddr_div_en,18-14:ddr_div*/
-    li v1,(1<<31)|(4<<26)|(1<<25)|(1<<20)|(1<<19)|(3<<14)|0x2a00
+    li v1,(1<<31)|(4<<26)|(1<<25)|(2<<20)|(1<<19)|(2<<14)|0x2a00
     sw v1,4(a0)
     li  a1, 4
     sw a1,(a0);
@@ -792,7 +792,7 @@ LEAF(initserial)
 	li	v1, CFCR_DLAB
 	sb	v1, NSREG(NS16550_CFCR)(v0)
 #ifdef LS1FSOC
- 	li	v1, ((APB_CLK*DDR_MULT)/(2*16*115200))     // 8MHz crystal,   M[7:3]=6     1fboard
+ 	li	v1, ((APB_CLK*DDR_MULT)/(2*16*CONS_BAUD))     // 8MHz crystal,   M[7:3]=6     1fboard
 #else
 	move	v1,a0
 	bnez	v1,2f
@@ -833,7 +833,7 @@ LEAF(initserial)
 	mtc0 v1,$25,1
 	.set mips0
 #endif
-	li a1,2*16*9600
+	li a1,2*16*CONS_BAUD
 	divu v1,v1,a1
 #endif
 	sb	v1, NSREG(NS16550_DATA)(v0)
