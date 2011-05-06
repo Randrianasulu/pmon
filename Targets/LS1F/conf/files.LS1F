@@ -21,6 +21,7 @@ file	sys/dev/gmac/if_gmac.c gmac
 
 file	Targets/LS1F/dev/can.c
 file    Targets/LS1F/dev/spi_w.c
+file    sys/dev/nand/ls1g-nand.c  nand
 
 #file 	sys/dev/phy/bcm5461config.c
 

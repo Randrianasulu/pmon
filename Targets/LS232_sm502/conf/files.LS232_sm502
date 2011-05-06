@@ -13,6 +13,7 @@ file	Targets/LS232_sm502/dev/rtc-8025.c
 file	Targets/LS232_sm502/ls232/tgt_cmd.c
 #file	Targets/LS232_sm502/dev/sdcard_gpio.c
 file	Targets/LS232_sm502/dev/sdcard_spi.c
+file sys/dev/nand/fcr-nand.c      nand
 
 
 define  localbus { [base = -1 ] }

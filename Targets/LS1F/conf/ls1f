@@ -187,7 +187,7 @@ select fatfs
 select gzip
 option INPUT_FROM_BOTH
 option OUTPUT_TO_BOTH
-#select nand
+select nand
 select cmd_xyzmodem
 select loop
 select raw_ether
