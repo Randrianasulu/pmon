@@ -328,12 +328,14 @@ int file_to_mtd_pos(int fd,int *plen)
 	priv = (mtdpriv *)_file[fd].data;
 	p = priv->file;
 
-   goodpart=goodpart0;
-   add=goodpart0->part_offset;
    offset=0;
    file_start=p->part_offset+priv->open_offset;
    pos=_file[fd].posn;
 
+if(getenv("goodpart"))
+{
+   goodpart=goodpart0;
+   add=goodpart0->part_offset;
  while(goodpart)
  {
   if(file_start<goodpart->part_offset)
@@ -345,6 +347,11 @@ int file_to_mtd_pos(int fd,int *plen)
   goodpart=goodpart->i_next.le_next;
  }
  if(plen)*plen=(goodpart->part_offset+goodpart->part_size)-(file_start+pos+offset);
+}
+else
+{
+	if(plen)*plen=(p->part_offset+p->part_size)-(file_start+pos+offset);
+}
 
  return file_start+pos+offset;
 }
