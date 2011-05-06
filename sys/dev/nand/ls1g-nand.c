@@ -866,8 +866,9 @@ if(start>=0)
 #define NAND_DEV        0x1fe78040
 #define DMA_DESP        0xa0800000
 #define DMA_DESP_ORDER  0x00800008
-#define DDR_PHY         0x08200000
-#define DDR_ADDR        0xa8200000
+#define DMA_ASK_ORDER   0x00800004
+#define DDR_PHY         0x08400000
+#define DDR_ADDR        0xa8400000
 
 #define STATUS_TIME 100
 
@@ -877,28 +878,64 @@ if(start>=0)
             __ww(NAND_REG_BASE,0x400);  \
 }while(0)
 
-void nand_test(void)
+unsigned int verify_erase(unsigned int addr,int all)
 {
-    int i,val=0;
+    int i=0,flag=0;
+    volatile unsigned int *base = (unsigned int*)DDR_ADDR;
+    unsigned int val=0;
+    __ww(DMA_DESP+0,0);
+    __ww(DMA_DESP+0x4,DDR_PHY); 
+    __ww(DMA_DESP+0x8,NAND_DEV); 
+    __ww(DMA_DESP+0xc,0x8400);
+    __ww(DMA_DESP+0x10,0x0); 
+    __ww(DMA_DESP+0x14,0x1); 
+    __ww(DMA_DESP+0x18,0x0);
+    __ww(0xbfd01160,DMA_DESP_ORDER);
+
+
+
+    __ww(NAND_REG_BASE+0x0,0x0);
+    __ww(NAND_REG_BASE+0x4,addr<<(12+6));
+    __ww(NAND_REG_BASE+0x1c,0x21000);//main + spare
+    __ww(NAND_REG_BASE+0x0,0x300);
+    __ww(NAND_REG_BASE+0x0,0x303);
+    
+    udelay(5000);
+    while(1){
+        __ww(0xbfd01160,DMA_ASK_ORDER);
+        __rw(DMA_DESP+0x4,val);
+        if(val == (0x21000+DDR_PHY)){break;}
+        udelay(400);
+    }
+    for(;i<0x8400;i++){
+        if(*(base+i) != 0xffffffff){printf("\naddr 0x%08x: 0x%08x isn't 0xFFFFFFFF",(base+i),*(base+i));flag=1;if(all){return flag;}}
+    }
+    return flag;
+}
+
+void nanderase_verify(int argc,char ** argv)
+{
+    int i=0,flag=0;
     int status_time ;
+    char *detail;
+//    all =strtoul(argv[1],0,0);
+    detail = argv[1];
+    flag=strncmp(detail,"detail",6);
     __ww(0xbfd00420,0x0a000000);
     __ww(NAND_REG_BASE+0x0,0x0);   
     __ww(NAND_REG_BASE+0x0,0x41);
     __ww(NAND_REG_BASE+0x4,0x00);
-
     status_time = STATUS_TIME;
 
-       printf("erase blockaddr: 0x%08x",val); 
+       printf("erase blockaddr: 0x%08x",i); 
     for(i=0;i<1024;i++){
         printf("\b\b\b\b\b\b\b\b");
-       printf("%08x",val); 
-        __ww(NAND_REG_BASE+0x4,val);   
-
-
-
+        printf("%08x",i<<(11+6)); 
+        __ww(NAND_REG_BASE+0x4,i<<(11+6));   
+        __ww(NAND_REG_BASE+0x0,0x8);
         __ww(NAND_REG_BASE+0x0,0x9);
             udelay(2000);
-        while((*((volatile unsigned int *)(NAND_REG_BASE)) & 0x400) == 0)
+        while((*((volatile unsigned int *)(NAND_REG_BASE)) & 0x1<<16) == 0)
         {
             if(!(status_time--)){
                 cmd_to_zero;
@@ -907,7 +944,7 @@ void nand_test(void)
             }
             udelay(80);
         }
-        val+=0x20000;
+        if(verify_erase(i,flag)){printf("BLOCK:%d,addr:0x%08x,some error or bad block\n",i,i<<(11+6));}
     }
     printf("\nerase all nandflash ok...\n");
 
@@ -954,9 +991,9 @@ __display(DMA_DESP,0x10);
 //   while(1);
 #endif 
 }
-void nand_test_f(void)
+void nanderase(void)
 {
-    int i,val=0;
+    int i=0;
     int status_time ;
     __ww(0xbfd00420,0x0a000000);
     __ww(NAND_REG_BASE+0x0,0x0);   
@@ -965,14 +1002,15 @@ void nand_test_f(void)
 
     status_time = STATUS_TIME;
 
-       printf("erase blockaddr: 0x%08x",val); 
+       printf("erase blockaddr: 0x%08x",i); 
     for(i=0;i<1024;i++){
         printf("\b\b\b\b\b\b\b\b");
-       printf("%08x",val); 
-        __ww(NAND_REG_BASE+0x4,val);   
+       printf("%08x",i<<(11+6)); 
+        __ww(NAND_REG_BASE+0x4,i<<(11+6));   
+        __ww(NAND_REG_BASE+0x0,0x8);
         __ww(NAND_REG_BASE+0x0,0x9);
             udelay(2000);
-        while((*((volatile unsigned int *)(NAND_REG_BASE)) & 0x400) == 0)
+        while((*((volatile unsigned int *)(NAND_REG_BASE)) & 0x1<<16) == 0)
         {
             if(!(status_time--)){
                 cmd_to_zero;
@@ -981,10 +1019,8 @@ void nand_test_f(void)
             }
             udelay(80);
         }
-        val+=0x20000;
     }
     printf("\nerase all nandflash ok...\n");
-
 }
 #include "nand_gpio.c"
 
@@ -1024,13 +1060,78 @@ static void nand_read_id(void)
             printf("read_id_l:0x%08x\nread_id_h:0x%08x\n",id_val,id_val_h);
 
 }
+#define TIMING 0xc
+#define OP_NUM  0x1c
+#define ADDR    0x4
+#define CMD     0x0
+static unsigned int nand_num=0;
+
+static void nandwrite_test(int argc,char **argv)/*cmd addr(L,page num) timing op_num(byte) */
+{
+    unsigned int cmd = 0,addr=0,timing=0x412,op_num=0,dma_num=0;
+    unsigned int pages=0,i,val,timeout;
+    if(argc != 5)
+    {
+        printf("\nnandwrite_test : cmd  addr(start write page_num)  timing  op_num(write pages)\n");
+        printf("EXAMPLE:nandwrite_test : 0x203  0x10 0x412 0x5\n\n");
+        return;
+    }
+       nand_num=0; 
+    __ww(0xbfd00420,0x0a000000);
+     cmd = strtoul(argv[1],0,0);
+     addr = strtoul(argv[2],0,0);
+     timing = strtoul(argv[3],0,0);
+     op_num = strtoul(argv[4],0,0);
+//     dma_num = strtoul(argv[5],0,0);
+     if(cmd&0x9){addr <<= 12;}
+     else{addr <<= 11;}
+//    pages = (op_num>>11)+1;
+    pages = op_num;
+for(i=0;i<pages;i++){
+     __ww(NAND_REG_BASE+TIMING,timing); 
+     __ww(NAND_REG_BASE+OP_NUM,0x840); 
+     __ww(NAND_REG_BASE+ADDR,addr);
+     __ww(DDR_ADDR,0xffffffff);
+/*dma configure*/
+    __ww(DMA_DESP,0xa0081100); 
+    __ww(DMA_DESP+0x4,DDR_PHY); 
+    __ww(DMA_DESP+0x8,NAND_DEV); 
+    __ww(DMA_DESP+0xc,0x210);
+    __ww(DMA_DESP+0x10,0x0); 
+    __ww(DMA_DESP+0x14,0x1); 
+    __ww(DMA_DESP+0x18,0x1000);
+    __ww(0xbfd01160,DMA_DESP_ORDER);
+/*send cmd*/ 
+     __ww(NAND_REG_BASE+CMD,cmd&0x200);
+     __ww(NAND_REG_BASE+CMD,cmd);
+     udelay(100);
+     while(1){
+        __ww(0xbfd01160,DMA_ASK_ORDER);
+        __rw(DMA_DESP+0x4,val);
+        if(val == (0x210+DDR_PHY)){break;}
+        udelay(20);
+    }
+    timeout=30;
+    udelay(300);
+    __rw(NAND_REG_BASE+CMD,val);
+    while(!(val&0x1<<20)){
+        udelay(20);
+        if(!(timeout--)){nand_num++;break;}
+        __rw(NAND_REG_BASE+CMD,val);
+    }
+    printf("nand_num===0x%08x\n",nand_num);
+    
+}
+
+}
 static const Cmd Cmds[] =
 {
 	{"MyCmds"},
-	{"nanderase","val",0,"hardware test",nand_test,0,99,CMD_REPEAT},
-	{"nanderasef","val",0,"hardware test",nand_test_f,0,99,CMD_REPEAT},
+	{"nanderase_verify","val",0,"hardware test",nanderase_verify,0,99,CMD_REPEAT},
+	{"nanderase","val",0,"hardware test",nanderase,0,99,CMD_REPEAT},
 	{"nandreadid_gpio","val",0,"hardware test",nand_gpio_read_id,0,99,CMD_REPEAT},
 	{"nandreadid","val",0,"hardware test",nand_read_id,0,99,CMD_REPEAT},
+	{"nandwrite_test","val",0,"hardware test",nandwrite_test,0,99,CMD_REPEAT},
 	{0, 0}
 };
 
