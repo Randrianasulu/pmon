@@ -9,9 +9,9 @@ typedef unsigned char u8;
 #define K1BASE 0xa0000000
 #define KSEG1(addr) ((void *)(K1BASE | (u32)(addr)))
 
-#define KSEG1_STORE8(addr, value) *(volatile u8 *)(KSEG1(addr)) = ((u8)value & 0xff)
-#define KSEG1_STORE16(addr, value) *(volatile u16 *)(KSEG1(addr)) = ((u8)value & 0xffff)
-#define KSEG1_STORE32(addr, value) *(volatile u32 *)(KSEG1(addr)) = (u32)(value)
+#define KSEG1_STORE8(addr, value) *(volatile u8 *)(KSEG1(addr)) = (value)
+#define KSEG1_STORE16(addr, value) *(volatile u16 *)(KSEG1(addr)) = (value)
+#define KSEG1_STORE32(addr, value) *(volatile u32 *)(KSEG1(addr)) = (value)
 
 #define KSEG1_LOAD8(addr) *(volatile u8 *)(KSEG1(addr))
 #define KSEG1_LOAD16(addr) *(volatile u16 *)(KSEG1(addr))
