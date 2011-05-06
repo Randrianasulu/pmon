@@ -866,7 +866,7 @@ tgt_mapenv(int (*func) __P((char *, char *)))
 	if(fl_devident(nvram, NULL) == 0 ||
            cksum(nvram + NVRAM_OFFS, NVRAM_SIZE, 0) != 0) {
 #else
-    nvram = (char *)malloc(512);
+    nvram = (char *)malloc(NVRAM_SIZE);
 	nvram_get(nvram);
 	if(cksum(nvram, NVRAM_SIZE, 0) != 0) {
 #endif
@@ -960,7 +960,7 @@ tgt_unsetenv(char *name)
         memcpy(nvramsecbuf, nvram, NVRAM_SECSIZE);
 	nvrambuf = nvramsecbuf + (NVRAM_OFFS & (NVRAM_SECSIZE - 1));
 #else
-        nvramsecbuf = nvrambuf = nvram = (char *)malloc(512);
+        nvramsecbuf = nvrambuf = nvram = (char *)malloc(NVRAM_SIZE);
 	nvram_get(nvram);
 #endif
 
@@ -1209,21 +1209,15 @@ cksum(void *p, size_t s, int set)
 void
 nvram_get(char *buffer)
 {
-	int i;
-	for(i = 0; i < 114; i++) {
-		linux_outb(i + RTC_NVRAM_BASE, RTC_INDEX_REG);	/* Address */
-		buffer[i] = linux_inb(RTC_DATA_REG);
-	}
+	spi_read_area(0x80000,buffer,NVRAM_SIZE);
 }
 
 void
 nvram_put(char *buffer)
 {
 	int i;
-	for(i = 0; i < 114; i++) {
-		linux_outb(i+RTC_NVRAM_BASE, RTC_INDEX_REG);	/* Address */
-		linux_outb(buffer[i],RTC_DATA_REG);
-	}
+	spi_erase_area(0x80000,0x80000+NVRAM_SIZE,0x10000);
+	spi_write_area(0x00080000,buffer,NVRAM_SIZE);
 }
 
 #endif

@@ -69,13 +69,13 @@ extern char           *heaptop;
 #ifdef NVRAM_IN_FLASH
 #	define	NVRAM_SIZE		494
 #	define	NVRAM_SECSIZE		500
-#	define	NVRAM_OFFS		0x0007f000
+#	define	NVRAM_OFFS		0x00070000
 #	define ETHER_OFFS		494 	/* Ethernet address base */
 #else	/* Use clock ram, 256 bytes only */
-#	define NVRAM_SIZE		114
+#	define NVRAM_SIZE	        512	
 #	define NVRAM_SECSIZE		NVRAM_SIZE	/* Helper */
 #	define NVRAM_OFFS		0
-#	define ETHER_OFFS		108 	/* Ethernet address base */
+#	define ETHER_OFFS		(NVRAM_SIZE-6) 	/* Ethernet address base */
 #endif
 
 
