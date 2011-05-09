@@ -190,16 +190,83 @@ END(wbflush)
  *----------------------------------------------------------------------------
  */
 
+#ifdef CPU_LS232
+LEAF(CPU_ConfigCache232)
+	.set mips32
+	mfc0	t3, COP_0_STATUS_REG
+	sw	t3, CpuStatusRegister
 
-LEAF(CPU_ConfigCache)
-	.set	noreorder
-#ifdef CACHE2FLUSH_ON_CONFIG
-        la      t0, 1f				# run uncached
-        or      t0, UNCACHED_MEMORY_ADDR
-        j       t0
+	mfc0	v0, COP_0_CONFIG,1		# Get configuration register
+	sw	v0, CpuConfigRegister
+
+	srl	t1,v0,19
+	andi	t1,7
+	li	t2,2
+	sll	t2,t1
+	sw	t2, CpuPrimaryInstCacheLSize	
+
+	srl	t1,v0,22
+	andi	t1,7
+	sll 	t2,6
+	sll	t2,t1
+
+	sw	t2, CpuPrimaryInstSetSize
+
+
+	srl	t1,v0,16
+	andi	t1,7
+
+	sll	t2,t1
+	sw	t2, CpuPrimaryInstCacheSize	# store cache size.
+
+	li	t2,1
+	sll	t2,t1
+	sw	t2, CpuNWayCache
+	sw	t2, CpuNWayICache
+	sw	t2, CpuCacheType		# Save cache attributes
+	
+
+
+	srl	t1,v0,10
+	andi	t1,7
+	li	t2,2
+	sll	t2,t1
+	sw	t2, CpuPrimaryDataCacheLSize	
+
+	srl	t1,v0,13
+	andi	t1,7
+	sll 	t2,6
+	sll	t2,t1
+
+	sw	t2, CpuPrimaryDataSetSize
+
+
+	srl	t1,v0,7
+	andi	t1,7
+
+	sll	t2,t1
+	sw	t2, CpuPrimaryDataCacheSize	# store cache size.
+
+	li	t2,1
+	sll	t2,t1
+	sw	t2, CpuNWayDCache
+
+	
+	sw	zero, CpuSecondaryCacheSize
+	sw	zero, CpuTertiaryCacheSize
+
+
+
+	j	ra
 	nop
-1: 
+	.set mips0
+
+END(CPU_ConfigCache232)
 #endif
+
+#ifndef CPU_LS232
+
+LEAF(CPU_ConfigCacheLegacy)
 	mfc0	v1, COP_0_PRID			# read processor ID register
 	mfc0	v0, COP_0_CONFIG		# Get configuration register
 	sw	v1, CpuProcessorId		# save PRID register
@@ -432,6 +499,8 @@ ConfResult:
 	sw	t2, CpuCacheType		# Save cache attributes
 	and	t2, CTYPE_WAYMASK		# isolate number of sets.
 	sw	t2, CpuNWayCache
+	sw	t2, CpuNWayDCache
+	sw	t2, CpuNWayICache
 	srl	t2, 1				# get div shift for set size.
 
 	sw	t6, CpuSecondaryCacheSize
@@ -465,6 +534,25 @@ ConfResult:
 
 	j	ra
 	nop
+END(CPU_ConfigCacheLegacy)
+#endif
+
+LEAF(CPU_ConfigCache)
+	.set	noreorder
+#ifdef CACHE2FLUSH_ON_CONFIG
+        la      t0, 1f				# run uncached
+        or      t0, UNCACHED_MEMORY_ADDR
+        j       t0
+	nop
+1: 
+#endif
+#ifdef CPU_LS232
+	j CPU_ConfigCache232
+	nop
+#else
+	j CPU_ConfigCacheLegacy
+	nop
+#endif
 END(CPU_ConfigCache)
 
 /*----------------------------------------------------------------------------
@@ -690,7 +778,7 @@ LEAF(CPU_FlushICache)
 	addu	a0, CACHED_MEMORY_ADDR		# a0 now new KSEG0 address
 	srl	a1, a1, 7			# Number of unrolled loops
 1:
-	lw	v0, CpuNWayCache		# Cache properties
+	lw	v0, CpuNWayICache		# Cache properties
 	addiu	v0, -2				# <0 1way, 0 = two, >0 four
 	bgez	v0, 2f
 	addu	a1, -1
@@ -799,7 +887,7 @@ LEAF(CPU_FlushDCache)
 	li a2,1
 #endif
 1:
-	lw	v0, CpuNWayCache
+	lw	v0, CpuNWayDCache
 	addiu	v0, -2				# <0 1way, 0 = two, >0 four
 	bgez	v0, 2f				# NWay.. go flush sets
 	addu	a1, -1
@@ -923,7 +1011,7 @@ LEAF(CPU_HitFlushDCache)
 	li	v0, SR_DIAG_DE
 	mtc0	v0, COP_0_STATUS_REG		# Disable interrupts
 
-	lw	v0, CpuNWayCache
+	lw	v0, CpuNWayDCache
 	beq	a1, zero, 3f			# size is zero!
 	addu	a1, 127				# Round up
 	addu	a1, a1, a0			# Add extra from address
@@ -1038,7 +1126,7 @@ LEAF(CPU_HitInvalidateDCache)
 	li	v0, SR_DIAG_DE
 	mtc0	v0, COP_0_STATUS_REG		# Disable interrupts
 
-	lw	v0, CpuNWayCache
+	lw	v0, CpuNWayDCache
 	beq	a1, zero, 3f			# size is zero!
 	addu	a1, 127				# Round up.
 	addu	a1, a1, a0			# Add in extra from align

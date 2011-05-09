@@ -443,6 +443,8 @@ u_int	CpuCacheAliasMask;
 u_int	CpuSecondaryCacheSize;
 u_int	CpuTertiaryCacheSize;
 u_int	CpuNWayCache;
+u_int	CpuNWayICache;
+u_int	CpuNWayDCache;
 u_int	CpuCacheType;		/* R4K, R5K, RM7K */
 u_int	CpuConfigRegister;
 u_int	CpuStatusRegister;
