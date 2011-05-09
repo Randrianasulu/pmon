@@ -902,55 +902,26 @@ cache_init:
 cache_detect_4way:
     .set mips32
         mfc0    t4, CP0_CONFIG,1
-#        mfc0    $12, $16,1
-	lui	t5, 0x7
-        and    t5, t4, t5    
-	srl	t5, t5, 16    #ic
-        andi    t6, t4, 0x0380
-        srl     t6, t6, 7     #dc
-        addiu   t8, $0, 1
-                                #set dcache way
-        beq     t6, $0,  cache_d1way
-        addiu   t7, $0, 1       #1 way
-        beq     t6, t8,  cache_d2way
-        addiu   t7, $0, 2       #2 way
-        beq     $0, $0, cache_d4way
-        addiu   t7, $0, 4       #4 way
-cache_d1way:
-        beq     $0, $0, 1f
-        addiu   t6, t6, 12      #1 way
-cache_d2way:
-        beq     $0, $0, 1f
-        addiu   t6, t6, 11      #2 way
-cache_d4way:
-        addiu   t6, t6, 10      #4 way (10), 2 way(11), 1 way(12)
-1:                              #set icache way
-        beq     t5, $0,  cache_i1way
-        addiu   t3, $0, 1       #1 way
-        beq     t5, t8,  cache_i2way
-        addiu   t3, $0, 2       #2 way
-        beq     $0, $0, cache_i4way
-        addiu   t3, $0, 4       #4 way
-cache_i1way:
-        beq     $0, $0, 1f
-        addiu   t5, t5, 12
-cache_i2way:
-        beq     $0, $0, 1f
-        addiu   t5, t5, 11
-cache_i4way:
-        addiu   t5, t5, 10      #4 way (10), 2 way(11), 1 way(12)
+	lui	v0, 0x7
+        and    v0, t4, v0    
+	srl	t3, v0, 16    #ic
 
-1:      addiu   t4, $0, 1
-        sllv    t6, t4, t6
-        sllv    t5, t4, t5
+	li	t5,0x800 #32*64
+	srl	v1,t4,22
+	andi	v1,7
+	sll	t5,v1   #InstCacheSetSize
+	sll	t5,t3	#t6 InstCacheSize
 
 
-#if 0
-    la	t0, memvar
-	sw	t7, 0x0(t0) #ways
-	sw	t5, 0x4(t0) #icache size
-	sw	t6, 0x8(t0) #dcache size
-#endif
+        andi    v0, t4, 0x0380
+        srl     t7, v0, 7     #dc
+
+	li	t6,0x800 #32*64
+	srl	v1,t4,13
+	andi	v1,7
+	sll	t6,v1  #DataCacheSetSize
+	sll	t6,t7  #t5 DataCacheSize
+
 ####part 3####
 #	.set	mips3
 	lui	a0, 0x8000
@@ -966,12 +937,7 @@ cache_init_d2way:
 	beq	a3, $0, 1f
 	nop
 	mtc0	$0, CP0_TAGLO
-	beq	t7, 1, 4f
 	cache	Index_Store_Tag_D, 0x0(v0)	# 1 way
-	beq	t7, 2 ,4f
-	cache	Index_Store_Tag_D, 0x1000(v0)	# 2 way
-	cache	Index_Store_Tag_D, 0x2000(v0)	# 4 way
-	cache	Index_Store_Tag_D, 0x3000(v0)
 4:	beq	$0, $0, 1b
 	addiu	v0, v0, 0x20
 1:
@@ -981,12 +947,7 @@ cache_flush_i2way:
 1:	slt	a3, v0, v1
 	beq	a3, $0, 1f
 	nop
-	beq	t3, 1, 4f
 	cache	Index_Invalidate_I, 0x0(v0)	# 1 way
-	beq	t3, 2, 4f
-	cache	Index_Invalidate_I, 0x1000(v0)	# 2 way
-	cache	Index_Invalidate_I, 0x2000(v0)
-	cache	Index_Invalidate_I, 0x3000(v0)	# 4 way
 4:	beq	$0, $0, 1b
 	addiu	v0, v0, 0x20
 1:
@@ -996,12 +957,7 @@ cache_flush_d2way:
 1:	slt	a3, v0, v1
 	beq	a3, $0, 1f
 	nop
-	beq	t7, 1, 4f
 	cache	Index_Writeback_Inv_D, 0x0(v0) 	#1 way
-	beq	t7, 2, 4f
-	cache	Index_Writeback_Inv_D, 0x1000(v0)	# 2 way
-	cache	Index_Writeback_Inv_D, 0x2000(v0)
-	cache	Index_Writeback_Inv_D, 0x3000(v0)	# 4 way
 4:	beq	$0, $0, 1b
 	addiu	v0, v0, 0x20
 	.set	mips0
