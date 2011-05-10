@@ -86,12 +86,6 @@ extern const char *kbd_error_msgs[];
 #define HAVE_FLASH
 #endif
 
-#if (NMOD_X86EMU_INT10 == 0)&&(NMOD_X86EMU == 0)
-int vga_available=0;
-#else
-//#include "vgarom.c"
-#endif
-
 #define REG_TOY_READ0 0xbfe6402c
 #define REG_TOY_READ1 0xbfe64030
 #define REG_TOY_WRITE0 0xbfe64024
@@ -107,7 +101,7 @@ extern void stringserial(char *);
 
 int kbd_available;
 int usb_kbd_available;
-int vga_available;
+int vga_available=0;
 
 static int md_pipefreq = 0;
 static int md_cpufreq = 0;
@@ -137,12 +131,8 @@ static void init_legacy_rtc(void);
 ConfigEntry	ConfigTable[] =
 {
 	 { (char *)COM1_BASE_ADDR, 0, ns16550, 256, CONS_BAUD, NS16550HZ},
-#if NMOD_VGACON >0
-#if NMOD_FRAMEBUFFER >0
+#if NMOD_VGACON >0 && NMOD_FRAMEBUFFER >0
 	{ (char *)1, 0, fbterm, 256, CONS_BAUD, NS16550HZ },
-#else
-	{ (char *)1, 0, vgaterm, 256, CONS_BAUD, NS16550HZ },
-#endif
 #endif
 	{ 0 }
 };
@@ -353,22 +343,15 @@ void
 tgt_devconfig()
 {
 #if NMOD_VGACON > 0
-//zgj	int rc=-1;
-	int rc=1;
+	int rc=0;
 #if NMOD_FRAMEBUFFER > 0 
 	unsigned long fbaddress,ioaddress;
 	extern struct pci_device *vga_dev;
 #endif
 #endif
 	if(have_pci)_pci_devinit(1);	/* PCI device initialization */
-#if (NMOD_X86EMU_INT10 > 0)||(NMOD_X86EMU >0)
-	SBD_DISPLAY("VGAI", 0);
-//zgj	if(!getenv("novga")) 
-		rc = vga_bios_init();
-#endif
 
 #if NMOD_FRAMEBUFFER > 0
-	//	fbaddress=SD_LCD_BAR_BASE;
 		printf("begin fb_init\n");
 		fbaddress = dc_init();
 		fbaddress |= 0xa0000000;
@@ -386,8 +369,8 @@ tgt_devconfig()
         vga_available=1;
 	else 
         vga_available=0;
-
 #endif
+
     config_init();
 
     /*end usb reset*/
@@ -586,8 +569,8 @@ _probe_frequencies()
 	pll=PLL_FREQ_REG(0);
 	ctrl=PLL_FREQ_REG(4);
 	clk=(12+(pll&0x3f))*33333333/2 + ((pll>>8)&0x3ff)*33333333/2/1024;
-        md_pipefreq = (ctrl&(1<<25))?clk/((ctrl>>20)&0x1f):clk/2;
-        md_cpufreq  = (ctrl&(1<<19))?clk/((ctrl>>14)&0x1f):clk/2;
+        md_pipefreq = ((ctrl&0x300)==0x300)?33333333:(ctrl&(1<<25))?clk/((ctrl>>20)&0x1f):clk/2;
+        md_cpufreq  = ((ctrl&0xc00)==0xc00)?33333333:(ctrl&(1<<19))?clk/((ctrl>>14)&0x1f):clk/2;
 	}
 #endif
 
