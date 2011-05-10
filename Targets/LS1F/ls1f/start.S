@@ -165,6 +165,7 @@ ext_map_and_reboot:
 
 /* General exception */
 	.align	7			/* bfc00380 */
+	li s0,(0xbfc00000-0x81000000)
 	la	a0, v380_msg
 	bal	stringserial
 	nop
@@ -199,6 +200,11 @@ exc_common:
 	nop
 	PRINTSTR("\r\nEPC=")
 	mfc0	a0, COP_0_EXC_PC
+	bal	hexserial
+	nop
+
+	PRINTSTR("\r\nBADADDR=")
+	mfc0	a0, COP_0_BAD_VADDR
 	bal	hexserial
 	nop
 
