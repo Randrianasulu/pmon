@@ -978,35 +978,6 @@ cache_init_finish:
 #define REG_ADDRESS 0x0
 #define CONFIG_BASE 0xaffffe00
 
-        .global ddr2_config_old
-        .ent    ddr2_config_old
-        .set    noreorder
-       # .set    mips3
-ddr2_config_old:
-    la      t0, ddr2_reg_data_old
-    addu    t0, t0, s0
-    li      t1, 0x1d
-    li      t2, CONFIG_BASE
-
-reg_write_old:
-    ld      a1, 0x0(t0)
-    sd      a1, REG_ADDRESS(t2)
-    subu    t1, t1, 0x1
-    addiu     t0, t0, 0x8
-    bne     t1, $0, reg_write_old
-    addiu     t2, t2, 0x10
-    
-    ############start##########
-    li      t2, CONFIG_BASE
-    la		t0,DDR2_CTL_start_DATA_LO_old
-    #la		t0,ddr2_start_reg
-    addu    	t0, t0, s0
-    ld      a1, 0x0(t0)
-    sd      a1, 0x30(t2)
-
-    jr      ra
-    nop
-    .end    ddr2_config_old
 #ddr2 by cww 20090901
 #if 1
 #include "ddr2fconfig.S"

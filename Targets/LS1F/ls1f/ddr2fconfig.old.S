@@ -1,8 +1,7 @@
 #define REG_ADDRESS 0x0
 #define CONFIG_BASE 0xaffffe00
     
-
-/*
+	.text
         .global ddr2_config_old
         .ent    ddr2_config_old
         .set    noreorder
@@ -32,7 +31,6 @@ reg_write_old:
     jr      ra
     nop
     .end    ddr2_config_old
-    */
 
 	.rdata
 	.align 5
