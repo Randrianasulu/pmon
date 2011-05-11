@@ -190,7 +190,7 @@ int yaffsfs_Match(char a, char b)
 // Curveball2 Might have "/x/ and "/x/y". Need to return the longest match
 static yaffs_Device *yaffsfs_FindDevice(const char *path, char **restOfPath)
 {
-        int idx = 0,len=0;;
+        int idx = 0,len=0;
         const char *leftOver;
 	const char *p;
 	yaffs_Device *retval = NULL;
