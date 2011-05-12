@@ -130,22 +130,15 @@ uncached:
  */
 	.align	9
 ext_map_and_reboot:
-	bal	CPU_TLBClear
-	nop
-
-	li	a0, 0xc0000000
-	li	a1, 0x40000000
-	bal	CPU_TLBInit
-	nop
-	la	v0, tgt_reboot
-	la	v1, start
-	subu	v0, v1
-	lui	v1, 0xffc0
-	addu	v0, v1
-	jr	v0
-	nop
-
- /* */
+	li	a0,0x10000000 /*test from 0xbfcxxxxx or 0xff20xxxx */
+	and	a0,ra
+	bnez	a0,1f
+	la	a0,_start
+	li	s0,0xbfc00000
+	subu	s0,a0
+1:
+	la	a0, v200_msg
+	bal	stringserial
 	nop
 	b	exc_common
 
@@ -218,19 +211,6 @@ exc_common:
 	nop
 1:
 	b 1b
-	nop
-
-
-	PRINTSTR("\r\nDERR0=")
-	cfc0	a0, COP_0_DERR_0
-	bal	hexserial
-	nop
-	PRINTSTR("\r\nDERR1=")
-	cfc0	a0, COP_0_DERR_1
-	bal	hexserial
-	nop
-
-	b	ext_map_and_reboot
 	nop
 
 	.align 9
