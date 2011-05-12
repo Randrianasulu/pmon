@@ -1192,15 +1192,17 @@ cksum(void *p, size_t s, int set)
 void
 nvram_get(char *buffer)
 {
-	spi_read_area(0x80000,buffer,NVRAM_SIZE);
+	spi_read_area(0xb0000,buffer,NVRAM_SIZE);
+	spi_initr();
 }
 
 void
 nvram_put(char *buffer)
 {
 	int i;
-	spi_erase_area(0x80000,0x80000+NVRAM_SIZE,0x10000);
-	spi_write_area(0x00080000,buffer,NVRAM_SIZE);
+	spi_erase_area(0xb0000,0xb0000+NVRAM_SIZE,0x10000);
+	spi_write_area(0x000b0000,buffer,NVRAM_SIZE);
+	spi_initr();
 }
 
 #endif
