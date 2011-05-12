@@ -165,7 +165,13 @@ ext_map_and_reboot:
 
 /* General exception */
 	.align	7			/* bfc00380 */
-	li s0,(0xbfc00000-0x81000000)
+	li	a0,0x10000000 /*test from 0xbfcxxxxx or 0xff20xxxx */
+	and	a0,ra
+	bnez	a0,1f
+	la	a0,_start
+	li	s0,0xbfc00000
+	subu	s0,a0
+1:
 	la	a0, v380_msg
 	bal	stringserial
 	nop
