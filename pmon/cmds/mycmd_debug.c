@@ -354,34 +354,62 @@ return 0;
 }
 
 
-#if __mips >= 3
 static	unsigned long long lrdata;
 static int lwl(int argc,char **argv)
 {
 	unsigned long long addr;
 	if(argc!=2)return -1;
 	addr=nr_str2addr(argv[1],0,0);
-	  asm("ld  $2,(%0);\n"
+	  asm("lw  $2,%0;\n"
 "		   lwl $2,(%1);\n"
-"		   sw $2,(%0)\n"
-		  ::"r"(&lrdata),"r"(addr)
+"		   sw $2,%0\n"
+		  ::"m"(lrdata),"r"(addr)
 		  :"$2"
 		 );
 	  nr_printf("data=%016llx\n",lrdata);
+	  return 0;
 }
 static int lwr(int argc,char **argv)
 {
 	unsigned long long addr;
 	if(argc!=2)return -1;
 	addr=nr_str2addr(argv[1],0,0);
-	  asm("ld $2,(%0);\n"
+	  asm("lw $2,%0;\n"
 "		   lwr $2,(%1);\n"
-"		   sw $2,(%0)\n"
-		  ::"r"(&lrdata),"r"(addr)
+"		   sw $2,%0\n"
+		  ::"m"(lrdata),"r"(addr)
 		  :"$2"
 		 );
 	  nr_printf("data=%016llx\n",lrdata);
+	  return 0;
 }
+
+static int swl(int argc,char **argv)
+{
+	unsigned long long addr;
+	if(argc!=2)return -1;
+	addr=nr_str2addr(argv[1],0,0);
+	  asm("lw  $2,%0;\n"
+"		   swl $2,(%1);\n"
+		  ::"m"(lrdata),"r"(addr)
+		  :"$2"
+		 );
+	  return 0;
+}
+static int swr(int argc,char **argv)
+{
+	unsigned long long addr;
+	if(argc!=2)return -1;
+	addr=nr_str2addr(argv[1],0,0);
+	  asm("lw $2,(%0);\n"
+"		   swr $2,(%1);\n"
+		  ::"r"(&lrdata),"r"(addr)
+		  :"$2"
+		 );
+	  return 0;
+}
+
+#if __mips >= 3
 static int ldl(int argc,char **argv)
 {
 	unsigned long long addr;
@@ -408,13 +436,14 @@ static int ldr(int argc,char **argv)
 		 );
 	  nr_printf("data=%016llx\n",lrdata);
 }
-
+#endif
 static int linit(int argc,char **argv)
 {
-	lrdata=0;
+	if(argc>1)
+	lrdata=strtoull(argv[1],0,0);
+	  nr_printf("data=%016llx\n",lrdata);
 	return 0;
 }
-#endif
 
 #if 1
 double sin(double);
@@ -567,13 +596,15 @@ static const Cmd Cmds[] =
 	{"cacheflush","addr size rw",0,"cacheflush addr size rw",cmd_cacheflush,0,99,CMD_REPEAT},
 	{"cflush","addr size rw",0,"cflush addr size rw",cmd_cflush,0,99,CMD_REPEAT},
 	{"testcpu","",0,"testcpu",cmd_testcpu,2,2,CMD_REPEAT},
-#if __mips >= 3
 	{"lwl","n",0,"lwl n",lwl,2,2,CMD_REPEAT},
 	{"lwr","n",0,"lwr n",lwr,2,2,CMD_REPEAT},
+	{"swl","n",0,"swl n",swl,2,2,CMD_REPEAT},
+	{"swr","n",0,"swr n",swr,2,2,CMD_REPEAT},
+#if __mips >= 3
 	{"ldl","n",0,"ldl n",ldl,2,2,CMD_REPEAT},
 	{"ldr","n",0,"ldr n",ldr,2,2,CMD_REPEAT},
-	{"linit","",0,"linit",linit,1,1,CMD_REPEAT},
 #endif
+	{"linit","",0,"linit",linit,1,2,CMD_REPEAT},
 	{"mytest","",0,"mytest",mytest,1,1,CMD_REPEAT},
 #if PCI_IDSEL_CS5536 != 0
 	{"cs5536_gpio","reg out:? in:? out_aux1:? out_aux2:? in_aux1:? pu:? val:?",0,"set cs5536 gpio",cs5536_gpio,2,99,CMD_REPEAT},
