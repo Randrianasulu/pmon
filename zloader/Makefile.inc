@@ -87,7 +87,7 @@ startram.o:
 	$(CC) -D_LOCORE -G 0  -nostdinc   -DMIPS  -DCONS_BAUD="B115200"  -DCONFIG_CACHE_64K_4WAY  -D_KERNEL -D__OpenBSD__ -DPMON -D__PMON__ -mno-abicalls -c startram.S ${ZLOADER_OPTIONS} -D MEMSIZE=${MEMSIZE}
 # $(CC) -D_LOCORE -G 0  -nostdinc   -DMIPS  -DCONS_BAUD="B115200"  -DCONFIG_CACHE_64K_4WAY  -D_KERNEL -D__OpenBSD__ -DPMON -D__PMON__ -EL -mno-abicalls -mcpu=r4000 -c startram.S -D MEMSIZE=${MEMSIZE}
 zloader.o: zloader.c inflate.c  malloc.c  memop.c  pmon.bin.c initmips.c
-	$(CC) -g -c zloader.c ${ZLOADER_OPTIONS} -DMEMSIZE=${MEMSIZE}
+	$(CC) -O2 ${DEBUG} -c zloader.c ${ZLOADER_OPTIONS} -DMEMSIZE=${MEMSIZE}
 
 zlib_loader.o: zlib_loader.c  ./zlib_gzip zlib_pmon.bin.c initmips.c
 	cd zlib_inflate;$(CC) -I ../../include -c *.c
