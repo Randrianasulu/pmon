@@ -801,6 +801,8 @@ LEAF(suspend_resume)
 	mtc0	t1,	$12
 	lw	t1,	68(t0)
 	mtc0	t1,	$4
+	lw	t1,	72(t0)
+	mtc0	t1,	$5
 
 	jr	ra
 	nop
