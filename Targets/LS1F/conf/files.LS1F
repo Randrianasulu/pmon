@@ -11,6 +11,7 @@ file	Targets/LS1F/dev/ac97.c
 file	Targets/LS1F/ls1f/tgt_cmd.c
 file	Targets/LS1F/ls1f/memscan.c
 file	Targets/LS1F/dev/hpet.c
+file	Targets/LS1F/dev/acpi.c
 #sw
 file	sys/dev/gmac/synopGMAC_Host.c               gmac
 file	sys/dev/gmac/synopGMAC_Dev.c                gmac

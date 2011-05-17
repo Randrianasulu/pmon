@@ -177,11 +177,37 @@ ext_map_and_reboot:
 	b	exc_common
 
 	.align	7			/* bfc00480 */
-	la	a0, v480_msg
-	bal	stringserial
+#la	a0, v480_msg
+#	bal	stringserial
+#	nop
+#b	exc_common
+#if 0
+	li s0,(0xbfc00000-0x81000000)
+	PRINTSTR("ACPI_MEM_CEHCK=")
+	li	a1, 0
+	li	t0, 0xa0000000
+	li	t2, 0xa0100000
+1:	lw	t1,(t0)
+	addu	a1, a1, t1
+	addiu t0, t0, 4
+	bne	t0,t2,1b
 	nop
-	b	exc_common
+	addu a0,a1,zero
+	bal	hexserial
+	nop
+	PRINTSTR("\r\n")
+#endif
 
+	li	t0, 0xaffffe30
+	lw	t1, 0x4(t0)
+	li	t2, 0x1
+	or	t1, t1, t2
+	sw	t1, 0x4(t0)
+
+	li	t0, 0xbfe7c008
+	lw	t1, 0x0(t0)
+	ori t1, t1, 0x2000
+	sw	t1, 0x0(t0)
 	
 	.align	8			/* bfc00500 */
 exc_common:
@@ -429,6 +455,15 @@ cpu_win_fixup:
 	 * reading the I2C EEROM on the DIMMS
 	 */
 
+	/*
+	 * set gpio 66 to make ddr #CKE low
+	 */
+	li	t0,0xbfd010c8
+	li	t1,0x4
+	sw	t1,(t0)
+	li	t0,0xbfd010f8
+	li	t1,0x0
+	sw	t1,(t0)
 
 
 #ddr2config by cww 20090901
@@ -470,6 +505,81 @@ do_caches:
     and    a0,a0,~((1<<12) | 3)
 	or     a0,a0,2
     mtc0   a0,COP_0_CONFIG
+	
+
+acpi_begin:
+
+/* Access ACPI controller to check out if the machine is resuming from suspend 
+   	   Zeng Lu <zenglu@loongson.cn> */
+#	li	t0,	0xbfe7c000
+#	lw	t1,(t0)
+#and t1,	t1,	(1<<15)//WAK_STS
+#	beqz	t1,	acpi_end
+#	nop
+	/*clear wakeup events */
+	li	t0, 0xbfe7c000
+	li	t1, -1
+	sw	t1, (t0)
+	li	t0, 0xbfe7c020
+	li	t1, -1
+	sw	t1, (t0)
+
+	li	t0,	0xbfe7c008
+	lw	t1,	(t0)
+#if 0 //clear slp_type if needed,this bit will be cleared in os
+	li	t2, 0
+	sw	t2, (t0)
+#endif
+
+	srl	t1,	10
+	and	t1,	t1,	7//SLP_TYP
+	sub	t1,	t1,	5
+	bnez	t1,	acpi_end	/* Resuming from suspend */
+	nop
+
+	PRINTSTR("ACPI_CONTEXT=")
+	li	t0,	0xa01ffc00
+	li	t1,	0xa01ffc48
+1:	lw	a0,	(t0)
+	bal	hexserial
+	nop
+	PRINTSTR("\r\n")
+	addiu t0,t0,4
+	bne t0,t1,1b
+	nop
+
+	 mfc0   a0,COP_0_CONFIG
+    and    a0,a0,~((1<<12) | 3)
+	or     a0,a0,3
+    mtc0   a0,COP_0_CONFIG
+
+#if 0
+	PRINTSTR("ACPI_MEM_CEHCK=")
+	li	a1, 0
+	li	t0, 0xa0000000
+	li	t2, 0xa0100000
+1:	lw	t1,(t0)
+	addu	a1, a1, t1
+	addiu t0, t0, 4
+	bne	t0,t2,1b
+	nop
+	addu a0,a1,zero
+	bal	hexserial
+	nop
+	PRINTSTR("\r\n")
+#endif
+
+
+	bal	CPU_TLBClear
+	nop
+	PRINTSTR("ACPI_RESUME\r\n")
+	bal	suspend_resume
+	nop
+	/* Resume will never get here */
+1:
+	b	1b
+	nop
+acpi_end:/* Startup as usual */
 
 
 PRINTSTR("begin test\r\n");
@@ -662,6 +772,39 @@ LEAF(CPU_TLBInit)
 	jr	ra
 	nop
 END(CPU_TLBInit)
+
+/*
+ * Resume the CPU state, jump to the kernel
+ */
+LEAF(suspend_resume)
+	li	t0,	0xa01ffc00
+	lw	ra,	(t0)
+	lw	sp,	4(t0)
+	lw	s8,	8(t0)
+	lw	gp,	12(t0)
+	lw	s0,	16(t0)
+	lw	s1,	20(t0)
+	lw	s2,	24(t0)
+	lw	s3,	28(t0)
+	lw	s4,	32(t0)
+	lw	s5,	36(t0)
+	lw	s6,	40(t0)
+	lw	s7,	44(t0)
+
+	lw	k0,	48(t0)
+	lw	k1,	52(t0)
+
+	lw	v0,	56(t0)
+	lw	v1,	60(t0)
+
+	lw	t1,	64(t0)
+	mtc0	t1,	$12
+	lw	t1,	68(t0)
+	mtc0	t1,	$4
+
+	jr	ra
+	nop
+END(suspend_resume)
 
 LEAF(stringserial)
 	nop

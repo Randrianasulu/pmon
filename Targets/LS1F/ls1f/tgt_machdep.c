@@ -452,7 +452,7 @@ tgt_devinit()
 //sw: set clock delay
 	(*(volatile u32*)(0xbfd00410) = (0x24a8));
 //sw: enable gpio	
-	(*(volatile u32*)(0xbfd010c8) = (0xf00000));
+	(*(volatile u32*)(0xbfd010c8) = (0xf00004));
 	(*(volatile u32*)(0xbfd010d8) = (0xf00000));
 //	(*(volatile u32*)(0xbc180000+0x20) = 0x0;
 //	(*(volatile u32*)(0xbc180000+0x24) = 0x80000000;
