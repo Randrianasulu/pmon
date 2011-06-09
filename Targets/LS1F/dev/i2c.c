@@ -38,11 +38,10 @@ int j;
 
  if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
 
-  * GS_SOC_I2C_CR  = CR_READ;
+  * GS_SOC_I2C_CR  = CR_READ|I2C_WACK; /*last read not send ack*/
   while(*GS_SOC_I2C_SR & SR_TIP);
 
     buf[i] = * GS_SOC_I2C_TXR;
-  if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
   * GS_SOC_I2C_CR  = CR_STOP;
   * GS_SOC_I2C_SR;
  

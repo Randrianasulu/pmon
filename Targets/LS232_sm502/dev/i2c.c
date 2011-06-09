@@ -38,11 +38,11 @@ int j;
 
  if((* LS232_I2C_SR) & SR_NOACK) return i;
 
-  * LS232_I2C_CR  = CR_READ;
+  * LS232_I2C_CR  = CR_READ|I2C_WACK; /*last read not send ack*/
+
   while(*LS232_I2C_SR & SR_TIP);
 
     buf[i] = * LS232_I2C_TXR;
-  if((* LS232_I2C_SR) & SR_NOACK) return i;
   * LS232_I2C_CR  = CR_STOP;
   * LS232_I2C_SR;
  
