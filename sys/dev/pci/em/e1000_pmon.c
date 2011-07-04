@@ -796,7 +796,7 @@ static void *pci_alloc_consistent(void *hwdev, size_t size,
 {
 void *buf;
     buf = kmalloc(size,GFP_KERNEL);
-//    pci_sync_cache(hwdev, buf,size, SYNC_W);
+    pci_sync_cache(hwdev, buf,size, SYNC_R);
 
     buf = (unsigned char *)CACHED_TO_UNCACHED(buf);
     *dma_handle =vtophys(buf);
