@@ -189,3 +189,5 @@ select raw_ether
 select cmd_testfire
 option COM3_BASE_ADDR=0xbe000000
 select e100
+select mod_txt
+select mod_cat
