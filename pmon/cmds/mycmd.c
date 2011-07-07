@@ -1108,10 +1108,11 @@ printf("status:%s %s\n",ifr->ifr_flags&IFF_UP?"up":"down",ifr->ifr_flags&IFF_RUN
 }
 else if(argc>=3)
 {
-char *cmds[]={"down","up","remove","stat","setmac","readrom","writerom"};
+char *cmds[]={"down","up","remove","stat","setmac","readrom","writerom","readphy","writephy","0x"};
 int i;
 	for(i=0;i<sizeof(cmds)/sizeof(char *);i++)
-	if(!strcmp(argv[2],cmds[i]))break;
+	if(!strncmp(argv[2],cmds[i],strlen(cmds[i])))break;
+
 	switch(i)
 	{
 	case 0://down
@@ -1186,6 +1187,39 @@ int i;
                 }
             }
                 break;
+		case 7: //readphy
+            {
+                struct ifnet *ifp;
+                ifp = ifunit(argv[1]);
+                if(ifp)
+                {
+                long arg[2]={argc-2,(long)&argv[2]};
+                ifp->if_ioctl(ifp,SIOCRDPHY,arg);
+                }
+            }
+                break;
+		case 8: //writephy
+			{
+                struct ifnet *ifp;
+                ifp = ifunit(argv[1]);
+                if(ifp)
+                {
+                long arg[2]={argc-2,(long)&argv[2]};
+                ifp->if_ioctl(ifp,SIOCWRPHY,arg);
+                }
+			}
+			break;
+		case sizeof(cmds)/sizeof(cmds[0]) -1:
+			{
+                struct ifnet *ifp;
+                ifp = ifunit(argv[1]);
+                if(ifp)
+                {
+                long arg[2]={argc-2,(long)&argv[2]};
+                ifp->if_ioctl(ifp,strtoul(argv[2],0,0),arg);
+                }
+			}
+			break;
 
 	default:
 		while(ioctl(s, SIOCGIFADDR, ifra)==0)

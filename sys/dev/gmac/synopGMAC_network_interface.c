@@ -1948,6 +1948,7 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
         }
         break;
 */
+	   case SIOCWRPHY:
        case SIOCWREEPROM:
                 {
                 long *p=data;
@@ -1982,6 +1983,7 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
 	}
 		}
                 break;
+	   case	SIOCRDPHY:
        case SIOCRDEEPROM:
                 {
                 long *p=data;
@@ -1996,7 +1998,7 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
 		ac = p[0];
 		av = p[1];
 		gmacdev = (synopGMACdevice *)adapter->synopGMACdev;
-		if(ac<1)phybase = gmacdev->PhyBase;
+		if(ac<2)phybase = gmacdev->PhyBase;
 		else phybase = strtoul(av[1],0,0);
 		for(i=0;i<32;i++)
 		{
