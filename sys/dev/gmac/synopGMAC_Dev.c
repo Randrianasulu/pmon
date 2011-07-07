@@ -1392,6 +1392,24 @@ s32 synopGMAC_attach (synopGMACdevice * gmacdev, u64 macBase, u64 dmaBase, u32 p
 	gmacdev->MacBase = macBase;
 	gmacdev->DmaBase = dmaBase;
 	gmacdev->PhyBase = phyBase;
+	{
+		int i,j;
+		u16 data;
+
+		for (i = phyBase,j=0;j<32;i=(i+1)&0x1f) 
+		{
+			synopGMAC_read_phy_reg(gmacdev->MacBase,i,2,&data);
+			if(data != 0 && data != 0xffff) break;
+			synopGMAC_read_phy_reg(gmacdev->MacBase,i,3,&data);
+			if(data != 0 && data != 0xffff) break;
+		}
+
+		if(j==32) { 
+			printf("phy_detect: can't find PHY!\n");
+		}
+
+		gmacdev->PhyBase = i;
+	}
 
 	/* Program/flash in the station/IP's Mac address */
 	synopGMAC_set_mac_addr(gmacdev,GmacAddr0High,GmacAddr0Low, mac_addr); 
