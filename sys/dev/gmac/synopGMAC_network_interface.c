@@ -2255,9 +2255,30 @@ s32  synopGMAC_init_network_interface(char* xname,u64 synopGMACMappedAddr)
 	struct ifnet* ifp;
 
 	static u8 mac_addr0[6] = DEFAULT_MAC_ADDRESS;
+	static int inited = 0;
 	int i;
 	u16 data;
 	struct synopGMACNetworkAdapter * synopGMACadapter;
+	if(!inited)
+	{
+		u8 v;
+		char *s=getenv("ethaddr");
+		if(s){
+			int allz,allf;
+			u8 macaddr[6];
+
+			for(i = 0, allz = 1, allf = 1; i < 6; i++) {
+				gethex(&v, s, 2);
+				macaddr[i] = v;
+				s += 3;         /* Don't get to fancy here :-) */
+				if(v != 0) allz = 0;
+				if(v != 0xff) allf = 0;
+			} 
+			if(!allz && !allf)
+				memcpy(mac_addr0, macaddr, 6);
+		}
+		inited = 1;
+	}
 
 	
 	TR("Now Going to Call register_netdev to register the network interface for GMAC core\n");
