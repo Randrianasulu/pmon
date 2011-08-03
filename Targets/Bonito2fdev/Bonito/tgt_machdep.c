@@ -362,7 +362,7 @@ void
 initmips(unsigned int memsz)
 {
 tgt_fpuenable();
-#ifdef DEVBD2F_SM502
+#if defined(DEVBD2F_SM502) && !defined(DEVBD2F_SM502_GOLDING)
 {
 /*set lio bus to 16 bit*/
 volatile int *p=0xbfe00108;
