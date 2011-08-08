@@ -194,3 +194,4 @@ option OUTPUT_TO_BOTH
 #option TEST_SM502_UART0
 #option	USE_SM502_UART0
 option DEVBD2F_SM502_GOLDING
+select fpga
