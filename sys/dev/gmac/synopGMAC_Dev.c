@@ -1396,7 +1396,7 @@ s32 synopGMAC_attach (synopGMACdevice * gmacdev, u64 macBase, u64 dmaBase, u32 p
 		int i,j;
 		u16 data;
 
-		for (i = phyBase,j=0;j<32;i=(i+1)&0x1f) 
+		for (i = phyBase,j=0;j<32;i=(i+1)&0x1f,j++) 
 		{
 			synopGMAC_read_phy_reg(gmacdev->MacBase,i,2,&data);
 			if(data != 0 && data != 0xffff) break;
