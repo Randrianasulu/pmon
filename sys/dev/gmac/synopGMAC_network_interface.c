@@ -1961,6 +1961,7 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
 		ac = p[0];
 		av = p[1];
 		gmacdev = (synopGMACdevice *)adapter->synopGMACdev;
+		phybase = gmacdev->PhyBase;
 	if(ac>1)
 	{
 	 //offset:data,data
