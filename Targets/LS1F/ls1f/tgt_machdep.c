@@ -54,6 +54,7 @@
 #include <machine/cpu.h>
 #include <machine/pio.h>
 #include "pflash.h"
+#include "nand.h"
 #include "dev/pflash_tgt.h"
 
 #include "include/fcr.h"
@@ -276,7 +277,9 @@ initmips(unsigned int memsz)
 	SBD_DISPLAY("BEV0",0);
 	
 	printf("BEV in SR set to zero.\n");
+#if NNAND
 	ls1g_soc_nand_init();
+#endif
 
 #ifdef  MEMSCAN	
 	memscan();
@@ -379,7 +382,7 @@ tgt_devconfig()
 	*(volatile int *)0xbff10204 = 0x40000000;
 #else
 	/*ls1g usb reset stop*/
-	*(volatile int *)0xbfd00424 = 0x80000000;
+	*(volatile int *)0xbfd00424 |= 0x80000000;
 #endif
 
     printf("====before configure\n");

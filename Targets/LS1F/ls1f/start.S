@@ -376,6 +376,10 @@ locate:
 	
 #endif
 
+/*disable all gpio*/
+	li a0,0xbfd00000
+	sw zero,0x10c0(a0)
+	sw zero,0x10c4(a0)
 
 	li a0,0
 	bal	initserial
@@ -475,6 +479,22 @@ cpu_win_fixup:
         bal     ddr2_config
         nop
         PRINTSTR("DDR2 config end\r\n")
+#ifdef CONFIG_DDR16BIT
+/*16bit ddr*/ 
+	li a0,0xbfd00000
+	li a1,0x110000
+	lw a2,0x424(a0);
+	or a2,a1
+	sw a2,0x424(a0);
+#endif
+
+#ifdef CONFIG_PHY100M
+/*100M phy*/
+	li a0,0xbfd00000
+	lw a2,0x424(a0);
+	ori a2,5
+	sw a2,0x424(a0);
+#endif
 
 
 #define CF_7_SE         (1 << 3)        /* Secondary cache enable */
