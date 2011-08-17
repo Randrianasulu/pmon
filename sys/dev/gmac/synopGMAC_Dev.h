@@ -1633,7 +1633,6 @@ void synopGMAC_tx_activate_flow_control(synopGMACdevice * gmacdev);
 void synopGMAC_tx_deactivate_flow_control(synopGMACdevice * gmacdev);
 void synopGMAC_pause_control(synopGMACdevice *gmacdev);
 s32 synopGMAC_mac_init(synopGMACdevice * gmacdev);
-s32 synopGMAC_check_phy_init (synopGMACdevice * gmacdev);
 s32 synopGMAC_set_mac_addr(synopGMACdevice *gmacdev, u32 MacHigh, u32 MacLow, u8 *MacAddr );
 s32 synopGMAC_get_mac_addr(synopGMACdevice *gmacdev, u32 MacHigh, u32 MacLow, u8 *MacAddr );
 s32 synopGMAC_attach (synopGMACdevice * gmacdev, u64 macBase, u64 dmaBase, u32 phyBase,u8 *mac_addr);
