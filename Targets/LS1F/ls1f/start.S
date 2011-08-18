@@ -364,9 +364,15 @@ locate:
 #else
     li  a0, 0xbfe78030
     /*31:dc_div_en,30-26:dc_div,25:cpu_div_en,24-20:cpu_div,19:ddr_div_en,18-14:ddr_div*/
-    li v1,(1<<31)|(4<<26)|(1<<25)|(2<<20)|(1<<19)|(2<<14)|0x2a00
+#if 0
+    li v1,0x92298000
+    li  a1, 0x39f0a
+#else
+   // li v1, (1<<31)|(4<<26)|(1<<25)|(2<<20)|(1<<19)|(4<<14)|0x2a00|0xf00
+    li v1, (1<<31)|(4<<26)|(1<<25)|(1<<20)|(1<<19)|(2<<14)|0x2a00
+    li  a1,0
+#endif
     sw v1,4(a0)
-    li  a1, 4
     sw a1,(a0);
 
 1:
@@ -472,9 +478,6 @@ cpu_win_fixup:
 
 #ddr2config by cww 20090901
         li      msize,0x0f000000
-        PRINTSTR("DDR2 config begin_2\r\n")
-        bal     ddr2_config_old
-        nop
         PRINTSTR("DDR2 config begin_2\r\n")
         bal     ddr2_config
         nop
@@ -1132,6 +1135,5 @@ cache_init_finish:
 #ddr2 by cww 20090901
 #if 1
 #include "ddr2fconfig.S"
-#include "ddr2fconfig.old.S"
 #endif
 

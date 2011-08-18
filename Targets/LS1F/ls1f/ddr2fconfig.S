@@ -112,14 +112,14 @@ DDR2_CTL_09_DATA_HI:	.word 0x0000060c #800
 DDR2_CTL_10_DATA_LO:	.word 0x3f0f0200 #400
 //DDR2_CTL_10_DATA_LO:	.word 0x3f1a021b #800
 //0_0011101 dll_dqs_delay_2 0_0011101 dll_dqs_delay_1 0_0011101 dll_dqs_delay_0 00_111111 command_age_count 
-DDR2_CTL_10_DATA_HI:	.word 0x1010103f
+DDR2_CTL_10_DATA_HI:	.word 0x2222223f
 //0_0011101 dll_dqs_delay_6 0_0011101 dll_dqs_delay_5 0_0011101 dll_dqs_delay_4 0_0011101 dll_dqs_delay_3
-DDR2_CTL_11_DATA_LO:	.word 0x1d1d1d10
+DDR2_CTL_11_DATA_LO:	.word 0x1d1d1d1d
 //0_1011111 wr_dqs_shift 0_1111111 dqs_out_shift 0_0011101 dll_dqs_delay_8 0_0011101 dll_dqs_delay_7 
 //DDR2_CTL_11_DATA_HI:	.word 0x3f601d1d#better
 //DDR2_CTL_11_DATA_HI:	.word 0x38481d1d#slice 1 error
-//DDR2_CTL_11_DATA_HI:	.word 0x42501d1d
-DDR2_CTL_11_DATA_HI:	.word 0x5f7f1d1d
+DDR2_CTL_11_DATA_HI:	.word 0x42501d1d
+//DDR2_CTL_11_DATA_HI:	.word 0x5f7f1d1d
 //00001011 tras_min 00000000 out_of_range_length 00000000 ecc_u_synd 00000000 ecc_c_synd
 //DDR2_CTL_12_DATA_LO:	.word 0x05000000 #125 M
 //DDR2_CTL_12_DATA_LO:	.word 0x0b000000 #400
