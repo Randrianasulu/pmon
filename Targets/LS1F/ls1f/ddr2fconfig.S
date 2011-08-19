@@ -36,14 +36,15 @@ reg_write:
     addiu     t0, t0, 0x8
     bne     t1, $0, reg_write
     addiu     t2, t2, 0x10
-    
+
     ############start##########
     li      t2, CONFIG_BASE
-    la		t0,DDR2_CTL_03_DATA_LO
+    la		t0,DDR2_CTL_03_DATA_HI
     addu    	t0, t0, s0
+10:    
     lw      a1, 0x0(t0)
-    sw      a1, 0x30(t2)
-    lw      a1, 0x4(t0)
+    sw      a1, 0x34(t2)
+    lw      a1, 0x0(t0)
     ori a1,0x0100
     sw      a1, 0x34(t2)
 
@@ -52,7 +53,16 @@ reg_write:
         andi    a1, 0x01
         beqz    a1, 9b
         nop
-
+	lh	a1, 0xf2(t2)
+	sltiu 	a1,5
+	beqz 	a1,1f
+	nop
+	lw	a1, 0xf4(t2)
+	addiu   a1,4
+	sw	a1, 0xf4(t2)
+	b 10b
+	nop
+1:
     jr      ra
     nop
     .end    ddr2_config
@@ -159,7 +169,7 @@ DDR2_CTL_14_DATA_HI:	.word 0x00100010
 DDR2_CTL_15_DATA_LO:	.word 0x00000004
 //0000000_010110100 dqs_out_shift_bypass 0000000_010000111 dll_start_point 
 //DDR2_CTL_15_DATA_HI:	.word 0x00b40010
-DDR2_CTL_15_DATA_HI:	.word 0x00000040
+DDR2_CTL_15_DATA_HI:	.word 0x00000008
 //000000_0000000000 int_ack 0000000_010000111 wr_dqs_shift_bypass
 //DDR2_CTL_16_DATA_LO:	.word 0x00000087
 DDR2_CTL_16_DATA_LO:	.word 0x00000044
