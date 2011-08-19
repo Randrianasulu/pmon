@@ -39,11 +39,19 @@ reg_write:
     
     ############start##########
     li      t2, CONFIG_BASE
-    la		t0,DDR2_CTL_start_DATA_LO
-    #la		t0,ddr2_start_reg
+    la		t0,DDR2_CTL_03_DATA_LO
     addu    	t0, t0, s0
-    ld      a1, 0x0(t0)
-    sd      a1, 0x30(t2)
+    lw      a1, 0x0(t0)
+    sw      a1, 0x30(t2)
+    lw      a1, 0x4(t0)
+    ori a1,0x0100
+    sw      a1, 0x34(t2)
+
+9: //not_locked
+        ld	a1, 0x10(t2)
+        andi    a1, 0x01
+        beqz    a1, 9b
+        nop
 
     jr      ra
     nop
@@ -114,11 +122,11 @@ DDR2_CTL_10_DATA_LO:	.word 0x3f0f0200 #400
 //0_0011101 dll_dqs_delay_2 0_0011101 dll_dqs_delay_1 0_0011101 dll_dqs_delay_0 00_111111 command_age_count 
 DDR2_CTL_10_DATA_HI:	.word 0x1d1d1d3f
 //0_0011101 dll_dqs_delay_6 0_0011101 dll_dqs_delay_5 0_0011101 dll_dqs_delay_4 0_0011101 dll_dqs_delay_3
-DDR2_CTL_11_DATA_LO:	.word 0x1d1d1d00
+DDR2_CTL_11_DATA_LO:	.word 0x1d1d1d1d
 //0_1011111 wr_dqs_shift 0_1111111 dqs_out_shift 0_0011101 dll_dqs_delay_8 0_0011101 dll_dqs_delay_7 
 //DDR2_CTL_11_DATA_HI:	.word 0x3f601d1d#better
 //DDR2_CTL_11_DATA_HI:	.word 0x38481d1d#slice 1 error
-DDR2_CTL_11_DATA_HI:	.word 0x42501d1d
+DDR2_CTL_11_DATA_HI:	.word 0x50701d1d
 //DDR2_CTL_11_DATA_HI:	.word 0x5f7f1d1d
 //00001011 tras_min 00000000 out_of_range_length 00000000 ecc_u_synd 00000000 ecc_c_synd
 //DDR2_CTL_12_DATA_LO:	.word 0x05000000 #125 M
@@ -151,7 +159,7 @@ DDR2_CTL_14_DATA_HI:	.word 0x00100010
 DDR2_CTL_15_DATA_LO:	.word 0x00000004
 //0000000_010110100 dqs_out_shift_bypass 0000000_010000111 dll_start_point 
 //DDR2_CTL_15_DATA_HI:	.word 0x00b40010
-DDR2_CTL_15_DATA_HI:	.word 0x00000008
+DDR2_CTL_15_DATA_HI:	.word 0x00000040
 //000000_0000000000 int_ack 0000000_010000111 wr_dqs_shift_bypass
 //DDR2_CTL_16_DATA_LO:	.word 0x00000087
 DDR2_CTL_16_DATA_LO:	.word 0x00000044
