@@ -32,8 +32,6 @@ typedef unsigned long dma_addr_t;
 
 #define write_reg(addr,val) writel(val,addr)
 
-#define DIS_WIDTH  FB_XSIZE  // 640 // 800
-#define DIS_HEIGHT FB_YSIZE // 480 //  600 
 #define EXTRA_PIXEL  0
 #define DC_BASE_ADDR 0xbc301240
 #define DC_BASE_ADDR_1 0xbc301250
@@ -43,10 +41,6 @@ typedef unsigned long dma_addr_t;
 static char *ADDR_CURSOR = 0xA6000000;
 static char *MEM_ptr = 0xA2000000;
 static int MEM_ADDR =0;
-#ifdef DC_FB1 
-static char *MEM_ptr_1 = 0xA2000000;
-static int MEM_ADDR_1 =0;
-#endif
 
 struct vga_struc{
            long pclk;
@@ -205,6 +199,7 @@ int config_cursor()
   write_reg((0xbc301560  +0x00),0x00aaaaaa);
 }
 
+static int fb_xsize, fb_ysize;
 
 int config_fb(unsigned long base)
 {
@@ -213,7 +208,7 @@ int i,mode=-1;
   for(i=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
   {
 	  int out;
-	  if(vgamode[i].hr == FB_XSIZE && vgamode[i].vr == FB_YSIZE){
+	  if(vgamode[i].hr == fb_xsize && vgamode[i].vr == fb_ysize){
 		  mode=i;
 #ifdef LS1FSOC
 		  out = caclulatefreq(APB_CLK/1000,vgamode[i].pclk);
@@ -224,7 +219,7 @@ int i,mode=-1;
    *(volatile int *)0xbfd00410 = out;
    /*output pix2 clock pll ctrl */
    *(volatile int *)0xbfd00424 = out;
-#else
+#elif !defined(CONFIG_FB_DYN)
 		  caclulatefreq(APB_CLK/1000,vgamode[i].pclk);
 #endif
 		  break;
@@ -257,19 +252,19 @@ int i,mode=-1;
 
 #if defined(CONFIG_VIDEO_32BPP)
   write_reg((base+OF_BUF_CONFIG),0x00100104);
-  write_reg((base+OF_BUF_STRIDE),FB_XSIZE*4); //1024
+  write_reg((base+OF_BUF_STRIDE),fb_xsize*4); //1024
 #elif defined(CONFIG_VIDEO_16BPP)
   write_reg((base+OF_BUF_CONFIG),0x00100103);
-  write_reg((base+OF_BUF_STRIDE),(FB_XSIZE*2+255)&~255); //1024
+  write_reg((base+OF_BUF_STRIDE),(fb_xsize*2+255)&~255); //1024
 #elif defined(CONFIG_VIDEO_15BPP)
   write_reg((base+OF_BUF_CONFIG),0x00100102);
-  write_reg((base+OF_BUF_STRIDE),FB_XSIZE*2); //1024
+  write_reg((base+OF_BUF_STRIDE),fb_xsize*2); //1024
 #elif defined(CONFIG_VIDEO_12BPP)
   write_reg((base+OF_BUF_CONFIG),0x00100101);
-  write_reg((base+OF_BUF_STRIDE),FB_XSIZE*2); //1024
+  write_reg((base+OF_BUF_STRIDE),fb_xsize*2); //1024
 #else  //640x480-32Bits
   write_reg((base+OF_BUF_CONFIG),0x00100104);
-  write_reg((base+OF_BUF_STRIDE),FB_XSIZE*4); //640
+  write_reg((base+OF_BUF_STRIDE),fb_xsize*4); //640
 #endif //32Bits
 
 #ifdef LS1GSOC
@@ -296,44 +291,22 @@ int dc_init()
 {
    int print_count;
    int i;
-   int PIXEL_COUNT = DIS_WIDTH * DIS_HEIGHT +  EXTRA_PIXEL; 
-   int MEM_SIZE; // = PIXEL_COUNT * 4;
-  // int MEM_SIZE = PIXEL_COUNT * 2;
    int init_R = 0;
    int init_G = 0;
    int init_B = 0;
    int j;
    int ii=0,tmp=0;
-   int MEM_SIZE_3 = MEM_SIZE /6; 
 
-    int line_length=0;
    
    int  print_addr;
    int print_data;
    printf("enter dc_init...\n");
 
-#if defined(CONFIG_VIDEO_32BPP)
-MEM_SIZE = PIXEL_COUNT * 4;
-line_length = FB_XSIZE * 4;
-#elif defined(CONFIG_VIDEO_16BPP)
-MEM_SIZE = PIXEL_COUNT * 2;
-line_length = FB_XSIZE * 2;
-#elif defined(CONFIG_VIDEO_15BPP)
-MEM_SIZE = PIXEL_COUNT * 2;
-line_length = FB_XSIZE * 2;
-#elif defined(CONFIG_VIDEO_12BPP)
-MEM_SIZE = PIXEL_COUNT * 2;
-line_length = FB_XSIZE * 2;
-#else
-MEM_SIZE = PIXEL_COUNT * 4;
-line_length = FB_XSIZE * 4;
-#endif
+   fb_xsize  = getenv("xres")? strtoul(getenv("xres"),0,0):FB_XSIZE;
+   fb_ysize  = getenv("yres")? strtoul(getenv("yres"),0,0):FB_YSIZE;
 
 MEM_ADDR = (long)MEM_ptr&0x0fffffff;
 
-#ifdef DC_FB1 
-MEM_ADDR_1 = (long)MEM_ptr_1&0x0fffffff;
-#endif
 
 if(MEM_ptr == NULL)
 {
@@ -359,9 +332,6 @@ config_cursor();
 
 printf("display controller reg config complete!\n");
 
-#ifdef DC_FB1
-return MEM_ptr_1;
-#endif
 
 return MEM_ptr;
 }

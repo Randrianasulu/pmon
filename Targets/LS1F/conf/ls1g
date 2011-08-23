@@ -209,3 +209,4 @@ option 	CONFIG_VIDEO_16BPP
 #option 	CONFIG_VIDEO_32BPP
 select		cmd_call		# Call a function command
 select		ide
+option		CONFIG_FB_DYN
