@@ -663,8 +663,25 @@ PRINTSTR("begin test\r\n");
 	sw a1,0x20(a0)
 
 
-
+#define HAVE_TARGET_SETDDR
 #include "newtest.32/mydebug.S"
+tgt_setddr:
+	PRINTSTR("input 0xbfe78030:");
+	bal inputhex
+	nop
+	move t0,v0
+	PRINTSTR("\r\ninput 0xbfe78034:");
+	bal inputhex
+	nop
+	li v1,0xbfe78030
+	sw t0,(v1)
+	sw v0,4(v1)
+	li a0,0
+	bal initserial
+	nop
+	b func_q
+	nop
+
 bootnow:
 PRINTSTR("end test\r\n");
 #define	FCALL_PRINTSTR(x) \
@@ -1170,6 +1187,7 @@ cache_init_finish:
     nop
     .set reorder
 	.end 	cache_init
+
 
 #define REG_ADDRESS 0x0
 #define CONFIG_BASE 0xaffffe00
