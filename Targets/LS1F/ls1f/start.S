@@ -278,9 +278,25 @@ locate:
     sb  t1, 0x4(t0) // sfc_param
 
 #ifdef LS1FSOC/* to adjust the DDR frequency */
-    li  a0, 0xbfe78030
+	li v0,0xbfc00000+(NVRAM_POS+PLL_OFFS)
+	lw a1,(v0)
+
+	li v0,0xffff0000
+	and v0,a1
+	bnez v0,1f
+	nop
+
+	andi v0,v1,0x8888
+	beqz v0,1f
+	nop
+
+	b 2f
+	nop
+1:
 #define DDRCFG_DATA (0x8888|(CPU_MULT-1)|((DDR_MULT-3)<<8))
     li  a1, DDRCFG_DATA   // 1fboard 25MHz
+2:
+    li  a0, 0xbfe78030
     sw  a1, 0x0(a0)
     nop
     sw  a1, 0x0(a0)
