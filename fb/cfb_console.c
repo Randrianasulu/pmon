@@ -1529,7 +1529,11 @@ void video_set_background(unsigned char r, unsigned char g, unsigned char b)
 	}
 }
 static int record = 1;
+#ifdef CONFIG_FB_DYN
+char console_buffer[2][1280/VIDEO_FONT_HEIGHT+1][1024/VIDEO_FONT_WIDTH+1]={32};
+#else
 char console_buffer[2][FB_YSIZE/VIDEO_FONT_HEIGHT+1][FB_XSIZE/VIDEO_FONT_WIDTH+1]={32};
+#endif
 
 void video_console_print(int console_col, int console_row, unsigned char *s)
 {
@@ -1674,6 +1678,10 @@ int fb_init (unsigned long fbbase,unsigned long iobase)
         pGD->winSizeX  = FB_XSIZE;
         pGD->winSizeY  = FB_YSIZE;
 #endif			
+#ifdef CONFIG_FB_DYN
+        pGD->winSizeX  = getenv("xres")? strtoul(getenv("xres"),0,0):FB_XSIZE;
+        pGD->winSizeY  = getenv("yres")? strtoul(getenv("yres"),0,0):FB_YSIZE;
+#endif
 	
 #if   defined(CONFIG_VIDEO_1BPP)
         pGD->gdfIndex  = GDF__1BIT;
