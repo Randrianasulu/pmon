@@ -368,9 +368,35 @@ locate:
     li v1,0x92298000
     li  a1, 0x39f0a
 #else
-   // li v1, (1<<31)|(4<<26)|(1<<25)|(2<<20)|(1<<19)|(4<<14)|0x2a00|0xf00
+	li v0,0xbfc00000+(NVRAM_POS+PLL_OFFS)
+	lw v1,4(v0)
+	lw a1,(v0)
+
+	li v0,0xfffc0000
+	and v0,a1
+	bnez v0,1f
+	nop
+
+	andi v0,v1,0x3f
+	bnez v0,1f
+	nop
+
+	li v0,(1<<31)|(1<<25)|(1<<19)
+	and a2,v0,v1
+	bne a2,v0,1f
+	nop
+
+	beqz v1,1f
+	nop
+	nop
+	beqz a1,1f
+	nop
+	b 2f
+	nop
+1:
     li v1, (1<<31)|(4<<26)|(1<<25)|(1<<20)|(1<<19)|(2<<14)|0x2a00
     li  a1,0
+2:
 #endif
     sw v1,4(a0)
     sw a1,(a0);
