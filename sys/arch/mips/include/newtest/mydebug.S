@@ -786,7 +786,8 @@ func_f:
 	  nop
 
 	  PRINTSTR("\r\n");
-	 
+
+#ifndef HAVE_TARGET_SETDDR
 	  li a0,0xbff00008
 	  lw t5,(a0)
 
@@ -838,6 +839,10 @@ func_f:
 		sw t5,(a0)
 		b func_q
 		nop
+#else
+		b tgt_setddr
+		nop
+#endif
 
 func_k:
 	  move a0,v0
