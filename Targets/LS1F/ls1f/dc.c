@@ -384,7 +384,8 @@ int i,j,k,diff,cpu;
 
 static int cmd_xrandr(int argc,char **argv)
 {
-unsigned int i,j,k,l,mode=-1;
+unsigned int i,j,k,l;
+int mode=-1;
 struct xmode *head=0,*pnode,**p;
 unsigned int length=0;
 unsigned int xres,yres;
@@ -429,7 +430,7 @@ ddr_arg = strtoul(argv[5],0,0);
 			{
 				gclk=(33333*(12+i)+33333*j/1024)/2;
 				val=gclk/EXTRA_DIV/k;
-				if(gclk>660000 || (diff=abs(val-freq))>1000) continue;
+				if(gclk>660000 || (diff=abs(val-freq))>=1000) continue;
 
 				cpudiv=gclk>cpu_arg?gclk/cpu_arg:1;
 				while(gclk/cpudiv>cpu_arg)
@@ -443,9 +444,9 @@ ddr_arg = strtoul(argv[5],0,0);
 				/*sort first cpu,then diff*/
 				for(p=&head;*p && (*p)->cpu>cpu;p=&(*p)->next);
 				for(;*p && (*p)->cpu == cpu && (*p)->diff < diff;p=&(*p)->next);
-				if(length<100)
-				{
 				 pnode=malloc(sizeof(struct xmode));
+				if(pnode)
+				{
 				 pnode->next = *p;
 				 *p=pnode;
 				 length++;
@@ -464,7 +465,7 @@ ddr_arg = strtoul(argv[5],0,0);
 	}
 
 	printf("i,\tj,\tk,\tval,\tdiff,\tpll,\tcpu\tddr\t8030,\t,8034\n");
-	for(pnode=head,l=0;pnode && l<10;pnode=pnode->next,l++)
+	for(pnode=head,l=0;pnode;pnode=pnode->next,l++)
    {
 	i=pnode->i;
 	j=pnode->j;
@@ -489,11 +490,21 @@ ddr_arg = strtoul(argv[5],0,0);
 	r8034=(1<<31)|(k<<26)|(1<<25)|(cpudiv<<20)|(1<<19)|(ddrdiv<<14);
 
 	printf("%d:%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%x,\t,%x\n",l,i,j,k,val,diff,33333*(12+i+j/1024)/2 ,cpu,ddr, r8030, r8034);
+	if(l%10==9||!pnode->next)
+	{
+		char c,buf[10];
+		printf("select which one [num|q|enter]?");
+		i=read(0,buf,9);
+		buf[i] = 0;
+		c=buf[0];
+		if(c =='\n'|| c=='\r') continue;
+		if(c == 'q') return 0;
+		l=strtoul(buf,0,0);
+		break;
+	}
    }
-	printf("select which one?\n");
-	l=0;
-	read(0,&l,3);
-	l=strtoul(&l,0,0);
+
+	if(!pnode) return 0;
 
 	for(pnode=head;pnode && l;pnode=pnode->next,l--);
 
