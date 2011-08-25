@@ -993,7 +993,8 @@ void video_putc (const char c)
 		break;
 
 	case 9:		/* tab 8 */
-		CURSOR_OFF console_col |= 0x0008;
+		CURSOR_OFF 
+		console_col += 0x0008;
 		console_col &= ~0x0007;
 
 		if (console_col >= CONSOLE_COLS)
