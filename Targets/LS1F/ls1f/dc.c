@@ -140,7 +140,7 @@ int caclulatefreq(long long XIN,long long PCLK)
 	ctrl=PLL_FREQ_REG(4);
 	printf("pll=0x%x,ctrl=0x%x\n",pll,ctrl);
 	printf("cpu freq is %d\n",tgt_pipefreq());
-	start=-1;
+	start=pll?-1:0;
 	end=1;
 /*ls1b02:dc clk divided 4 */
 	PCLK *= EXTRA_DIV;
