@@ -286,7 +286,7 @@ locate:
 	bnez v0,1f
 	nop
 
-	andi v0,v1,0x8888
+	andi v0,a1,0x8888
 	beqz v0,1f
 	nop
 
@@ -299,84 +299,11 @@ locate:
     li  a0, 0xbfe78030
     sw  a1, 0x0(a0)
     nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
-    sw  a1, 0x0(a0)
-    nop
+	lw	a2, 0x0(a0)
+	xor a2,a1
+	andi a2,0xf0f
+	bnez a2,2b
+	nop
 #else
     li  a0, 0xbfe78030
     /*31:dc_div_en,30-26:dc_div,25:cpu_div_en,24-20:cpu_div,19:ddr_div_en,18-14:ddr_div*/
