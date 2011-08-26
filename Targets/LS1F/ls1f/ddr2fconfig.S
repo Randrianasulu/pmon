@@ -132,7 +132,7 @@ DDR2_CTL_10_DATA_LO:	.word 0x3f0f0200 #400
 //0_0011101 dll_dqs_delay_2 0_0011101 dll_dqs_delay_1 0_0011101 dll_dqs_delay_0 00_111111 command_age_count 
 DDR2_CTL_10_DATA_HI:	.word 0x1d1d1d3f
 //0_0011101 dll_dqs_delay_6 0_0011101 dll_dqs_delay_5 0_0011101 dll_dqs_delay_4 0_0011101 dll_dqs_delay_3
-DDR2_CTL_11_DATA_LO:	.word 0x1d1d1d1d
+DDR2_CTL_11_DATA_LO:	.word 0x1d1d1d00
 //0_1011111 wr_dqs_shift 0_1111111 dqs_out_shift 0_0011101 dll_dqs_delay_8 0_0011101 dll_dqs_delay_7 
 //DDR2_CTL_11_DATA_HI:	.word 0x3f601d1d#better
 //DDR2_CTL_11_DATA_HI:	.word 0x38481d1d#slice 1 error
