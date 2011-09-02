@@ -1321,8 +1321,10 @@ tgt_reboot()
         *(volatile unsigned int *)0xbc301240 = 0x01100004 ;
     #endif
 
-	longreach = (void *)0xbfc00000;
-	(*longreach)();
+	/*enable watch dog*/
+outl(0xbfe5c060,1);
+outl(0xbfe5c064,1);
+outl(0xbfe5c068,1);
 
 	while(1);
 
