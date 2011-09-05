@@ -2823,12 +2823,14 @@ static int hc_start (ohci_t * ohci)
 			OHCI_INTR_UE | OHCI_INTR_FNO | OHCI_INTR_RHSC |
 			OHCI_INTR_OC | OHCI_INTR_MIE);
 	writel (mask, &ohci->regs->intrdisable);
+#if 0 //zenglu
 	/* clear all interrupts */
 	mask &= ~OHCI_INTR_MIE;
 	writel (mask, &ohci->regs->intrstatus);
 	/* Choose the interrupts we care about now  - but w/o MIE */
 	mask = OHCI_INTR_RHSC | OHCI_INTR_UE | OHCI_INTR_WDH | OHCI_INTR_SO | OHCI_INTR_MIE;
 	writel (mask, &ohci->regs->intrenable);
+#endif
 
 #ifdef	OHCI_USE_NPS
 	/* required for AMD-756 and some Mac platforms */
