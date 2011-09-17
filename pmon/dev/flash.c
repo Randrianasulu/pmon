@@ -618,15 +618,15 @@ fl_verify_device(void *fl_base, void *data_base, int data_size, int verbose)
 		fl_last = fl_base;
 		switch(map->fl_map_bus) {
 		case FL_BUS_8:
-			ok = (*((u_char *)fl_base)++ == *((u_char *)data_base)++);
+			ok = (*((u_char *)fl_base) == *((u_char *)data_base)); fl_base += 1; data_base += 1;
 			break;
 
 		case FL_BUS_16:
-			ok = (*((u_short *)fl_base)++ == *((u_short *)data_base)++);
+			ok = (*(u_short *)fl_base == *((u_short *)data_base)); fl_base += 2; data_base += 2;
 			break;
 
 		case FL_BUS_32:
-			ok = (*((u_int *)fl_base)++ == *((u_int *)data_base)++);
+			ok = (*(u_int *)fl_base == *(u_int *)data_base); fl_base += 4; data_base += 4;
 			break;
 
 		case FL_BUS_64:

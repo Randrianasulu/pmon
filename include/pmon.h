@@ -142,7 +142,6 @@ typedef struct Stopentry {
 } Stopentry;
 
 /* external data declarations */
-extern char    *searching;
 extern const Cmd *CmdList[];
 extern char     date[];
 extern char     vers[];

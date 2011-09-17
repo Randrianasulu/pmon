@@ -118,6 +118,7 @@ static struct pmap windows[] =
 { 0, 0}
 };
 
+static int find_ticks_for_test(unsigned long chunks, int test);
 /* Compute the total number of ticks per pass */
 void find_ticks(void)
 {
