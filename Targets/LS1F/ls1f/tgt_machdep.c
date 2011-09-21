@@ -129,6 +129,28 @@ void mv_error(unsigned long *adr, unsigned long good, unsigned long bad);
 void print_err( unsigned long *adr, unsigned long good, unsigned long bad, unsigned long xor);
 static void init_legacy_rtc(void);
 
+/*used for debug,only work on ejtag mode*/
+int ejtag_serial (int op, struct DevEntry *dev, unsigned long param, int data)
+{
+	switch (op) {
+		case OP_INIT:
+		case OP_XBAUD:
+		case OP_BAUD:
+		case OP_RXSTOP:
+			break;
+		case OP_TXRDY:
+			return 1;
+		case OP_TX:
+			*(volatile char *)0xff2001e0=data;
+			break;
+		case OP_RXRDY:
+			return *(volatile char *)0xff2001e1;
+		case OP_RX:
+			return *(volatile char *)0xff2001e0;
+	}
+	return 0;
+}
+
 ConfigEntry	ConfigTable[] =
 {
 	 { (char *)COM1_BASE_ADDR, 0, ns16550, 256, CONS_BAUD, NS16550HZ},
