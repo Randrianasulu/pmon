@@ -9,6 +9,7 @@ file	Targets/Bonito2fdev/pci/cs5536_io.c cs5536
 file	Targets/Bonito2fdev/pci/cs5536_vsm.c cs5536
 file 	Targets/Bonito2fdev/dev/fpga.c  fpga
 file	Targets/Bonito2fdev/dev/gwi-nand.c gwi & nand
+file	Targets/Bonito2fdev/dev/gwi-lcd.c gwi 
 
 
 define  localbus { [base = -1 ] }
