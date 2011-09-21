@@ -921,7 +921,6 @@ void nanderase_verify(int argc,char ** argv)
 //    all =strtoul(argv[1],0,0);
     detail = argv[1];
     flag=strncmp(detail,"detail",6);
-    __ww(0xbfd00420,0x0a000000);
     __ww(NAND_REG_BASE+0x0,0x0);   
     __ww(NAND_REG_BASE+0x0,0x41);
     __ww(NAND_REG_BASE+0x4,0x00);
@@ -958,7 +957,6 @@ void nanderase_verify(int argc,char ** argv)
 //    return 0;  
 
 //    __ww(NAND_REG_BASE+0x0,0x0);
-//    __display(0xbfd00420,0x10);
 //        udelay(1000000);
 //    __display(NAND_REG_BASE,0x1);  
 //    __ww(NAND_REG_BASE+0x0,0x0);
@@ -995,7 +993,6 @@ void nanderase(void)
 {
     int i=0;
     int status_time ;
-    __ww(0xbfd00420,0x0a000000);
     __ww(NAND_REG_BASE+0x0,0x0);   
     __ww(NAND_REG_BASE+0x0,0x41);
     __ww(NAND_REG_BASE+0x4,0x00);
@@ -1031,8 +1028,6 @@ static void nand_read_id(void)
     unsigned int id_reg =  0xbfe78010;
     unsigned int id_val=0;
     unsigned int id_val_h=0;
-    *((volatile unsigned int *)(0xbfd00420))=0x0a000000;
-    *((volatile unsigned int *)(0xbfd00420))=0x0a000000;
     *((volatile unsigned int *)(0xbfe7800c))=0x30f0;
     *((volatile unsigned int *)(0xbfe78000))=0x21;
 #define    IDL  *((volatile unsigned int*)(0xbfe78010))  
@@ -1077,7 +1072,6 @@ static void nandwrite_test(int argc,char **argv)/*cmd addr(L,page num) timing op
         return;
     }
        nand_num=0; 
-    __ww(0xbfd00420,0x0a000000);
      cmd = strtoul(argv[1],0,0);
      addr = strtoul(argv[2],0,0);
      timing = strtoul(argv[3],0,0);
@@ -1149,8 +1143,6 @@ int ls1g_soc_nand_init(void)
 	struct nand_chip *this;
         printf("\nNAND DETE\n");
 //       nand_test();    
-        if(__rw(0xbfd00420,val) != 0x0a000000)
-            __ww(0xbfd00420,0x0a000000);
 
 
         /* Allocate memory for MTD device structure and private data */

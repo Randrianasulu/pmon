@@ -301,6 +301,10 @@ initmips(unsigned int memsz)
 	
 	printf("BEV in SR set to zero.\n");
 #if NNAND
+#ifdef LS1FSOC
+	/*mutex nand use lpc pin*/
+    *((volatile unsigned int *)0xbfd00420) = (*((volatile unsigned int *)0xbfd00420) & 0x01ffffff) |0x0a000000;
+#endif
 	ls1g_soc_nand_init();
 #endif
 
