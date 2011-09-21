@@ -362,7 +362,7 @@ void
 initmips(unsigned int memsz)
 {
 tgt_fpuenable();
-#if defined(DEVBD2F_SM502) && !defined(DEVBD2F_SM502_GOLDING)
+#if defined(DEVBD2F_SM502) && (!defined(DEVBD2F_SM502_GOLDING) && !defined(DEVBD2F_SM502_GWI))
 {
 /*set lio bus to 16 bit*/
 volatile int *p=0xbfe00108;
@@ -461,6 +461,10 @@ unsigned int addr;
 	printf("power management addr=%x\n",addr);
 	_pci_conf_writen(mytag,0x48,addr|1,4);
 }
+#endif
+
+#ifdef DEVBD2F_SM502_GWI
+gwi_nand_nand_init();
 #endif
 
 	/*
