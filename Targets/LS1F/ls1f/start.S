@@ -411,8 +411,8 @@ cpu_win_fixup:
         // mapped_addr =  paddr &~mask | mmap & mask
         //
         // mmap[7] -> enable
-	// mmap[5] -> block trans enable
-        // mmap[4] -> cachable
+		// mmap[5] -> block trans enable,cache
+        // mmap[4] -> fetch ins
         // mmap[1:0] -> destination
         //
         // NOTE: the address windows has priority, win0 > win1 > ... > win7
@@ -460,13 +460,14 @@ cpu_win_fixup:
 	sw a2,0x424(a0);
 #endif
 
-#ifdef CONFIG_PHY100M
 /*100M phy*/
 	li a0,0xbfd00000
 	lw a2,0x424(a0);
-	ori a2,5
-	sw a2,0x424(a0);
+	ori a2,0xf
+#ifndef CONFIG_PHY100M
+	xor a2,0xf	
 #endif
+	sw a2,0x424(a0);
 
 
 #define CF_7_SE         (1 << 3)        /* Secondary cache enable */
