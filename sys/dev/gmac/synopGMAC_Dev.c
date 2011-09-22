@@ -817,13 +817,11 @@ void synopGMAC_multicast_hash_filter_disable(synopGMACdevice * gmacdev)
   * @param[in] pointer to synopGMACdevice.
   * \return void.
   */
-#if UNUSED
 void synopGMAC_promisc_enable(synopGMACdevice * gmacdev)
 {
 	synopGMACSetBits(gmacdev->MacBase, GmacFrameFilter, GmacPromiscuousMode);
 	return;
 }
-#endif
 /**
   * Clears promiscous mode.
   * When called the GMAC falls back to normal operation from promiscous mode.
@@ -1059,7 +1057,7 @@ s32 synopGMAC_mac_init(synopGMACdevice * gmacdev)
 		synopGMAC_multicast_disable(gmacdev);
 		synopGMAC_dst_addr_filter_normal(gmacdev);
 		synopGMAC_multicast_hash_filter_disable(gmacdev);
-		synopGMAC_promisc_disable(gmacdev);
+		synopGMAC_promisc_enable(gmacdev);
 		synopGMAC_unicast_hash_filter_disable(gmacdev);
 	
 		/*Flow Control Configuration*/

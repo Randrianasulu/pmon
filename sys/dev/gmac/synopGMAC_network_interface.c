@@ -926,6 +926,7 @@ void synop_handle_received_data(struct synopGMACNetworkAdapter* tp)
 				adapter->synopGMACNetStats.rx_bytes += len;
 			}
 			else{
+				printf("s: %08x\n",status);
 				adapter->synopGMACNetStats.rx_errors++;
 				adapter->synopGMACNetStats.collisions       += synopGMAC_is_rx_frame_collision(status);
 				adapter->synopGMACNetStats.rx_crc_errors    += synopGMAC_is_rx_crc(status);
