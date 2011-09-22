@@ -198,6 +198,7 @@ ext_map_and_reboot:
 	PRINTSTR("\r\n")
 #endif
 
+	/*acpi: set ddr autorefresh and suspend */
 	li	t0, 0xaffffe30
 	lw	t1, 0x4(t0)
 	li	t2, 0x1
@@ -876,6 +877,14 @@ LEAF(hexserial)
 END(hexserial)
 
 LEAF(tgt_putchar)
+#ifdef CONFIG_EJTAG_SERIAL
+	lui v0,0xff20;
+	sb a0,0x1e0(v0);
+	nop
+	nop
+	jr ra 
+	nop
+#endif
 	nop
 	la	v0, COM1_BASE_ADDR
 1:
@@ -890,6 +899,12 @@ LEAF(tgt_putchar)
 END(tgt_putchar)
 
 LEAF(tgt_testchar)
+#ifdef CONFIG_EJTAG_SERIAL
+	lui v0,0xff20;
+	lb v0,0x1e1(v0);
+	jr ra 
+	nop
+#endif
 	la	v0, COM1_BASE_ADDR
 1:
 	lbu	v1, NSREG(NS16550_LSR)(v0)
@@ -899,6 +914,12 @@ LEAF(tgt_testchar)
 END(tgt_testchar)
 
 LEAF(tgt_getchar)
+#ifdef CONFIG_EJTAG_SERIAL
+	lui v0,0xff20;
+	lb v0,0x1e0(v0);
+	jr ra 
+	nop
+#endif
 	la	v0, COM1_BASE_ADDR
 1:
 	lbu	v1, NSREG(NS16550_LSR)(v0)
@@ -932,6 +953,15 @@ END(tgt_getchar)
 #define B115200 115200
 
 LEAF(initserial)
+#ifdef CONFIG_EJTAG_SERIAL
+	/*enable cp0 count*/
+	mfc0 v0,$23
+	li v1,0x200000
+	or v0,v1
+	mtc0 v0,$23
+	jr ra 
+	nop
+#endif
 	la	v0, COM1_BASE_ADDR
 1:
 	li	v1, FIFO_ENABLE|FIFO_RCV_RST|FIFO_XMT_RST|FIFO_TRIGGER_4

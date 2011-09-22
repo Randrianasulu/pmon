@@ -153,7 +153,11 @@ int ejtag_serial (int op, struct DevEntry *dev, unsigned long param, int data)
 
 ConfigEntry	ConfigTable[] =
 {
+#ifdef CONFIG_EJTAG_SERIAL
+	 { (char *)COM1_BASE_ADDR, 0, ejtag_serial, 256, CONS_BAUD, NS16550HZ},
+#else
 	 { (char *)COM1_BASE_ADDR, 0, ns16550, 256, CONS_BAUD, NS16550HZ},
+#endif
 #if NMOD_VGACON >0 && NMOD_FRAMEBUFFER >0
 	{ (char *)1, 0, fbterm, 256, CONS_BAUD, NS16550HZ },
 #endif
@@ -316,12 +320,6 @@ initmips(unsigned int memsz)
 	hpet_test();
 #endif
 	
-//	pci_conf_dump();
-	
-#ifdef	GMAC	
-	ls1f_gmac_init();
-#endif	
-
 	/*
 	 * Launch!
 	 */
