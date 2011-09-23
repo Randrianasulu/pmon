@@ -1602,11 +1602,6 @@ reg_write:
 	 * Now determine DRAM configuration and size by
 	 * reading the I2C EEROM on the DIMMS
 	 */
-i2c_test:
-	li	k1,0
-#include "i2ccfgddr.S"
-	beqz msize,i2c_test
-	nop
 2:	
 /////////////////
 
@@ -1667,7 +1662,7 @@ DDR2_CTL_00_DATA_HI:	.word 0x01000100 #no_concurrentap
 //DDR2_CTL_01_DATA_LO:	.word 0x00010100 #dll_by_pass
 DDR2_CTL_01_DATA_LO:	.word 0x00010000
 //0000000_0 fwc 0000000_0 fast_write 0000000_0 enable_quick_srefresh 0000000_0 eight_bank_mode 
-DDR2_CTL_01_DATA_HI:	.word 0x00010000
+DDR2_CTL_01_DATA_HI:	.word 0x00010001
 //0000000_0 no_cmd_init 0000000_0 intrptwritea 0000000_0 intrptreada 0000000_0 intrptapburst
 DDR2_CTL_02_DATA_LO:	.word 0x00000000
 //0000000_1 priority_en 0000000_0 power_down 0000000_1 placement_en 0000000_1 odt_add_turn_clk_en 
@@ -1859,7 +1854,7 @@ DDR2_CTL_00_DATA_HI_1:	.word 0x01000100 #no_concurrentap
 //DDR2_CTL_01_DATA_LO_1:	.word 0x00010100 #dll_by_pass
 DDR2_CTL_01_DATA_LO_1:	.word 0x00010000
 //0000000_0 fwc 0000000_0 fast_write 0000000_0 enable_quick_srefresh 0000000_0 eight_bank_mode 
-DDR2_CTL_01_DATA_HI_1:	.word 0x00010000
+DDR2_CTL_01_DATA_HI_1:	.word 0x00010001
 //0000000_0 no_cmd_init 0000000_0 intrptwritea 0000000_0 intrptreada 0000000_0 intrptapburst
 DDR2_CTL_02_DATA_LO_1:	.word 0x00000000
 //0000000_1 priority_en 0000000_0 power_down 0000000_1 placement_en 0000000_1 odt_add_turn_clk_en 
