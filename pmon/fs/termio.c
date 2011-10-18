@@ -389,6 +389,7 @@ devinit (void)
 		p->tfunc = 0;
 		p->freq = q->freq;
 		p->nopen = 0;
+		p->shift = q->shift;
 		
 		if (p->chan == 0)
 			(*p->handler) (OP_INIT, p, NULL, q->rxqsize);

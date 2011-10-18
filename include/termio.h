@@ -115,6 +115,7 @@ typedef struct ConfigEntry {
 	int brate;
 	unsigned long freq;
 	unsigned int flag;
+	unsigned int shift;
 } ConfigEntry;
 
 #include "queue.h"
@@ -135,6 +136,7 @@ typedef struct DevEntry {
 	struct termio t;
 	unsigned long freq;
 	int nopen;
+	int shift;
 } DevEntry;
 
 extern DevEntry DevTable[DEV_MAX];

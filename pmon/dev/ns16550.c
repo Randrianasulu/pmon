@@ -153,3 +153,52 @@ ns16550 (int op, struct DevEntry *dev, unsigned long param, int data)
 	}
 	return 0;
 }
+
+
+int
+ns165501 (int op, struct DevEntry *dev, unsigned long param, int data)
+{
+	char *dp;
+
+	dp = dev->sio;
+	if((int)dp==-1)return 1;
+
+	switch (op) {
+		case OP_INIT:
+			return 0;
+
+		case OP_XBAUD:
+		case OP_BAUD:
+			return 0;
+
+		case OP_TXRDY:
+		#ifdef NOMSG_ON_SERIAL
+		return 1;
+		#endif
+			return (inb(dp+(NS16550_LSR<<dev->shift)) & LSR_TXRDY);
+
+		case OP_TX:
+		#ifdef NOMSG_ON_SERIAL
+		return 0;
+		#endif
+			outb(dp+(NS16550_DATA<<dev->shift), data);
+			break;
+
+		case OP_RXRDY:
+		#ifdef NOMSG_ON_SERIAL
+		return 0;
+		#endif
+			return (inb(dp+(NS16550_LSR<<dev->shift)) & LSR_RXRDY);
+
+		case OP_RX:
+			return inb(dp+(NS16550_DATA<<dev->shift)) & 0xff;
+
+		case OP_RXSTOP:
+			if (data)
+				outb(dp+(NS16550_MCR<<dev->shift), inb(dp+(NS16550_MCR<<dev->shift)) & ~MCR_RTS);
+			else
+				outb(dp+(NS16550_MCR<<dev->shift), inb(dp+(NS16550_MCR<<dev->shift)) | MCR_RTS);
+			break;
+	}
+	return 0;
+}
