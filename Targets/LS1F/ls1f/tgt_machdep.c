@@ -410,6 +410,26 @@ tgt_devconfig()
 	*(volatile int *)0xbfd00424 |= 0x80000000;
 #endif
 
+#if LS1GSOC
+/*
+ * if found syn1,then set io multiplexing
+ * gmac1 use UART0,UART1
+ */
+{
+int i;
+extern struct cfdata cfdata[];
+for(i=0;cfdata[i].cf_driver;i++)
+{
+	if(strcmp(cfdata[i].cf_driver->cd_name,"syn") == 0 && cfdata[i].cf_unit == 1)
+	{
+		*(volatile int *)0xbfd00420 |= 0x18;
+	break;
+	}
+ 
+}
+}
+#endif
+
     printf("====before configure\n");
     configure();
    
