@@ -426,7 +426,7 @@ ddr_arg = strtoul(argv[5],0,0);
 	{
 		for(j=0;j<=1023;j++)
 		{
-			for(k=1;k<=15;k++)
+			for(k=1;k<=31;k++)
 			{
 				gclk=(33333*(12+i)+33333*j/1024)/2;
 				val=gclk/EXTRA_DIV/k;
