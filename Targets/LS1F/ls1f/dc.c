@@ -53,24 +53,25 @@ struct vga_struc{
 }
 vgamode[] =
 {
-{/*"640x480_70.00"*/    28560,  640,    664,    728,    816,    480,    481,    484,    500,    },
-{/*"640x640_60.00"*/	33100,	640,	672,	736,	832,	640,	641,	644,	663,	},
-{/*"640x768_60.00"*/	39690,	640,	672,	736,	832,	768,	769,	772,	795,	},
-{/*"640x800_60.00"*/	42130,	640,	680,	744,	848,	800,	801,	804,	828,	},
-{/*"800x480_70.00"*/    35840,  800,    832,    912,    1024,   480,    481,    484,    500,    },
-{/*"800x600_60.00"*/	38220,	800,	832,	912,	1024,	600,	601,	604,	622,	},
-{/*"800x640_60.00"*/	40730,	800,	832,	912,	1024,	640,	641,	644,	663,	},
-{/*"832x600_60.00"*/	40010,	832,	864,	952,	1072,	600,	601,	604,	622,	},
-{/*"832x608_60.00"*/	40520,	832,	864,	952,	1072,	608,	609,	612,	630,	},
-{/*"1024x480_60.00"*/	38170,	1024,	1048,	1152,	1280,	480,	481,	484,	497,	},
-{/*"1024x600_60.00"*/	48960,	1024,	1064,	1168,	1312,	600,	601,	604,	622,	},
-{/*"1024x640_60.00"*/	52830,	1024,	1072,	1176,	1328,	640,	641,	644,	663,	},
-{/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795,	},
-{/*"1152x764_60.00"*/   71380,  1152,   1208,   1328,   1504,   764,    765,    768,    791,    },
-{/*"1280x800_60.00"*/   83460,  1280,   1344,   1480,   1680,   800,    801,    804,    828,    },
-{/*"1280x1024_55.00"*/  98600,  1280,   1352,   1488,   1696,   1024,   1025,   1028,   1057,   },
-{/*"1440x800_60.00"*/   93800,  1440,   1512,   1664,   1888,   800,    801,    804,    828,    },
-{/*"1440x900_67.00"*/   120280, 1440,   1528,   1680,   1920,   900,    901,    904,    935,    },
+{/*"320x240_60.00"*/  5260,  320, 304, 336, 352,  240, 241, 244, 249 }, 
+{/*"640x480_70.00"*/    28560,  640,    664,    728,    816,    480,    481,    484,    500 },
+{/*"640x640_60.00"*/	33100,	640,	672,	736,	832,	640,	641,	644,	663 },
+{/*"640x768_60.00"*/	39690,	640,	672,	736,	832,	768,	769,	772,	795	},
+{/*"640x800_60.00"*/	42130,	640,	680,	744,	848,	800,	801,	804,	828	},
+{/*"800x480_70.00"*/    35840,  800,    832,    912,    1024,   480,    481,    484,    500 },
+{/*"800x600_60.00"*/	38220,	800,	832,	912,	1024,	600,	601,	604,	622	},
+{/*"800x640_60.00"*/	40730,	800,	832,	912,	1024,	640,	641,	644,	663	},
+{/*"832x600_60.00"*/	40010,	832,	864,	952,	1072,	600,	601,	604,	622	},
+{/*"832x608_60.00"*/	40520,	832,	864,	952,	1072,	608,	609,	612,	630	},
+{/*"1024x480_60.00"*/	38170,	1024,	1048,	1152,	1280,	480,	481,	484,	497	},
+{/*"1024x600_60.00"*/	48960,	1024,	1064,	1168,	1312,	600,	601,	604,	622	},
+{/*"1024x640_60.00"*/	52830,	1024,	1072,	1176,	1328,	640,	641,	644,	663	},
+{/*"1024x768_60.00"*/	64110,	1024,	1080,	1184,	1344,	768,	769,	772,	795	},
+{/*"1152x764_60.00"*/   71380,  1152,   1208,   1328,   1504,   764,    765,    768,    791 },
+{/*"1280x800_60.00"*/   83460,  1280,   1344,   1480,   1680,   800,    801,    804,    828 },
+{/*"1280x1024_55.00"*/  98600,  1280,   1352,   1488,   1696,   1024,   1025,   1028,   1057 },
+{/*"1440x800_60.00"*/   93800,  1440,   1512,   1664,   1888,   800,    801,    804,    828  },
+{/*"1440x900_67.00"*/   120280, 1440,   1528,   1680,   1920,   900,    901,    904,    935  },
 };
 
 enum{
@@ -379,71 +380,112 @@ static int cmd_initserial(int argc,char **argv)
 struct xmode
 {
 struct xmode *next;
-int i,j,k,diff,cpu;
+int i,j,ks[3],key;
 };
 
 static int cmd_xrandr(int argc,char **argv)
 {
-unsigned int i,j,k,l;
+int i,j,k,l;
 int mode=-1;
 struct xmode *head=0,*pnode,**p;
-unsigned int length=0;
-unsigned int xres,yres;
-unsigned int val,diff,freq;
-unsigned int cpudiv,ddrdiv;
-unsigned int cpu,ddr;
-unsigned int cpu_arg,ddr_arg;
-unsigned int gclk;
+int length=0;
+int xres,yres;
+int val,freq;
+int cpu,ddr,dc;
+int gclk;
 unsigned int r8030,r8034;
+int ks[3];
+int idx[3];
+int area[3][3];
+int order;
+int key;
 
-if(argc<5) return -1;
+if(argc<6) return -1;
 
 xres=strtoul(argv[1],0,0);
 yres=strtoul(argv[2],0,0);
-cpu_arg = strtoul(argv[4],0,0);
-ddr_arg = strtoul(argv[5],0,0);
+
+for(i=4;i<=6;i++)
+{
+char *p;
+if(strncmp("cpu:",argv[i],4) == 0)
+{
+ idx[0] = i-4;
+ p = argv[i]+4;
+}
+else if(strncmp("ddr:",argv[i],4) == 0)
+{
+ idx[1] = i-4;
+ p = argv[i]+4;
+}
+else if(strncmp("dc:",argv[i],3) == 0)
+{
+ idx[2] = i-4;
+ p = argv[i]+3;
+}
+else
+ return -1;
+
+ area[i-4][0]=strtol(p,&p,0);
+ p++;
+ area[i-4][1]=strtol(p,&p,0);
+ area[i-4][2]= 1;
+}
+
+area[idx[2]][2] = EXTRA_DIV;
+
+for(i=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
+{
+	int out;
+	if(vgamode[i].hr == xres && vgamode[i].vr == yres){
+		mode=i;
+		freq = vgamode[i].pclk;
+		break;
+	}
+}
+
+if(mode<0)
+{
+	printf("\n\n\nunsupported framebuffer resolution\n\n\n");
+	return;
+}
 
 
-
-  for(i=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
-  {
-	  int out;
-	  if(vgamode[i].hr == xres && vgamode[i].vr == yres){
-		  mode=i;
-		  freq = vgamode[i].pclk;
-		  break;
-	  }
-  }
-
-  if(mode<0)
-  {
-	  printf("\n\n\nunsupported framebuffer resolution\n\n\n");
-	  return;
-  }
+area[idx[2]][0] += freq;
+area[idx[2]][1] += freq;
 
 
 	for(i=0;i<=0x3f;i++)
 	{
 		for(j=0;j<=1023;j++)
 		{
-			for(k=1;k<=31;k++)
-			{
 				gclk=(33333*(12+i)+33333*j/1024)/2;
-				val=gclk/EXTRA_DIV/k;
-				if(gclk>660000 || (diff=abs(val-freq))>=1000) continue;
+				if(gclk>660000)  continue;
 
-				cpudiv=gclk>cpu_arg?gclk/cpu_arg:1;
-				while(gclk/cpudiv>cpu_arg)
-				{
-					cpudiv++;
+				for(order=0;order<=2;order++)
+				{	
+
+					for(k=1;k<=31;k++)
+					{
+						val=(33333*(12+i)+33333*j/1024)/2/area[order][2]/k;
+						if(val>=area[order][0] && val<=area[order][1]){
+							ks[order] = k;
+							break;
+						}
+					}
+					if(k==32) break;
 				}
 
+				if(order<3) continue;
 
-				cpu = gclk/cpudiv;
+				if(idx[2] == 0)
+				 key = abs(gclk/area[0][2]/ks[0] - freq);
+				else
+				 key = gclk/area[0][2]/ks[0];
 
 				/*sort first cpu,then diff*/
-				for(p=&head;*p && (*p)->cpu>cpu;p=&(*p)->next);
-				for(;*p && (*p)->cpu == cpu && (*p)->diff < diff;p=&(*p)->next);
+				for(p=&head;*p && (*p)->key>key;p=&(*p)->next);
+
 				 pnode=malloc(sizeof(struct xmode));
 				if(pnode)
 				{
@@ -456,40 +498,33 @@ ddr_arg = strtoul(argv[5],0,0);
 				
 				pnode->i = i;
 				pnode->j = j;
-				pnode->k = k;
-				pnode->cpu = cpu;
-				pnode->diff = diff;
-		
-			}
-		}
+				pnode->ks[0] = ks[0];
+				pnode->ks[1] = ks[1];
+				pnode->ks[2] = ks[2];
+				pnode->key = key;
+		 }
 	}
 
-	printf("i,\tj,\tk,\tval,\tdiff,\tpll,\tcpu\tddr\t8030,\t,8034\n");
+	printf("i,\tj,\tpll,\tcpu,\tddr,\tdc,\tdcdiff\t,8030,\t,8034\n");
 	for(pnode=head,l=0;pnode;pnode=pnode->next,l++)
    {
 	i=pnode->i;
 	j=pnode->j;
-	k=pnode->k;
-	cpu = pnode->cpu;
-	diff = pnode->diff;
+	ks[0]=pnode->ks[0];
+	ks[1]=pnode->ks[1];
+	ks[2]=pnode->ks[2];
 	
 	gclk=(33333*(12+i)+33333*j/1024)/2;
-	val=gclk/EXTRA_DIV/k;
 
-	cpudiv=gclk/cpu;
-
-	ddrdiv=gclk>ddr_arg?gclk/ddr_arg:1;
-	while(gclk/ddrdiv>ddr_arg)
-	{
-		ddrdiv++;
-	}
 	
-	ddr=gclk/ddrdiv;
+	cpu=gclk/area[idx[0]][2]/ks[idx[0]];
+	ddr=gclk/area[idx[1]][2]/ks[idx[1]];
+	dc=gclk/area[idx[2]][2]/ks[idx[2]];
 
 	r8030=i|(j<<8);
-	r8034=(1<<31)|(k<<26)|(1<<25)|(cpudiv<<20)|(1<<19)|(ddrdiv<<14);
+	r8034=(1<<31)|(ks[2]<<26)|(1<<25)|(ks[0]<<20)|(1<<19)|(ks[1]<<14);
 
-	printf("%d:%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%x,\t,%x\n",l,i,j,k,val,diff,33333*(12+i+j/1024)/2 ,cpu,ddr, r8030, r8034);
+	printf("%d:%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%d,\t%x,\t,%x\n",l,i,j,gclk,cpu,ddr,dc,dc-freq, r8030, r8034);
 	if(l%10==9||!pnode->next)
 	{
 		char c,buf[10];
@@ -510,23 +545,12 @@ ddr_arg = strtoul(argv[5],0,0);
 
 	i=pnode->i;
 	j=pnode->j;
-	k=pnode->k;
-	cpu = pnode->cpu;
+	ks[0]=pnode->ks[0];
+	ks[1]=pnode->ks[1];
+	ks[2]=pnode->ks[2];
 	
-	gclk=(33333*(12+i)+33333*j/1024)/2;
-
-	cpudiv=gclk/cpu;
-
-	ddrdiv=gclk>ddr_arg?gclk/ddr_arg:1;
-	while(gclk/ddrdiv>ddr_arg)
-	{
-		ddrdiv++;
-	}
-	
-	ddr=gclk/ddrdiv;
-
 	r8030=i|(j<<8);
-	r8034=(1<<31)|(k<<26)|(1<<25)|(cpudiv<<20)|(1<<19)|(ddrdiv<<14);
+	r8034=(1<<31)|(ks[2]<<26)|(1<<25)|(ks[0]<<20)|(1<<19)|(ks[1]<<14);
 
 	{
 	char str[256];
@@ -551,7 +575,7 @@ static const Cmd Cmds[] =
 	{"dc_freq"," pclk sysclk", 0, "config dc clk(khz)",cmd_dc_freq, 0, 99, CMD_REPEAT},
 	{"caclfreq","", 0, "cacl freq",cmd_caclfreq, 0, 99, CMD_REPEAT},
 #ifdef LS1GSOC
-	{"xrandr","xres yres hsync cpufreq(KHZ) ddrfreq(KHZ)", 0, "xrandr xres yres hsync cpufreq(KHZ) ddrfreq(KHZ)", cmd_xrandr, 0, 99, CMD_REPEAT},
+	{"xrandr","xres yres hsync cpu:from-to ddr:from-to dc:from-to", 0, "xrandr xres yres hsync cpufreq(KHZ) ddrfreq(KHZ) dcdiff(khz)", cmd_xrandr, 0, 99, CMD_REPEAT},
 #endif
 	{"initserial","[ddrclk]", 0, "cacl freq",cmd_initserial, 0, 99, CMD_REPEAT},
 	{0, 0}
