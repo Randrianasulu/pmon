@@ -608,6 +608,8 @@ tgt_setddr:
 	li a0,0
 	bal initserial
 	nop
+	bal ddr2_config_start
+	nop
 	b func_q
 	nop
 

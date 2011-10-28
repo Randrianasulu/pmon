@@ -38,6 +38,7 @@ reg_write:
     addiu     t2, t2, 0x10
 
     ############start##########
+ddr2_config_start:
     li      t2, CONFIG_BASE
     la		t0,DDR2_CTL_03_DATA_HI
     addu    	t0, t0, s0
