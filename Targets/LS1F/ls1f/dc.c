@@ -70,6 +70,7 @@ vgamode[] =
 {/*"1152x764_60.00"*/   71380,  1152,   1208,   1328,   1504,   764,    765,    768,    791 },
 {/*"1280x800_60.00"*/   83460,  1280,   1344,   1480,   1680,   800,    801,    804,    828 },
 {/*"1280x1024_55.00"*/  98600,  1280,   1352,   1488,   1696,   1024,   1025,   1028,   1057 },
+{/*"1368x768_60.00"*/   85860,  1368,   1440,   1584,   1800,   768,    769,    772,    795 },
 {/*"1440x800_60.00"*/   93800,  1440,   1512,   1664,   1888,   800,    801,    804,    828  },
 {/*"1440x900_67.00"*/   120280, 1440,   1528,   1680,   1920,   900,    901,    904,    935  },
 };
@@ -233,7 +234,10 @@ int i,mode=-1;
 
   if(mode<0)
   {
-	  printf("\n\n\nunsupported framebuffer resolution\n\n\n");
+	  printf("\n\n\nunsupported framebuffer resolution,choose from bellow:\n");
+	  for(i=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
+		printf("%dx%d, ",vgamode[i].hr,vgamode[i].vr);
+	  printf("\n");
 	  return;
   }
 
@@ -446,7 +450,10 @@ for(i=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
 
 if(mode<0)
 {
-	printf("\n\n\nunsupported framebuffer resolution\n\n\n");
+	printf("\n\n\nunsupported framebuffer resolution,choose from bellow:\n");
+	for(i=0;i<sizeof(vgamode)/sizeof(struct vga_struc);i++)
+		printf("%dx%d, ",vgamode[i].hr,vgamode[i].vr);
+	printf("\n");
 	return;
 }
 
