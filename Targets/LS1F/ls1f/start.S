@@ -287,9 +287,8 @@ locate:
 	bnez v0,1f
 	nop
 
-	andi v0,a1,0x8888
-	beqz v0,1f
-	nop
+	li  v0, 0x8888
+	or  a1, a1, v0
 
 	b 2f
 	nop
