@@ -737,7 +737,7 @@ tgt_settime(time_t t)
                 tm = gmtime(&t);
 
         	outl(REG_TOY_WRITE1,tm->tm_year + 1900);
-		v=((tm->tm_mon+1)<<26)|(tm->tm_mday<<21)|(tm->tm_hour<<16)|(tm->tm_min<<10)|(tm->tm_sec);
+		v=((tm->tm_mon+1)<<26)|(tm->tm_mday<<21)|(tm->tm_hour<<16)|(tm->tm_min<<10)|(tm->tm_sec << 4);
 		outl(REG_TOY_WRITE0,v);
                                                                                
         }
