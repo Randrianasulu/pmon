@@ -538,10 +538,18 @@ static void SmiSetRegs (void)
 	{
 		unsigned int a,b;
 		a = *(unsigned int *)(0xb6000040);
+#ifdef USE_SM502_UART1
+		a = a|(0xc0)|0x100;
+#else
 		a = a|(0xc0);
+#endif
 		*(unsigned int *)(0xb6000040) = a;
 		b = *(unsigned int *)(0xb600000c);
+#ifdef USE_SM502_UART1
+		b = b|(0x1e0)|0x1e00;
+#else
 		b = b|(0x1e0);
+#endif
 		*(unsigned int *)(0xb600000c) = b;
 		
 	}
