@@ -206,6 +206,7 @@ option		X1024x768
 option  CONFIG_VIDEO_LOGO
 option	CONFIG_VIDEO_BMP_LOGO
 option 	CONFIG_VIDEO_16BPP
+option	CONFIG_VIDEO_SW_CURSOR
 #option 	CONFIG_VIDEO_32BPP
 select		cmd_call		# Call a function command
 select		ide
