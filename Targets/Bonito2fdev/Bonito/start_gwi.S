@@ -1213,6 +1213,15 @@ LEAF(tgt_putchar)
 #define	NSREG1(x)    (x*4)
 #define	SM502_ADDR  0xb6030000
 	la	v0,SM502_ADDR
+	bal 11f
+	nop
+#ifdef USE_SM502_UART1
+	la	v0,SM502_ADDR+32
+	bal 11f
+	nop
+#endif
+	jr AT
+	nop
 11:
 	lbu	v1, NSREG1(NS16550_LSR)(v0)
 	and	v1, LSR_TXRDY
@@ -1221,7 +1230,7 @@ LEAF(tgt_putchar)
 
 	sb	a0, NSREG1(NS16550_DATA)(v0)
 #endif
-	jr AT
+	jr ra
 	nop
 1:
 	lbu	v1, NSREG(NS16550_LSR)(v0)
@@ -1268,9 +1277,18 @@ LEAF(initserial)
 #define	NSREG1(x)    (x*4)
 #define	SM502_UART_FRE	96000000
 	la	v0,SM502_ADDR
-//	li	a0,SM502_UART_FRE/(12*CONS_BAUD)
-//	li	a0,SM502_UART_FRE/(16*19450)
-	li	a0,0x34
+	li	a0,8000000/(16*CONS_BAUD) //fclock is 8M
+	bal 2f
+	nop
+#ifdef USE_SM502_UART1
+	la	v0,SM502_ADDR+32
+	li	a0,8000000/(16*CONS_BAUD) //fclock is 8M
+	bal 2f
+	nop
+#endif
+	jr AT
+	nop
+2:
 	li	v1, FIFO_ENABLE|FIFO_RCV_RST|FIFO_XMT_RST|FIFO_TRIGGER_4
 	sb	v1, NSREG1(NS16550_FIFO)(v0)
 	li	v1, CFCR_DLAB
@@ -1286,7 +1304,7 @@ LEAF(initserial)
 	li	v1, 0x0
 	sb	v1, NSREG1(NS16550_IER)(v0)
 #endif
-	jr AT
+	jr ra
 	nop
 1:
 	li	v1, FIFO_ENABLE|FIFO_RCV_RST|FIFO_XMT_RST|FIFO_TRIGGER_4
@@ -1546,11 +1564,19 @@ LEAF(superio_init)
 	PCICONF_WRITEW(PCI_IDSEL_SM502,0,0x14,MMIO);
 	PCICONF_WRITEW(PCI_IDSEL_SM502,0,4,7);
 //	PCICONF_WRITEW(PCI_IDSEL_SM502,0,0x40,0x2184f);
+#ifdef USE_SM502_UART1
+	li 	a0,0x218cf|0x100
+#else
 	li 	a0,0x218cf
+#endif
 	li	a1,(MMIO_BASE+0x40)
 	sw	a0,0(a1)
 	nop
+#ifdef USE_SM502_UART1
+	li 	a0,0x1e0|0x1e00
+#else
 	li 	a0,0x1e0
+#endif
 	li	a1,0xb600000c
 	sw	a0,0(a1)
 	nop
