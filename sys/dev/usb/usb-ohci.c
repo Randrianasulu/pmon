@@ -2492,7 +2492,7 @@ int submit_common_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	else
 		timeout = 2000;
 
-	timeout *= 40;
+	timeout *= 100;
 
 	/* wait for it to complete */
 #if 0
@@ -2797,6 +2797,7 @@ static int hc_start (ohci_t * ohci)
 
 	writel (0, &ohci->regs->ed_controlhead);
 	writel (0, &ohci->regs->ed_bulkhead);
+	writel (0, &ohci->regs->ed_periodcurrent);
 
 #ifdef CONFIG_SM502_USB_HCD
 	if(ohci->flags & 0x80)
@@ -2817,6 +2818,15 @@ static int hc_start (ohci_t * ohci)
 	ohci->hc_control = OHCI_CONTROL_INIT | OHCI_USB_OPER;
 	ohci->disabled = 0;
 	writel (ohci->hc_control, &ohci->regs->control);
+
+	{
+		int val;	
+		val = readl(&ohci->regs->intrstatus);
+		while(val & OHCI_INTR_SF){
+			udelay(10);
+			readl(&ohci->regs->intrstatus);
+		}
+	}
 
 	/* disable all interrupts */
 	mask = (OHCI_INTR_SO | OHCI_INTR_WDH | OHCI_INTR_SF | OHCI_INTR_RD |
@@ -2842,6 +2852,8 @@ static int hc_start (ohci_t * ohci)
 #define mdelay(n) do {unsigned long msec=(n); while (msec--) udelay(1000);} while(0)
 	/* POTPGT delay is bits 24-31, in 2 ms units. */
 	mdelay ((roothub_a (ohci) >> 23) & 0x1fe);
+
+	mdelay(1000);
 
 	/* connect the virtual root hub */
 	ohci->rh.devnum = 0;
