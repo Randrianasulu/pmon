@@ -779,7 +779,11 @@ static void ls1g_nand_init_info(struct ls1g_nand_info *info)
     info->page_addr = -1;
     info->nand_addrl = 0x0;
     info->nand_addrh = 0x0;
+#ifdef LS1GSOC    
+    info->nand_timing = 0x206;
+#else    
     info->nand_timing = 0x4<<8 | 0x12;
+#endif
     info->nand_op_num = 0x0;
     info->nand_cs_rdy_map = 0x00000000;
     info->nand_cmd = 0;
@@ -797,24 +801,27 @@ static void ls1g_nand_init_info(struct ls1g_nand_info *info)
 int ls1g_nand_pmon_info_init(struct ls1g_nand_info *info,struct mtd_info *mtd)
 {	
         
-//        info->drcmr_dat =  ((unsigned int)(malloc(sizeof(struct ls1g_nand_dma_desc),M_DMAMAP,M_WAITOK))&0x1fffffff) | 0xa0000000;
-        info->drcmr_dat = 0xa8000000;
+        info->drcmr_dat =  (unsigned int)(malloc(sizeof(struct ls1g_nand_dma_desc)+15,M_DMAMAP,M_WAITOK));
+        info->drcmr_dat = ((info->drcmr_dat+15)&(~0xf))&0xfffffff|0xa0000000;
+//        info->drcmr_dat = 0xa8000000;
         if(info->drcmr_dat == NULL)
             return -1;
 	info->drcmr_dat_phys = (info->drcmr_dat) & 0x1fffffff;
 
         info->mmio_base = 0x1fe78000 | 0xa0000000;
     	
-        info->data_buff = (unsigned char *)0xa8200000;//malloc(MAX_BUFF_SIZE,M_DMAMAP,M_WAITOK);
-//        info->data_buff = ((unsigned int)(malloc(MAX_BUFF_SIZE,M_DMAMAP,M_WAITOK))&0x1fffffff)|0xa0000000;
+//        info->data_buff = (unsigned char *)0xa8200000;//malloc(MAX_BUFF_SIZE,M_DMAMAP,M_WAITOK);
+        info->data_buff = (unsigned int)(malloc(MAX_BUFF_SIZE + 15,M_DMAMAP,M_WAITOK));
+        info->data_buff = (unsigned char *)((((unsigned int)info->data_buff+15) & (~0xf))&0xfffffff|0xa0000000);
         if(info->data_buff == NULL)
             return -1;
         printf("data_buff==0x%08x\n",info->data_buff);
         info->data_buff_phys = (unsigned int)(info->data_buff) & 0x1fffffff;
         printf("data_buff_phys==0x%08x\n",info->data_buff_phys);
         
-  //      info->data_ask = ((unsigned int)(malloc(sizeof(struct ls1g_nand_ask_regs),M_DMAMAP,M_WAITOK))&0x1fffffff)|0xa0000000;
-        info->data_ask = 0xa8400000;//malloc(sizeof(struct ls1g_nand_ask_regs),M_DMAMAP,M_WAITOK);
+        info->data_ask = (unsigned int)(malloc(sizeof(struct ls1g_nand_ask_regs)+15,M_DMAMAP,M_WAITOK));
+        info->data_ask = (((info->data_ask+15)&(~0xf))&0xfffffff|0xa0000000);
+  //      info->data_ask = 0xa8400000;//malloc(sizeof(struct ls1g_nand_ask_regs),M_DMAMAP,M_WAITOK);
         if(info->data_ask ==NULL)
             return -1;
         info->data_ask_phys = info->data_ask & 0x1fffffff;
