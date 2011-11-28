@@ -340,6 +340,7 @@ locate:
 
 2:
 #endif
+	or v1,0x2a00
     sw v1,4(a0)
     sw a1,(a0);
 
