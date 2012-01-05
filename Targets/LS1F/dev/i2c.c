@@ -5,6 +5,12 @@
 
 //----------------------------------------------------
 
+void i2c_stop()
+{
+  * GS_SOC_I2C_CR  = CR_STOP;
+  * GS_SOC_I2C_SR;
+  while(*GS_SOC_I2C_SR & SR_BUSY);
+}
 
 
 
@@ -16,6 +22,7 @@ int j;
 	unsigned char value;
 	for(i=0;i<count;i++)
 	{
+again:
 		for(j=0;j<addrlen;j++)
 		{
 		/*write slave_addr*/
@@ -23,20 +30,20 @@ int j;
   * GS_SOC_I2C_CR  = (j == 0)? (CR_START|CR_WRITE):CR_WRITE; /* start on first addr */
    while(*GS_SOC_I2C_SR & SR_TIP);
 
-  if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
+  if((* GS_SOC_I2C_SR) & SR_NOACK) { printf("read no ack %d\n",__LINE__); i2c_stop();goto again;}
 		}
 
   * GS_SOC_I2C_TXR = reg;
   * GS_SOC_I2C_CR  = CR_WRITE;
    while(*GS_SOC_I2C_SR & SR_TIP);
-  if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
+  if((* GS_SOC_I2C_SR) & SR_NOACK) { printf("read no ack %d\n",__LINE__); i2c_stop();goto again;}
 
 		/*write slave_addr*/
   * GS_SOC_I2C_TXR = addr[0]|1;
   * GS_SOC_I2C_CR  = CR_START|CR_WRITE; /* start on first addr */
    while(*GS_SOC_I2C_SR & SR_TIP);
 
- if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
+  if((* GS_SOC_I2C_SR) & SR_NOACK) { printf("read no ack %d\n",__LINE__); i2c_stop();goto again;}
 
   * GS_SOC_I2C_CR  = CR_READ|I2C_WACK; /*last read not send ack*/
   while(*GS_SOC_I2C_SR & SR_TIP);
@@ -44,6 +51,7 @@ int j;
     buf[i] = * GS_SOC_I2C_TXR;
   * GS_SOC_I2C_CR  = CR_STOP;
   * GS_SOC_I2C_SR;
+  while(*GS_SOC_I2C_SR & SR_BUSY);
  
 	}
 
@@ -56,6 +64,7 @@ int i;
 int j;
 	for(i=0;i<count;i++)
 	{
+again:
 		for(j=0;j<addrlen;j++)
 		{
 		/*write slave_addr*/
@@ -63,19 +72,20 @@ int j;
   * GS_SOC_I2C_CR  = j == 0? (CR_START|CR_WRITE):CR_WRITE; /* start on first addr */
    while(*GS_SOC_I2C_SR & SR_TIP);
 
-  if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
+  if((* GS_SOC_I2C_SR) & SR_NOACK) { printf("write no ack %d\n",__LINE__); i2c_stop();goto again;}
 		}
 
+printf("reg=%d\n",reg);
   * GS_SOC_I2C_TXR = reg;
   * GS_SOC_I2C_CR  = CR_WRITE;
    while(*GS_SOC_I2C_SR & SR_TIP);
-  if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
+  if((* GS_SOC_I2C_SR) & SR_NOACK) { printf("write no ack %d\n",__LINE__); i2c_stop();goto again;}
 
   * GS_SOC_I2C_TXR = buf[i];
   * GS_SOC_I2C_CR = CR_WRITE|CR_STOP;
   while(*GS_SOC_I2C_SR & SR_TIP);
 
-  if((* GS_SOC_I2C_SR) & SR_NOACK) return i;
+  if((* GS_SOC_I2C_SR) & SR_NOACK) { printf("write no ack %d\n",__LINE__); i2c_stop();goto again;}
 	}
   while(*GS_SOC_I2C_SR & SR_BUSY);
 	return count;
