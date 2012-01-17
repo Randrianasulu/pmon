@@ -7,8 +7,7 @@
 #include <pmon.h>
 #include <include/types.h>
 #include <pflash.h>
-
-#define SPI_BASE  0x1fe80000
+unsigned int SPI_BASE=0x1fe80000;
 #define PMON_ADDR 0xa1000000
 #define FLASH_ADDR 0x000000
 
@@ -550,10 +549,14 @@ int fl_program_device(void *fl_base, void *data_base, int data_size, int verbose
 {
 	struct fl_map *map;
 	int off;
+	int spibase;
 	map = fl_find_map(fl_base);
 	off = (int)(fl_base - map->fl_map_base) + map->fl_map_offset;
+	spibase = SPI_BASE;
+	SPI_BASE = (map->fl_map_base == 0xbe000000)?0x1fec0000:0x1fe80000;
 	spi_write_area(off,data_base,data_size);
 	spi_initr();
+	SPI_BASE = spibase;
 	return 0;
 }
 
@@ -562,10 +565,14 @@ int fl_erase_device(void *fl_base, int size, int verbose)
 {
 	struct fl_map *map;
 	int off;
+	int spibase;
 	map = fl_find_map(fl_base);
 	off = (int)(fl_base - map->fl_map_base) + map->fl_map_offset;
+	spibase = SPI_BASE;
+	SPI_BASE = (map->fl_map_base == 0xbe000000)?0x1fec0000:0x1fe80000;
 	spi_erase_area(off,off+size,0x10000);
 	spi_initr();
+	SPI_BASE = spibase;
 return 0;
 }
 
