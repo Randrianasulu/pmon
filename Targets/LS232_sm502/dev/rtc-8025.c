@@ -138,7 +138,7 @@ static uchar buf[16];
 uchar rtc_read(uchar reg)
 {
 	uchar a;
-	a = buf[((reg) + 1) & 0xf];
+	a = buf[reg & 0xf];
 	return a;
 }
 
@@ -192,15 +192,18 @@ void rtc_8025_read (void)
 	uchar i;
 	struct rtc_time *tmp;
 	char value;
-	char i2caddr[]={(unsigned char)0x64};
+	char i2caddr[]={(unsigned char)0x64, 0};
 	tmp = malloc(sizeof(struct rtc_time ));
+	i2caddr[1] = 0xe<<4;
 	value = 0x20;
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&value,1);
 
+	i2caddr[1] = 0xf<<4;
 	value = 0x0;
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xf<<4,&value,1);
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&value,1);
 
-	tgt_i2cread(I2C_SINGLE,i2caddr,1,0,buf,16);
+	i2caddr[1] = 0;
+	tgt_i2cread(I2C_SINGLE,i2caddr,2,buf,16);
 
         sec = rtc_read(RTC_SEC_REG_ADDR);
         min = rtc_read(RTC_MIN_REG_ADDR);
@@ -253,14 +256,16 @@ void rtc_8025_set (void)
 	uchar i;
 	struct rtc_time *tmp;
 	char value;
-	char i2caddr[]={(unsigned char)0x64};
+	char i2caddr[]={(unsigned char)0x64, 0};
 	tmp = malloc(sizeof(struct rtc_time ));
 
+	i2caddr[1] = 0xe<<4;
 	value = 0x20;
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&value,1);
 
+	i2caddr[1] = 0xf<<4;
 	value = 0x0;
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xf<<4,&value,1);
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&value,1);
 
 	memset(tmp,0,sizeof(struct rtc_time));
 
@@ -333,8 +338,9 @@ void rtc_reset (void)
  */
 static void rtc_write (uchar reg, uchar val)
 {
-	char i2caddr[]={(unsigned char)0x64};
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,reg,&val,1);
+	char i2caddr[]={(unsigned char)0x64, 0};
+	i2caddr[1] = reg;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&val,1);
 }
 
 static unsigned bcd2bin (uchar n)

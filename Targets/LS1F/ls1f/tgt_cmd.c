@@ -16,7 +16,7 @@ extern int (*syscall2)(int type,long long addr,union commondata *mydata);
 //----------------------------------------
 
 static int syscall_i2c_type,syscall_i2c_addrlen;
-static char syscall_i2c_addr[2];
+static char syscall_i2c_addr[3];
 
 static int i2c_read_syscall(int type,long long addr,union commondata *mydata)
 {
@@ -24,7 +24,8 @@ char c;
 switch(type)
 {
 case 1:
-tgt_i2cread(syscall_i2c_type,syscall_i2c_addr,syscall_i2c_addrlen,addr,&mydata->data1,1);
+syscall_i2c_addr[syscall_i2c_addrlen] = addr;
+tgt_i2cread(syscall_i2c_type,syscall_i2c_addr,syscall_i2c_addrlen+1,&mydata->data1,1);
 
 break;
 
@@ -39,7 +40,8 @@ char c;
 switch(type)
 {
 case 1:
-tgt_i2cwrite(syscall_i2c_type,syscall_i2c_addr,syscall_i2c_addrlen,addr,&mydata->data1,1);
+syscall_i2c_addr[syscall_i2c_addrlen] = addr;
+tgt_i2cwrite(syscall_i2c_type,syscall_i2c_addr,syscall_i2c_addrlen+1,&mydata->data1,1);
 
 break;
 

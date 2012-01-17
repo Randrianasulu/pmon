@@ -116,8 +116,8 @@ int vga_available=0;
 #include "vgarom.c"
 #endif
 
-int tgt_i2cread(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char* buf ,int count);
-int tgt_i2cwrite(int type,unsigned char *addr,int addrlen,unsigned char reg,unsigned char* buf ,int count);
+int tgt_i2cread(int type,unsigned char *addr,int addrlen,unsigned char* buf ,int count);
+int tgt_i2cwrite(int type,unsigned char *addr,int addrlen,unsigned char* buf ,int count);
 extern struct trapframe DBGREG;
 extern void *memset(void *, int, size_t);
 
@@ -869,7 +869,7 @@ static inline unsigned char CMOS_READ(unsigned char addr)
 
 	pcitag_t tag;
 	unsigned char value;
-	char i2caddr[]={(unsigned char)0x64};
+	char i2caddr[]={(unsigned char)0x64, 0};
 	if(addr >= 0x0a)
 		return 0;
 	switch(addr)
@@ -897,16 +897,20 @@ static inline unsigned char CMOS_READ(unsigned char addr)
 		
 	}
 		
-	tgt_i2cread(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+	i2caddr[1] = 0xe<<4;
+	tgt_i2cread(I2C_SINGLE,i2caddr,2,&value,1);
 		value = value|0x20;
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
-	tgt_i2cread(I2C_SINGLE,i2caddr,1,addr<<4,&val,1);
+
+	i2caddr[1] = 0xe<<4;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&value,1);
+	i2caddr[1] = addr<<4;
+	tgt_i2cread(I2C_SINGLE,i2caddr,2,&val,1);
 	tmp1 = ((val>>4)&0x0f)*10;
 	tmp2  = val&0x0f;
 	val = tmp1 + tmp2;
 	
 #elif defined(DEVBD2F_FIREWALL)
-	char i2caddr[]={0xde,0};
+	char i2caddr[]={0xde,0, 0};
 	if(addr >= 0x0a)
 		return 0;
 	switch(addr)
@@ -937,7 +941,8 @@ static inline unsigned char CMOS_READ(unsigned char addr)
 #ifndef GPIO_I2C
 	//atp8620_i2c_read(0xde,addr,&tmp,1);
 #else	
-	tgt_i2cread(I2C_SINGLE,i2caddr,2,addr,&tmp,1);
+	i2caddr[2] = addr;
+	tgt_i2cread(I2C_SINGLE,i2caddr,3,&tmp,1);
 #endif
 	if(addr == 0x32)
 		tmp = tmp&0x7f;
@@ -960,7 +965,7 @@ static inline void CMOS_WRITE(unsigned char val, unsigned char addr)
   
   	unsigned char tmp1,tmp2;
 	volatile int tmp;
-	char i2caddr[]={(unsigned char)0x64};
+	char i2caddr[]={(unsigned char)0x64, 0};
 	tmp1 = (val/10)<<4;
 	tmp2  = (val%10);
 	val = tmp1|tmp2;
@@ -993,10 +998,13 @@ static inline void CMOS_WRITE(unsigned char val, unsigned char addr)
 	{
 		unsigned char value;
 	
-		tgt_i2cread(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
+		i2caddr[1] = 0xe<<4;
+		tgt_i2cread(I2C_SINGLE,i2caddr,2,&value,1);
 		value = value|0x20;
-		tgt_i2cwrite(I2C_SINGLE,i2caddr,1,0xe<<4,&value,1);
-		tgt_i2cwrite(I2C_SINGLE,i2caddr,1,addr<<4,&val,1);
+		i2caddr[1] = 0xe<<4;
+		tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&value,1);
+		i2caddr[1] = addr<<4;
+		tgt_i2cwrite(I2C_SINGLE,i2caddr,2,&val,1);
 	}
 
 #elif defined(DEVBD2F_FIREWALL)
@@ -1035,11 +1043,14 @@ static inline void CMOS_WRITE(unsigned char val, unsigned char addr)
 #ifndef GPIO_I2C
 	atp8620_i2c_write(0xde,addr,&val,1);
 #else	
+	i2caddr[2] = 0x3f;
 	a = 2;
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,0x3f,&a,1);
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,3,&a,1);
+	i2caddr[2] = 0x3f;
 	a = 6;
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,0x3f,&a,1);
-	tgt_i2cwrite(I2C_SINGLE,i2caddr,2,addr,&tmp,1);
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,3,&a,1);
+	i2caddr[2] = addr;
+	tgt_i2cwrite(I2C_SINGLE,i2caddr,3,&tmp,1);
 #endif
 #endif
 }
@@ -1067,15 +1078,17 @@ _probe_frequencies()
 {
 	extern void __main();
 	char tmp;
-	char i2caddr[]={0xde};
-	tgt_i2cread(I2C_SINGLE,i2caddr,2,0x3f,&tmp,1);
+	char i2caddr[]={0xde, 0, 0};
+	i2caddr[2] = 0x3f;
+	tgt_i2cread(I2C_SINGLE,i2caddr,3,&tmp,1);
 	/*
 	 * bit0:Battery is run out ,please replace the rtc battery
 	 * bit4:Rtc oscillator is no operating,please reset the machine
 	 */
 	tgt_printf("0x3f value  %x\n",tmp);
 	init_legacy_rtc();
-	tgt_i2cread(I2C_SINGLE,i2caddr,2,0x14,&tmp,1);
+	i2caddr[2] = 0x14;
+	tgt_i2cread(I2C_SINGLE,i2caddr,3,&tmp,1);
 	tgt_printf("0x14 value  %x\n",tmp);
 }
 #else
@@ -1150,7 +1163,7 @@ tgt_cpufreq()
 }
 
 time_t
-tgt_gettime()
+__attribute__((weak)) tgt_gettime()
 {
         struct tm tm;
         int ctrlbsave;
@@ -1192,7 +1205,7 @@ char gpio_i2c_settime(struct tm *tm);
  *  Set the current time if a TOD clock is present
  */
 void
-tgt_settime(time_t t)
+ __attribute__((weak)) tgt_settime(time_t t)
 {
         struct tm *tm;
         int ctrlbsave;
