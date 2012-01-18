@@ -127,7 +127,7 @@ int vga_available;
 
 static int md_pipefreq = 0;
 static int md_cpufreq = 0;
-static int clk_invalid = 0;
+int clk_invalid = 0;
 static int nvram_invalid = 0;
 static int cksum(void *p, size_t s, int set);
 static void _probe_frequencies(void);
@@ -150,7 +150,7 @@ void mv_error(unsigned long *adr, unsigned long good, unsigned long bad);
 void print_err( unsigned long *adr, unsigned long good, unsigned long bad, unsigned long xor);
 static inline unsigned char CMOS_READ(unsigned char addr);
 static inline void CMOS_WRITE(unsigned char val, unsigned char addr);
-static void init_legacy_rtc(void);
+void __attribute__((weak))  init_legacy_rtc(void);
 
 #ifdef USE_GPIO_SERIAL
 //modified by zhanghualiang 
@@ -801,7 +801,7 @@ tgt_logo()
 #endif
 }
 
-static void init_legacy_rtc(void)
+void __attribute__((weak))  init_legacy_rtc(void)
 {
         int year, month, date, hour, min, sec;
         CMOS_WRITE(DS_CTLA_DV1, DS_REG_CTLA);
@@ -1055,6 +1055,15 @@ static inline void CMOS_WRITE(unsigned char val, unsigned char addr)
 #endif
 }
 
+int __attribute__((weak)) tgt_getsec()
+{
+	int sec;
+	while(CMOS_READ(DS_REG_CTLA) & DS_CTLA_UIP);
+
+	sec = CMOS_READ(DS_REG_SEC);
+	return sec;
+}
+
 static void
 _probe_frequencies()
 {
@@ -1105,15 +1114,11 @@ aa:
         for(i = 2;  i != 0; i--) {
                 cnt = CPU_GetCOUNT();
                 timeout = 10000000;
-                while(CMOS_READ(DS_REG_CTLA) & DS_CTLA_UIP);
-                                                                               
-                sec = CMOS_READ(DS_REG_SEC);
+		sec = tgt_getsec();
                                                                                
                 do {
                         timeout--;
-			
-                        while(CMOS_READ(DS_REG_CTLA) & DS_CTLA_UIP);
-                        cur = CMOS_READ(DS_REG_SEC);
+                        cur = tgt_getsec();
                 } while(timeout != 0 && ((cur == sec)||(cur !=((sec+1)%60))) && (CPU_GetCOUNT() - cnt<0x30000000));
                 cnt = CPU_GetCOUNT() - cnt;
                 if(timeout == 0) {
