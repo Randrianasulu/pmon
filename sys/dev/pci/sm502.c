@@ -534,6 +534,8 @@ static void SmiSetRegs (void)
 		preg ++;
 	}		
 #ifdef DEVBD2F_SM502
+		/*enable gpio for rtc*/
+		*(unsigned int *)(0xb6000040) |= 0x40;
 #ifdef USE_SM502_UART0
 	{
 		unsigned int a,b;
