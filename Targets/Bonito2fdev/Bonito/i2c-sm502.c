@@ -28,11 +28,8 @@ static volatile char *mmio = 0;
 static void i2c_sleep(int ntime)
 {
 	int i,j=0;
-	for(i=0; i<300*ntime; i++)
-	{
-		j=i;
-		j+=i;
-	}
+	*GPIO_DIR_REG;
+	delay(ntime);
 }
 
 void sda_dir(int ivalue)
@@ -235,8 +232,7 @@ int i;
 		for(i=0;i<count;i++)
 		{
 			buf[i]=i2c_rec();	
-			if(i<count-1)
-			 i2c_send_ack(1);
+			i2c_send_ack(i==count-1);
 		}
 out:
 		i2c_stop();
