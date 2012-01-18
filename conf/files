@@ -394,3 +394,4 @@ file pmon/cmds/password.c
 file pmon/dev/md5.c            
 #command: cat
 file pmon/cmds/cat.c	mod_cat
+file sys/dev/rtc/rtc-ds1308.c ds1308
