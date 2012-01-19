@@ -469,7 +469,7 @@ autoload(char *s)
 		ioctl (STDIN, FIONREAD, &cnt);
 		while (dly != 0 && cnt == 0)
 		{
-			delay(1000000);
+			delay1(1000);
 			printf ("\b\b%02d", --dly);
 			ioctl (STDIN, FIONREAD, &cnt);
 		} 
