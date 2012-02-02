@@ -82,8 +82,8 @@ select 		mod_framebuffer
 select		mod_smi502		# Silicon Motion502
 option		SMI502
 #option		X640x480
-option X800x480
-#option		X800x600
+#option X800x480
+option		X800x600
 #option		X1024x768
 #option		X1280x800
 #option 	CONFIG_VIDEO_8BPP
@@ -102,7 +102,7 @@ option		NOSNOOP			# Caches are no-snooping
 #
 # HAVE options. What tgt level provide
 #
-#option		HAVE_TOD		# Time-Of-Day clock
+option		HAVE_TOD		# Time-Of-Day clock
 option		HAVE_NVENV		#  Platform has non-volatile env mem
 option		HAVE_LOGO		# Output splash logo
 option		USE_SUPERIO_UART
@@ -195,3 +195,12 @@ option OUTPUT_TO_BOTH
 #option	USE_SM502_UART0
 option DEVBD2F_SM502_GOLDING
 select fpga
+select ds1308
+select cmd_call
+option CONFIG_CPU_FREQ=800000000
+option CONFIG_BUS_FREQ=33333333
+
+option	CONFIG_VIDEO_LOGO
+option	CONFIG_VIDEO_BMP_LOGO
+option	CONFIG_VIDEO_SW_CURSOR
+option CONFIG_VIDEO_BMP_LOGO_FILE="sict_log.h"

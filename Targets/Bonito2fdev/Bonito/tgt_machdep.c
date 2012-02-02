@@ -1140,6 +1140,12 @@ aa:
 	}
          tgt_printf("cpu fre %u\n",md_pipefreq);                                                                      
 #endif /* HAVE_TOD */
+#ifdef CONFIG_CPU_FREQ
+	md_pipefreq = CONFIG_CPU_FREQ;
+#endif
+#ifdef CONFIG_BUS_FREQ
+	md_cpufreq = CONFIG_BUS_FREQ;
+#endif
 }
                                                                                
 
