@@ -95,23 +95,23 @@ DDR2_CTL_04_DATA_LO:	.word 0x01010101
 DDR2_CTL_04_DATA_HI:	.word 0x01000202
 //00000_100 column_size 00000_101 caslat 00000_010 addr_pins 000000_10 rtt_pad_termination
 //DDR2_CTL_05_DATA_LO:	.word 0x04040102 #CL =4
-DDR2_CTL_05_DATA_LO:	.word 0x04050202 #CL =5 ###################################
+DDR2_CTL_05_DATA_LO:	.word 0x04040202 #CL =5
 //DDR2_CTL_05_DATA_LO:	.word 0x04040202 #CL =4
 //00000_000 q_fullness 00000_000 port_data_error_type 00000_000 out_of_range_type 00000_000 max_cs_reg 
 DDR2_CTL_05_DATA_HI:	.word 0x00000000
 //00000_010 trtp 00000_010 trrd 00000_010 temrs 00000_011 tcke
-DDR2_CTL_06_DATA_LO:	.word 0x02030203 #125 M ####################################
+DDR2_CTL_06_DATA_LO:	.word 0x01020203 #125 M
 //DDR2_CTL_06_DATA_LO:	.word 0x02020203 #400
 //DDR2_CTL_06_DATA_LO:	.word 0x03050203 #800
 //0000_1010 aprebit 00000_100 wrlat 00000_010 twtr 00000_100 twr_int 
 //DDR2_CTL_06_DATA_HI:	.word 0x0a030203 #125 M
 //DDR2_CTL_06_DATA_HI:	.word 0x0a030204 #400
-DDR2_CTL_06_DATA_HI:	.word 0x0a040304 #800
+DDR2_CTL_06_DATA_HI:	.word 0x0a030306 #800
 //0000_0000 ecc_c_id 0000_1111 cs_map 0000_0111 caslat_lin_gate 0000_1010 caslat_lin
 //DDR2_CTL_07_DATA_LO:	.word 0x000f0708 #CL=4#cs_map to cs0-cs3
 //DDR2_CTL_07_DATA_LO:	.word 0x00010808 #CL=5#cs_map to cs0-cs3
 //DDR2_CTL_07_DATA_LO:	.word 0x000f070a #CL=5#cs_map to cs0-cs3
-DDR2_CTL_07_DATA_LO:	.word 0x00010809 #CL=4#cs_map to cs0-cs0#########################
+DDR2_CTL_07_DATA_LO:	.word 0x00010607 #CL=4#cs_map to cs0-cs0
 //0000_0000 max_row_reg 0000_0000 max_col_reg 0000_0010 initaref 0000_0000 ecc_u_id 
 //DDR2_CTL_07_DATA_HI:	.word 0x00000200
 DDR2_CTL_07_DATA_HI:	.word 0x00000400 #800
@@ -125,10 +125,10 @@ DDR2_CTL_09_DATA_LO:	.word 0x00000000
 //000_00000 ocd_adjust_pup_cs_0 000_00000 ocd_adjust_pdn_cs_0 0000_0100 trp 0000_1000 tdal 
 //DDR2_CTL_09_DATA_HI:	.word 0x00000204 #125 M
 //DDR2_CTL_09_DATA_HI:	.word 0x00000408 #400
-DDR2_CTL_09_DATA_HI:	.word 0x0000020c #800 ###################################tRP 
+DDR2_CTL_09_DATA_HI:	.word 0x0000060c #800
 //00_111111 age_count 000_01111 trc 000_00010 tmrd 000_00000 tfaw
 //DDR2_CTL_10_DATA_LO:	.word 0x3f070200 #125 M
-DDR2_CTL_10_DATA_LO:	.word 0x3f060300 #400 ##################################
+DDR2_CTL_10_DATA_LO:	.word 0x3f0f0200 #400
 //DDR2_CTL_10_DATA_LO:	.word 0x3f1a021b #800
 //0_0011101 dll_dqs_delay_2 0_0011101 dll_dqs_delay_1 0_0011101 dll_dqs_delay_0 00_111111 command_age_count 
 DDR2_CTL_10_DATA_HI:	.word 0x1716173f ########################################
@@ -148,7 +148,7 @@ DDR2_CTL_12_DATA_LO:	.word 0x15000000 #800
 //DDR2_CTL_12_DATA_HI:	.word 0x00160302
 //DDR2_CTL_12_DATA_HI:	.word 0x002a0302 #125/2 M
 //DDR2_CTL_12_DATA_HI:	.word 0x002a0602 #125 M
-DDR2_CTL_12_DATA_HI:	.word 0x00041005 #400 #######################################
+DDR2_CTL_12_DATA_HI:	.word 0x00043c06 #400
 //DDR2_CTL_12_DATA_HI:	.word 0x002a3c05 #800
 //0000000_000101010 dll_dqs_delay_bypass_2 0000000_000101010 dll_dqs_delay_bypass_1
 //DDR2_CTL_13_DATA_LO:	.word 0x01ff01ff #read_dqs_delay_max
