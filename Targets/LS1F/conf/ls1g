@@ -213,3 +213,5 @@ select		ide
 option		CONFIG_FB_DYN
 select http
 select tcp
+#option CONFIG_DDR16BIT
+#option CONFIG_PHY100M
