@@ -324,7 +324,7 @@ struct rtl8169_private {
 	bus_space_handle_t sc_sh;	/* bus space handle */
 	pci_chipset_tag_t sc_pc;	/* chipset handle needed by mips */
 
-	struct pci_attach_args *pa; 
+	struct pci_attach_args pa; 
 
 	struct arpcom arpcom;		/* per-interface network data !!we use this*/
 	struct mii_data sc_mii;		/* MII media information */
@@ -1623,6 +1623,7 @@ rtl8169_init_board(struct rtl8169_private *tp, struct pci_attach_args *pa)
        RTL_W8(tp, Config4, RTL_R8(tp, Config4) | 0x80);
 	RTL_W8(tp, Config5, RTL_R8(tp, Config5) & PMEStatus | 0x13);   //lihui.
 	RTL_W8(tp, Cfg9346, Cfg9346_Lock);
+	tp->pa = *pa;
 
     //by liuqi
     status = RTL_R16(tp, IntrStatus);
@@ -1868,7 +1869,7 @@ r8169_attach(struct device * parent, struct device * self, void *aux)
 	if (tp->mac_version < RTL_GIGA_MAC_VER_E) {
 		printf("Set PCI Latency=0x40\n");
 #define PCI_LATENCY_TIMER 0x0d
-		_pci_conf_writen(tp->pa->pa_tag, PCI_LATENCY_TIMER, 0x40, 1);
+		_pci_conf_writen(tp->pa.pa_tag, PCI_LATENCY_TIMER, 0x40, 1);
 	}
 
 	if (tp->mac_version == RTL_GIGA_MAC_VER_D) {
@@ -2630,7 +2631,7 @@ static void rtl8169_start_xmit(struct ifnet *ifp)
 static void rtl8169_pcierr_interrupt(struct rtl8169_private *tp)
 {
 	u16 pci_status, pci_cmd;
-	struct pci_attach_args *pa = tp->pa;
+	struct pci_attach_args *pa = &tp->pa;
 	u32 tmp;
 
 #if	1
