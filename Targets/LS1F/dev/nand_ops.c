@@ -8,6 +8,7 @@
 #define MYDBG 
 //printf("%s:%x\n",__func__,__LINE__);
 
+
 #define _WL(x,y)    (*((volatile unsigned int*)(x)) = (y))
 #define _RL(x,y)    ((y) = *((volatile unsigned int*)(x)))
 
@@ -56,6 +57,7 @@
 #define DMA_TIMES           0x14
 #define DMA_CMD             0x18
 
+
 #define STOP_DMA            (_WL(0xbfd01160,0x10))
 #define START_DMA(x)       do{  _WL(0xbfd01160,(VT_TO_PHY(x)|0x8));}while(0)
 #define ASK_DMA(x)          (_WL(0xbfd01160,(VT_TO_PHY(x)|0x4)))
@@ -97,6 +99,7 @@ static void nand_send_cmd(u32 cmd,u32 page)//Send addr and cmd
     if(cmd & (0x1<<9)){
         if(cmd &(0x1<<8)){
             NAND_WL(ADDRL,PAGE_TO_FLASH_S(page));
+            //printf("ADDRL is 0x%08x\n", (page*0x840)|0x800);
         }else{
             NAND_WL(ADDRL,PAGE_TO_FLASH_S(page)+0x800);
         }
@@ -107,7 +110,7 @@ static void nand_send_cmd(u32 cmd,u32 page)//Send addr and cmd
     }
     {
         int val=0;
-//    printf("flashaddr==0x%08x,cmd==%d\n",NAND_RL(ADDRL,val),cmd);
+        //printf("flashaddr==0x%08x,cmd==%d\n",NAND_RL(ADDRL,val),cmd);
     }
 
     NAND_WL(CMD,cmd & (~0xff));
@@ -121,12 +124,19 @@ void gpio_init(void)
     
 }
 #endif
+
 static u8 rdy_status(void)
 {
     return ((*((u32*) (NAND_BASE+CMD)) & (0x1<<16)) == 0 ? 0:1);
 }
+static u8 done_status(void)
+{
+    return ((*((volatile u32*) (NAND_BASE+CMD)) & (0x1<<10)) == 0 ? 0:1);
+}
+
 static u8 nand_op_ok(u32 len,u32 ram)
 {
+    #ifdef LS1FSOC
     u32 ask=0,dmalen=0,dmastatus=0;
     while(1){
     ASK_DMA(DMA_DESP);
@@ -140,6 +150,10 @@ static u8 nand_op_ok(u32 len,u32 ram)
     }
     while(!rdy_status())
         nand_udelay(20);
+    #else
+    while(!done_status())
+        nand_udelay(20);
+    #endif
     return 0;
 }
 static void dma_config(u32 len,u32 ddr,u32 cmd)
@@ -165,7 +179,11 @@ int is_bad_block(u32 block)
     u32 page=0;
     page = BLOCK_TO_PAGE(block);
     read_pages(RAM_ADDR,page,1,1);
-    if(*(( u8*) RAM_ADDR)!= 0xff){return 1;}
+    if(*(( u8*) (RAM_ADDR))!= 0xff)
+    {
+        //printf("bad block %d is %x\n", block, PAGE_TO_FLASH(BLOCK_TO_PAGE(block)));
+        return 1;
+    }
     return 0;
 }
 int erase_block(u32 block)
@@ -178,8 +196,13 @@ int erase_block(u32 block)
     MYDBG
     nand_udelay(50);
     MYDBG
+    #ifdef LS1FSOC
     while(!rdy_status())
     nand_udelay(30);
+    #else
+    while(!done_status())
+    nand_udelay(30);
+    #endif
     return 0;
 }
 int read_pages(u32 ram,u32 page,u32 pages,u8 flag)//flag:0==main 1==spare 2==main+spare
@@ -294,7 +317,7 @@ int write_pages(u32 ram,u32 page,u32 pages,u8 flag)
     }
 #endif
     for(;val>0;val-=step){
-//        printf("len==0x%08x,pages==0x%08x\n",len,val);
+        //printf("len==0x%08x,pages==0x%08x\n",len,val);
         dma_config(len,ram,dma_cmd);
         STOP_DMA;
         nand_udelay(10);
@@ -304,6 +327,7 @@ int write_pages(u32 ram,u32 page,u32 pages,u8 flag)
         nand_send_cmd(nand_cmd,page);
         nand_udelay(300);
         ret = nand_op_ok(len,ram);
+        //nand_udelay(300);
         ram+=len;
         page+=step;
         MYDBG;
@@ -454,7 +478,7 @@ int write_nand(u32 ram,u32 flash,u32 len,u8 flag)
     }
     printf("writing. ");    
     pages = (len + chunkpage - 1)/chunkpage;
-//    printf("%x:pages==0x%08x\n",__LINE__,pages);
+    printf("%x:pages==0x%08x\n",__LINE__,pages);
     start_page = page % PAGES_A_BLOCK;
     if(start_page){
         b_pages = (PAGES_A_BLOCK - start_page);
@@ -493,7 +517,7 @@ int write_nand(u32 ram,u32 flash,u32 len,u8 flag)
         MYDBG
         ret = write_pages(ram,page,PAGES_A_BLOCK,flag);
         MYDBG
-        printf(". ");
+        printf(". *");
         if(ret) {return ret;}
         pages -= PAGES_A_BLOCK;
         page += PAGES_A_BLOCK ;
@@ -634,12 +658,33 @@ int mynand_write(int argc,char **argv)
     return 0;
 }
 
+int my_yaffs_write(int argc, char **argv)
+{
+    u32 ram=0, flash=0, len=0;
+    u8 flag=0;
+    if(argc != 4){
+        printf("args error...\n");
+        printf("uargs:yaffs_write <ramaddr>  <flash_partition>  <len>\n");
+        printf("uargs:flash_partition:<mtdblock0/mtd0> <mtdblock1/mtd1>\n");
+        printf("example:yaffs_write 0xa1000000  mtdblock0  0x20000\n");
+        return -1;
+    }
+    ram=strtoul(argv[1],0,0);
+    len=strtoul(argv[3],0,0);
+    if(!strncmp(argv[2],"mtdblock0",9)||!strncmp(argv[2],"mtd0",4)){flash=0x0;}
+    if(!strncmp(argv[2],"mtdblock1",9)||!strncmp(argv[2],"mtd1",4)){flash=0x2000000;}
+    write_nand(ram,flash,len,2);
+    printf("yaffs write nand ops Ok ...\n");
+    return 0;
+}
+
 static const Cmd Cmds[] =
 {
 	{"MyCmds"},
 	{"erase_nand","val",0,"NANDFlash OPS:erase_nand <startblock> <blocks>",mynand_erase,0,99,CMD_REPEAT},
 	{"read_nand","val",0,"NANDFlash OPS:read_nand <ramaddr>  <flashaddr>  <len>  <flag(a/A/m/M/s/S)>",mynand_read,0,99,CMD_REPEAT},
 	{"write_nand","val",0,"NANDFlash OPS:write_nand <ramaddr>  <flashaddr>  <len>  <flag(a/A/m/M/s/S)>",mynand_write,0,99,CMD_REPEAT},
+	{"yaffs_write","val",0,"NANDFlash OPS:yaffs_write <ramaddr>  <flash_partition(mtdblock0/mtdblock1)>  <len>",my_yaffs_write,0,99,CMD_REPEAT},
 	{0, 0}
 };
 
