@@ -973,7 +973,18 @@ LEAF(initserial)
 	li	v1, CFCR_DLAB
 	sb	v1, NSREG(NS16550_CFCR)(v0)
 #ifdef LS1FSOC
- 	li	v1, ((APB_CLK*DDR_MULT)/(2*16*CONS_BAUD))     // 8MHz crystal,   M[7:3]=6     1fboard
+	li a0, 0xbfe78030
+	lw a0,(a0)
+	and a0,0x700
+	srl a0,8
+	addiu a0,3
+	li v1,APB_CLK
+	multu a0,v1
+	mflo v1
+	li a0,2*16*CONS_BAUD
+	divu v1,a0
+	mflo v1
+ //	li	v1, ((APB_CLK*DDR_MULT)/(2*16*CONS_BAUD))     // 8MHz crystal,   M[7:3]=6     1fboard
 #else
 	move	v1,a0
 	bnez	v1,2f
