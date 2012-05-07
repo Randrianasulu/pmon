@@ -326,7 +326,8 @@ static void ls1g_nand_init_mtd(struct mtd_info *mtd,struct ls1g_nand_info *info)
 {
 	struct nand_chip *this = &info->nand_chip;
 
-	this->options = 8;//(f->flash_width == 16) ? NAND_BUSWIDTH_16: 0;
+	//this->options = NAND_CACHEPRG|NAND_SKIP_BBTSCAN;//(f->flash_width == 16) ? NAND_BUSWIDTH_16: 0;
+	this->options = NAND_CACHEPRG;//(f->flash_width == 16) ? NAND_BUSWIDTH_16: 0;
 
 	this->waitfunc		= ls1g_nand_waitfunc;
 	this->select_chip	= ls1g_nand_select_chip;
@@ -345,7 +346,7 @@ static void ls1g_nand_init_mtd(struct mtd_info *mtd,struct ls1g_nand_info *info)
 	this->ecc.size		= 2048;
         this->ecc.bytes         = 24;
 
-//	this->ecc.layout = &hw_largepage_ecclayout;
+	this->ecc.layout = &hw_largepage_ecclayout;
 //        mtd->owner = THIS_MODULE;
 }
 #define write_z_cmd  do{                                    \
@@ -780,7 +781,7 @@ static void ls1g_nand_init_info(struct ls1g_nand_info *info)
     info->nand_addrl = 0x0;
     info->nand_addrh = 0x0;
 #ifdef LS1GSOC    
-    info->nand_timing = 0x206;
+    info->nand_timing = 0x209;
 #else    
     info->nand_timing = 0x4<<8 | 0x12;
 #endif
@@ -840,30 +841,30 @@ int ls1g_nand_pmon_info_init(struct ls1g_nand_info *info,struct mtd_info *mtd)
 
 static void find_good_part(struct mtd_info *ls1g_soc_mtd)
 {
-int offs;
-int start=-1;
-char name[20];
-int idx=0;
-for(offs=0;offs< ls1g_soc_mtd->size;offs+=ls1g_soc_mtd->erasesize)
-{
-if(ls1g_soc_mtd->block_isbad(ls1g_soc_mtd,offs)&& start>=0)
-{
-	sprintf(name,"g%d",idx++);
-	add_mtd_device(ls1g_soc_mtd,start,offs-start,name);
-	start=-1;
-}
-else if(start<0)
-{
- start=offs;
-}
+    int offs;
+    int start=-1;
+    char name[20];
+    int idx=0;
+    for(offs=0;offs< ls1g_soc_mtd->size;offs+=ls1g_soc_mtd->erasesize)
+    {
+        if(ls1g_soc_mtd->block_isbad(ls1g_soc_mtd,offs)&& start>=0)
+        {
+            sprintf(name,"g%d",idx++);
+            add_mtd_device(ls1g_soc_mtd,start,offs-start,name);
+            start=-1;
+        }
+        else if(start<0)
+        {
+            start=offs;
+        }
 
-}
+    }
 
-if(start>=0)
-{
-	sprintf(name,"g%d",idx++);
-	add_mtd_device(ls1g_soc_mtd,start,offs-start,name);
-}
+    if(start>=0)
+    {
+        sprintf(name,"g%d",idx++);
+        add_mtd_device(ls1g_soc_mtd,start,offs-start,name);
+    }
 }
 
 #define __ww(addr,val)  *((volatile unsigned int*)(addr)) = (val)
@@ -1139,9 +1140,8 @@ static const Cmd Cmds[] =
 static void init_cmd __P((void)) __attribute__ ((constructor));
 static void init_cmd()
 {
-	cmdlist_expand(Cmds, 1);
+//	cmdlist_expand(Cmds, 1);
 }
-
 int ls1g_soc_nand_init(void)
 {
  //       nand_gpio_read_id();
@@ -1153,7 +1153,7 @@ int ls1g_soc_nand_init(void)
 
 
         /* Allocate memory for MTD device structure and private data */
-	ls1g_soc_mtd = malloc(sizeof(struct mtd_info) + sizeof(struct nand_chip),M_DEVBUF,M_WAITOK);
+	ls1g_soc_mtd = malloc(sizeof(struct mtd_info) + sizeof(struct ls1g_nand_info),M_DEVBUF,M_WAITOK);
 	if (!ls1g_soc_mtd) {
 		printk("Unable to allocate fcr_soc NAND MTD device structure.\n");
 		return -ENOMEM;
@@ -1163,7 +1163,7 @@ int ls1g_soc_nand_init(void)
 
 	/* Initialize structures */
 	memset(ls1g_soc_mtd, 0, sizeof(struct mtd_info));
-	memset(this, 0, sizeof(struct nand_chip));
+	memset(this, 0, sizeof(struct ls1g_nand_info));
 
 	/* Link the private data with the MTD structure */
 	ls1g_soc_mtd->priv = this;
@@ -1173,7 +1173,6 @@ int ls1g_soc_nand_init(void)
             printf("\n\nerror: PMON nandflash driver have some error!\n\n");
             return -ENXIO;
         }
-
 	/* Scan to find existence of the device */
         if (nand_scan(ls1g_soc_mtd, 1)) {
 		free(ls1g_soc_mtd,M_DEVBUF);
@@ -1181,7 +1180,7 @@ int ls1g_soc_nand_init(void)
 	}
         if(ls1g_nand_detect(ls1g_soc_mtd)){
             printf("error: PMON driver don't support the NANDFlash!\n ");
-            return -ENXIO;
+           return -ENXIO;
         }       
 
 	/* Register the partitions */

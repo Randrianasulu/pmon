@@ -12,6 +12,7 @@ typedef struct mtdfile {
 #define MTDFILE_STATIC  0x0000
 #define MTDFILE_DYNAMIC 0x0001
 	LIST_ENTRY(mtdfile)	i_next;
+        void *trans_table;
 	char name[1];
 } mtdfile;
 
@@ -19,5 +20,6 @@ typedef struct mtdpriv {
 struct mtdfile *file;
 	unsigned int open_offset;
 	unsigned int open_size;
+        int flags;
 } mtdpriv;
 
