@@ -414,22 +414,22 @@ m_loop:
 
 1:
 	  sb t8,(t7)
-	  addiu t7,1
+	  daddiu t7,1
 	  b m_loop
 	  nop
 2:
 	  sh t8,(t7)
-	  addiu t7,2
+	  daddiu t7,2
 	  b m_loop
 	  nop
 4:
 	  sw t8,(t7)
-	  addiu t7,4
+	  daddiu t7,4
 	  b m_loop
 	  nop
 8:
 	  sd t8,(t7)
-	  addiu t7,8
+	  daddiu t7,8
 	  b m_loop
 	  nop
 m_end:
