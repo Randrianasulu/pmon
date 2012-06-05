@@ -65,3 +65,5 @@ void hexserial __P((int));
  */
 #define CLIENTPC 0x80100000
 #define SETCLIENTPC "80100000"
+int mtd_rescan(char *value);
+#define TGT_DEFENV {"mtdparts","nand-flash:10M@0(kernel)ro,-(rootfs)",&mtd_rescan}

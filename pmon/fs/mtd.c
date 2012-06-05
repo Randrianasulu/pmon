@@ -46,6 +46,14 @@
 #include "logfile.h"
 #include <pmon.h>
 #include <linux/mtd/nand.h>
+#include <linux/mtd/partitions.h>
+#if 0
+#define MTD_FLAGS_CHAR      0x1 /*main+oob,all data */
+#define MTD_FLAGS_BLOCK     0x2 /*main;but no OOB */
+#define MTD_FLAGS_RAW       0x4 /*raw mtd,no check bad part*/
+#define MTD_FLAGS_CHAR_MARK 0x8 /*main+oob,but bad_mark auto*/
+#define MTD_FLAGS_GOOD      0x10 /*use good part info*/
+#endif
 
 LIST_HEAD(mtdfiles, mtdfile) mtdfiles = LIST_HEAD_INITIALIZER(mtdfiles);
 static int mtdidx=0;
@@ -130,16 +138,39 @@ static int
         }
     }
     else if(isdigit(dname[0])){
-        if((poffset=strchr(dname,'c'))){ 
-            *poffset++=0;
-            flags=1;
-            if((poffset=strchr(poffset,'@'))) {
-                *poffset++=0;
-            }
-        }else{
-            if((poffset=strchr(dname,'@'))) 
-                *poffset++=0;
-        }
+	 int i;
+	 for(i=0; isdigit(dname[i]); i++);
+	 for(i=0; dname[i] && dname[i] != '/' && !poffset;i++)
+         {
+             switch(dname[i])
+             {
+                 case 'c':
+                     if(!flags){ 
+                         flags |= MTD_FLAGS_CHAR;break;
+                     }else
+                         break;
+                 case 'y': 
+                     if(!flags){
+                         flags |= MTD_FLAGS_CHAR_MARK; break;
+                     }else
+                         break;
+                 case 'b': 
+                     if(!flags){
+                         flags |= MTD_FLAGS_BLOCK; break;
+                     }else
+                         break;
+                 case 'r': 
+                     if(!flags){
+                         flags |= MTD_FLAGS_RAW; break;
+                     }else
+                         break;
+                     //	   case 'g': flags |= FLAGS_GOOD;break;
+                 case '@': poffset = &dname[i+1];break;
+                 default:
+                           break;
+
+             }
+         }
         idx=strtoul(dname,0,0);
     }
     else idx=-1;
@@ -166,7 +197,7 @@ foundit:
         if((psize=strchr(poffset,',')))
         {
             *psize++=0;
-            if(flags&0x1){
+            if(flags & MTD_FLAGS_RAW || flags & MTD_FLAGS_CHAR ||flags & MTD_FLAGS_CHAR_MARK){
                 open_size=strtoul(psize,0,0);
                 open_size -= ((open_size / 0x840)*0x40);
             }else
@@ -177,10 +208,8 @@ foundit:
 
     p->refs++;
     priv=malloc(sizeof(struct mtdpriv));
-    priv->flags=0;
+    priv->flags = flags;
     priv->file=p;
-    if(flags&0x1)
-        priv->flags |= 0x1;
     priv->open_size=open_size?open_size:p->part_size;
     priv->open_offset=open_offset;
 
@@ -216,13 +245,13 @@ static int
     struct mtd_oob_ops ops;
     priv = (mtdpriv *)_file[fd].data;
     p = priv->file;
-    if(priv->flags&0x1){
+    if(priv->flags & MTD_FLAGS_CHAR || priv->flags & MTD_FLAGS_RAW ||priv->flags & MTD_FLAGS_CHAR_MARK){
         n-=64;
     }
     left = n;
     if (_file[fd].posn + n > priv->open_size)
         n = priv->open_size - _file[fd].posn;
-    if(priv->flags&0x1){
+    if(priv->flags & MTD_FLAGS_CHAR_MARK ||priv->flags & MTD_FLAGS_CHAR|| priv->flags & MTD_FLAGS_RAW ){
         if(n<=0)
             return 0;
         ops.mode = MTD_OOB_RAW;
@@ -270,14 +299,16 @@ static int
     struct mtd_oob_ops ops;
     priv = (mtdpriv *)_file[fd].data;
     p = priv->file;
-    if(priv->flags & 0x1)
+    if(priv->flags & MTD_FLAGS_CHAR_MARK || priv->flags & MTD_FLAGS_CHAR|| priv->flags & MTD_FLAGS_RAW)
         n-=64;
     left=n;
     if (_file[fd].posn + n > priv->open_size)
         n = priv->open_size - _file[fd].posn;
     if(n<=0)
         return 0;
-    if(priv->flags&0x1){
+    if(priv->flags & MTD_FLAGS_CHAR_MARK ||priv->flags & MTD_FLAGS_CHAR|| priv->flags & MTD_FLAGS_RAW)
+    {
+        ops.mode = (priv->flags & MTD_FLAGS_CHAR_MARK) ? MTD_OOB_AUTO : MTD_OOB_RAW;
         while(left)
         {
             start_addr=file_to_mtd_pos(fd,&maxlen);
@@ -295,7 +326,7 @@ static int
             {
                 p->mtd->erase(p->mtd,&erase);
             }
-            ops.mode = MTD_OOB_AUTO;
+   //         ops.mode = MTD_OOB_AUTO;
             ops.ooblen = 64;
             ops.ooboffs = 0;
             ops.oobbuf = buf+0x800;
@@ -371,64 +402,54 @@ mtdfile_lseek (fd, offset, whence)
 	return (_file[fd].posn);
 }
 
-
-
+struct mtd_info *nand_flash_mtd_info;
 int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
 {
-	struct mtdfile *rmp;
-	int len=sizeof(struct mtdfile);
-	if(name)len+=strlen(name);
+    struct mtdfile *rmp;
+    int len=sizeof(struct mtdfile);
+    if(name)len+=strlen(name);
+	if(!nand_flash_mtd_info) nand_flash_mtd_info = mtd;
 
-	rmp = (struct mtdfile *)malloc(len);
-	if (rmp == NULL) {
-		fprintf(stderr, "Out of space adding mtdfile");
-		return(NULL);
-	}
+    rmp = (struct mtdfile *)malloc(len);
+    if (rmp == NULL) {
+        fprintf(stderr, "Out of space adding mtdfile");
+        return(NULL);
+    }
+    bzero(rmp, len);
+    rmp->mtd =mtd;
+    rmp->index=mtdidx++;
+    rmp->part_offset=offset;
+    if(size) rmp->part_size=size;
+    else rmp->part_size=mtd->size - offset;
+    if(name)strcpy(rmp->name,name);
 
-	bzero(rmp, len);
-	rmp->mtd =mtd;
-	rmp->index=mtdidx++;
-	rmp->part_offset=offset;
-	if(size) rmp->part_size=size;
-	else rmp->part_size=mtd->size - offset;
-	if(name)strcpy(rmp->name,name);
-        
-#if 1	
-        if(!mtdfiles.lh_first)
-	{
-	rmp->i_next.le_next=0;
-	rmp->i_next.le_prev=&rmp->i_next;
-	mtdfiles.lh_first=rmp;
-	}
-	else {
-	*mtdfiles.lh_first->i_next.le_prev=mtdfiles.lh_first;
-	LIST_INSERT_BEFORE(mtdfiles.lh_first, rmp, i_next);
-	*mtdfiles.lh_first->i_next.le_prev=0;
-	}
-/*add into badblock table */
-	if(!strcmp(name,"g0"))
-	{
-		goodpart0=rmp;
-	}
-#endif
-            creat_part_trans_table(rmp);
-        return 0;
+    if(!mtdfiles.lh_first)
+    {
+        rmp->i_next.le_next=NULL;
+        rmp->i_next.le_prev=&mtdfiles.lh_first;
+        mtdfiles.lh_first=rmp;
+    }
+    else {
+        LIST_INSERT_AFTER(mtdfiles.lh_first, rmp, i_next);
+    }
+    creat_part_trans_table(rmp);
+    return 0;
 }
 int file_to_mtd_pos(int fd,int *plen)
 {
     struct mtdfile *goodpart;
     mtdfile *p;
     mtdpriv *priv;
-    int add,file_start,offset,pos,tmp;
+    int add,file_start,pos;
 
     priv = (mtdpriv *)_file[fd].data;
     p = priv->file;
 
-    offset=0;
     file_start=p->part_offset+priv->open_offset;
     pos=_file[fd].posn;
-    if(getenv("goodpart"))
+    if(priv->flags & MTD_FLAGS_GOOD)
     {
+    int offset=0;
         goodpart=goodpart0;
         add=goodpart0->part_offset;
         while(goodpart)
@@ -444,17 +465,25 @@ int file_to_mtd_pos(int fd,int *plen)
             goodpart=goodpart->i_next.le_next;
         }
         if(plen)*plen=(goodpart->part_offset+goodpart->part_size)-(file_start+pos+offset);
+    return file_start+pos+offset;
+    }
+    else if(priv->flags & MTD_FLAGS_RAW)
+    {
+        if(plen){
+            *plen = (p->part_offset + p->part_size)-(file_start + pos);
+        }
+        return file_start + pos;
     }
     else
     {
+    int tmp;
         if(plen){
-            *plen=(p->part_offset+p->part_size)-(file_start+pos+offset);
+            *plen=(p->part_offset+p->part_size)-(file_start+pos);
         }
-        tmp = file_start+pos+offset;
+        tmp = file_start+pos;
         return (((((int*)(p->trans_table))[tmp>>17])<<17)|(tmp&((0x1<<17) -1)));
     }
     
-    return file_start+pos+offset;
 }
 
 int del_mtd_device (struct mtd_info *mtd)
@@ -463,8 +492,9 @@ int del_mtd_device (struct mtd_info *mtd)
 
 	LIST_FOREACH(rmp, &mtdfiles, i_next) {
 		if(rmp->mtd==mtd) {
-			if(rmp->refs == 0) {
+                        if(rmp->refs == 0) {
 				LIST_REMOVE(rmp, i_next);
+                                mtdidx--;
 				free(rmp);
 				return(0);
 			} else {
@@ -500,3 +530,124 @@ static void
 
 }
 
+static int cmd_flash_erase(int argc,char **argv)
+{
+    char *path=0;
+    int fp=-1,start=0,end=0;
+    mtdfile *p;
+    mtdpriv *priv;
+    struct mtd_info *mtd;
+    struct erase_info erase;
+    if(argc!=2){
+        printf("args error...\n");
+        printf("uargs:mtd_erase /dev/mtdx\n");
+        printf("example:mtd_erase /dev/mtd0\n\n");
+        return -1;
+    }
+    path = argv[1];
+    if(!path)return -1;
+    fp = open(path,O_RDWR|O_CREAT|O_TRUNC);
+    if(!fp){printf("open file error!\n");return -1;}
+    if(strncmp(_file[fp].fs->devname,"mtd",3)){
+        printf("the DEV(\"%s\") isn't flash-dev\n",path);
+        close(fp);
+        return -1;
+    }
+    priv = (mtdpriv*)_file[fp].data;
+    p = priv->file;
+    mtd = p->mtd;
+    start = (p->part_offset)&~(mtd->erasesize-1);
+    end = ((p->part_offset + p->part_size)&~(mtd->erasesize-1)) - mtd->erasesize;
+    erase.mtd = mtd;
+    erase.callback=0;
+    erase.priv = 0;
+    if(priv->flags & MTD_FLAGS_RAW)
+        printf("\nERASE the device:\"%s\",DON'T skip bad-blocks\n\n",path);
+    else 
+        printf("\nERASE the device:\"%s\",SKIP bad-blocks\n\n",path);
+//    printf("end==0x%08x,start=0x%08x\n",end,start);
+    printf("mtd_erase working: \n%08x  ",start);
+    if(priv->flags & MTD_FLAGS_RAW){
+        struct nand_chip *chip=mtd->priv;
+         while(start<end){
+            chip->erase_cmd(mtd,start >> chip->page_shift);
+            printf("\b\b\b\b\b\b\b\b\b\b%08x  ",start);
+            start += mtd->erasesize;
+        }
+    }else{
+        while(start<end){
+            erase.addr = start;
+            erase.len = mtd->erasesize;
+            mtd->erase(mtd,&erase);
+            printf("\b\b\b\b\b\b\b\b\b\b%08x  ",start);
+            start += mtd->erasesize;
+        }
+    }
+    close(fp);    
+    printf("\nmtd_erase work done!\n");
+    return 0;
+}
+
+struct mtd_partition partitions[16];
+int num_partitions;
+
+int nand_flash_add_parts(void)
+{
+
+    int i;
+    num_partitions = parse_cmdline_partitions(nand_flash_mtd_info,&partitions,0);
+    if(num_partitions > 0){ 
+        for(i=0;i < num_partitions;i++){ 
+            add_mtd_device(nand_flash_mtd_info,partitions[i].offset,partitions[i].size,partitions[i].name);
+        }
+    }
+    return num_partitions;
+}
+
+void first_del_all_parts(struct mtd_info *soc_mtd)
+{
+    int i=0;
+    for(;i<num_partitions;i++){
+        del_mtd_device(soc_mtd);
+    }
+}
+
+int mtd_rescan(char *value)
+{
+    if(value && nand_flash_mtd_info){
+        first_del_all_parts(nand_flash_mtd_info); 
+        nand_flash_add_parts();
+    }
+    return 0;
+}
+
+int my_mtdparts(int argc,char**argv)
+{
+    struct mtd_partition *parts=partitions;
+    int num=num_partitions,i;
+    printf("device <%s>,#parts = %d\n\n",nand_flash_mtd_info->name,num);     
+    printf(" #: name\tsize\t\toffset\t\tmask_flags\n");
+    for(i=0;i<num;i++){
+        printf(" %d: %s\t0x%08x(%dm)\t0x%08x(%dm)\t%x\n",i,parts[i].name,parts[i].size,parts[i].size>>20, parts[i].offset,parts[i].offset>>20,parts[i].mask_flags);
+    }
+    printf("\nmtdparts INFO:\n");
+    printf("  now-active: \tmtdparts=%s\n",getenv("mtdparts"));
+    printf("  <NOTE>:you can use command(CMD:  unset mtdparts ) to become the default !!! \n\n");
+    return 0;
+}
+
+
+
+static const Cmd Cmds[] =
+{
+	{"MyCmds"},
+	{"mtdparts","0",0,"NANDFlash OPS:mtdparts ",my_mtdparts,0,99,CMD_REPEAT},
+	{"mtd_erase","nand-flash-device",0,"NANDFlash OPS:mtd_erase /dev/mtdx",cmd_flash_erase,0,99,CMD_REPEAT},
+	{0, 0}
+};
+
+static void init_cmd __P((void)) __attribute__ ((constructor));
+static void init_cmd()
+{
+	cmdlist_expand(Cmds, 1);
+}

@@ -231,7 +231,7 @@ static int test_mtd_or_mtdc(int fp)
     if(!strncmp(_file[fp].fs->devname,"mtd",3)){
         flags=1;
         priv = (mtdpriv *)_file[fp].data;
-        if(priv->flags & 0x1)
+        if(priv->flags & MTD_FLAGS_CHAR ||priv->flags & MTD_FLAGS_CHAR_MARK ||priv->flags & MTD_FLAGS_RAW  )
             flags=2;
     }
     return flags;
