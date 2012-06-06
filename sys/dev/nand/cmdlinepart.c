@@ -332,14 +332,14 @@ static int mtdpart_setup_real(char *s)
  */
 int parse_cmdline_partitions(struct mtd_info *master,
                              struct mtd_partition **pparts,
-                             unsigned long origin)
+                             unsigned long origin,char *value)
 {
 	unsigned long offset;
 	int i;
 	struct cmdline_mtd_partition *part;
 	char *mtd_id = master->name;
 
-       if(!(cmdline = getenv("mtdparts")))
+        if(!((cmdline = value) || (cmdline = getenv("mtdparts"))))
            return 0;
 	if(!cmdline)
 		return 0;

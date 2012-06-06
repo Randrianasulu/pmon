@@ -1107,11 +1107,7 @@ static void init_cmd()
 //	cmdlist_expand(Cmds, 1);
 }
 
-/* you can find those in nand_ops.c*/
 static char *mtd_id="nand-flash";
-extern struct mtd_info *nand_flash_mtd_info;
-/* you can find those in nand_ops.c*/
-
 int ls1g_soc_nand_init(void)
 {
  //       nand_gpio_read_id();
@@ -1149,8 +1145,7 @@ int ls1g_soc_nand_init(void)
            return -ENXIO;
         }  
         ls1g_soc_mtd->name=mtd_id;
-        nand_flash_mtd_info = ls1g_soc_mtd;     
-        if(!nand_flash_add_parts()){
+        if(!nand_flash_add_parts(ls1g_soc_mtd,0)){
                 add_mtd_device(ls1g_soc_mtd,0,0,"total");
                 add_mtd_device(ls1g_soc_mtd,0,0x01400000,"kernel");
                 add_mtd_device(ls1g_soc_mtd,0x01400000,0x0,"os");

@@ -434,6 +434,7 @@ static inline int call_old_write_oob(struct mtd_info *mtd, loff_t from, struct m
 
 extern int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name);
 extern int del_mtd_device (struct mtd_info *mtd);
+extern int nand_flash_add_parts(struct mtd_info *,char*);
 
 extern struct mtd_info *__get_mtd_device(struct mtd_info *mtd, int num);
 

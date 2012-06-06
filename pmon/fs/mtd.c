@@ -402,13 +402,11 @@ mtdfile_lseek (fd, offset, whence)
 	return (_file[fd].posn);
 }
 
-struct mtd_info *nand_flash_mtd_info;
 int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
 {
     struct mtdfile *rmp;
     int len=sizeof(struct mtdfile);
     if(name)len+=strlen(name);
-	if(!nand_flash_mtd_info) nand_flash_mtd_info = mtd;
 
     rmp = (struct mtdfile *)malloc(len);
     if (rmp == NULL) {
@@ -588,17 +586,20 @@ static int cmd_flash_erase(int argc,char **argv)
     return 0;
 }
 
-struct mtd_partition partitions[16];
-int num_partitions;
+static struct mtd_partition *partitions;
+static int num_partitions;
+static struct mtd_info *nand_flash_mtd_info;
 
-int nand_flash_add_parts(void)
+int nand_flash_add_parts(struct mtd_info *mtd_soc,char *cmdline)
 {
 
     int i;
-    num_partitions = parse_cmdline_partitions(nand_flash_mtd_info,&partitions,0);
+    if(!nand_flash_mtd_info) 
+        nand_flash_mtd_info = mtd_soc;
+    num_partitions = parse_cmdline_partitions(mtd_soc,&partitions,0,cmdline);
     if(num_partitions > 0){ 
         for(i=0;i < num_partitions;i++){ 
-            add_mtd_device(nand_flash_mtd_info,partitions[i].offset,partitions[i].size,partitions[i].name);
+            add_mtd_device(mtd_soc,partitions[i].offset,partitions[i].size,partitions[i].name);
         }
     }
     return num_partitions;
@@ -612,13 +613,13 @@ void first_del_all_parts(struct mtd_info *soc_mtd)
     }
 }
 
-int mtd_rescan(char *value)
+int mtd_rescan(char *name,char*value)
 {
     if(value && nand_flash_mtd_info){
         first_del_all_parts(nand_flash_mtd_info); 
-        nand_flash_add_parts();
+        nand_flash_add_parts(nand_flash_mtd_info,value);
     }
-    return 0;
+    return 1;
 }
 
 int my_mtdparts(int argc,char**argv)
