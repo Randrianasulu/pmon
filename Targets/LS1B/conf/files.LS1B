@@ -1,0 +1,52 @@
+# $Id: files.LS1B
+#
+# Bonito Target specific files
+#
+file	Targets/LS1B/ls1b/dc.c
+file	Targets/LS1B/ls1b/tgt_machdep.c
+file	Targets/LS1B/dev/i2c.c
+file	Targets/LS1B/dev/spi.c
+file	Targets/LS1B/dev/ac97.c
+file	Targets/LS1B/ls1b/tgt_cmd.c
+file	Targets/LS1B/ls1b/memscan.c
+file	Targets/LS1B/dev/hpet.c
+#sw
+file	sys/dev/gmac/synopGMAC_Host.c               gmac
+file	sys/dev/gmac/synopGMAC_Dev.c                gmac
+file	sys/dev/gmac/synopGMAC_network_interface.c  gmac
+file	sys/dev/gmac/synopGMAC_plat.c               gmac
+file	sys/dev/gmac/if_gmac.c gmac
+
+file	Targets/LS1B/dev/can.c
+file    Targets/LS1B/dev/spi_w.c
+file    sys/dev/nand/cmdlinepart.c  nand needs-flag
+file    sys/dev/nand/ls1g-nand.c  nand needs-flag
+
+#file 	sys/dev/phy/bcm5461config.c
+
+define  localbus { [base = -1 ] }
+device  localbus
+attach  localbus at mainbus
+file    Targets/LS1B/dev/localbus.c		localbus
+
+device	syn: ether, ifnet
+attach	syn at localbus
+
+device	sdcard
+attach	sdcard at localbus
+file	Targets/LS1B/dev/sdcardfs_spi.c sdcard needs-flag
+
+# Ethernet driver for Discovery ethernet
+
+device lohci: usbbus 
+attach lohci at localbus
+
+#
+# Media Indepedent Interface (mii)
+#
+include "sys/dev/mii/files.mii"
+
+#
+# Custom application files
+#
+include "pmon/custom/files.custom"
