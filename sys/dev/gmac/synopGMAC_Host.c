@@ -54,6 +54,7 @@
 /***************************************************/
 
 s32  synopGMAC_init_network_interface(char* xname,u64 synopGMACMappedAddr);
+#ifndef NOPCI
 int  SynopGMAC_Host_Interface_init(void)
 {
 
@@ -88,6 +89,7 @@ int  SynopGMAC_Host_Interface_init(void)
 	
       return 0 ;
 }
+#endif
 
 /*
 void  SynopGMAC_Host_Interface_exit(void)
