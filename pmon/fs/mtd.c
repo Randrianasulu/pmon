@@ -69,6 +69,7 @@ int highmemcpy(long long dst,long long src,long long count);
 void mycacheflush(long long addrin,unsigned int size,unsigned int rw);
 
 #define addr_to_block(x) ((x)>>17)
+#define TO_MIN(x,y,z)   min(min((0x20000 - ((z) & (0x1ffff))),(x)),(y))
 static creat_part_trans_table(mtdfile *p)
 {
     struct mtd_info *mtd=p->mtd;
@@ -274,7 +275,7 @@ static int
         while(left)
         {
             newpos=file_to_mtd_pos(fd,&maxlen);
-            p->mtd->read(p->mtd,newpos,min(left,maxlen),&retlen,buf);
+            p->mtd->read(p->mtd,newpos,TO_MIN(left,maxlen,newpos),&retlen,buf);
             if(retlen<=0)break;
             _file[fd].posn += retlen;
             buf += retlen;
