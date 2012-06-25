@@ -14,10 +14,18 @@
 #define ORDER_REG_ADDR      (0xbfd01160)
 #define MAX_BUFF_SIZE	4096
 #define PAGE_SHIFT      12
+#ifdef LS1GSOC
 #define NO_SPARE_ADDRH(x)   ((x) >> (32 - (PAGE_SHIFT - 1 )))   
 #define NO_SPARE_ADDRL(x)   ((x) << (PAGE_SHIFT - 1))
 #define SPARE_ADDRH(x)      ((x) >> (32 - (PAGE_SHIFT )))   
 #define SPARE_ADDRL(x)      ((x) << (PAGE_SHIFT ))
+#elif LS1FSOC
+#define NO_SPARE_ADDRH(x)   (x)   
+#define NO_SPARE_ADDRL(x)   0
+#define SPARE_ADDRH(x)      (x)   
+#define SPARE_ADDRL(x)      0
+#endif
+
 #define ALIGN_DMA(x)       (((x)+ 3)/4)
 #define CHIP_DELAY_TIMEOUT (2*HZ/10)
 
@@ -43,6 +51,12 @@
 #define DMA_STEP_TIMES  0x20
 #define DMA_CMD         0x40
 
+#ifdef  LS1FSOC
+#define NAND_ECC_OFF    0
+#define NAND_ECC_ON     1
+#define RAM_OP_OFF      0
+#define RAM_OP_ON       1
+#endif
 
 enum{
     ERR_NONE        = 0,
@@ -62,21 +76,33 @@ struct ls1g_nand_platform_data{
         unsigned int nr_parts;
 };
 struct ls1g_nand_cmdset {
-        uint32_t    cmd_valid:1;
-	uint32_t    read:1;
-	uint32_t    write:1;
-	uint32_t    erase_one:1;
-	uint32_t    erase_con:1;
-	uint32_t    read_id:1;
-	uint32_t    reset:1;
-	uint32_t    read_sr:1;
-	uint32_t    op_main:1;
-	uint32_t    op_spare:1;
-	uint32_t    done:1;
+        uint32_t    cmd_valid:1;    //0
+    	uint32_t    read:1;         //1
+	uint32_t    write:1;        //2
+	uint32_t    erase_one:1;    //3
+    	uint32_t    erase_con:1;    //4
+	uint32_t    read_id:1;      //5
+	uint32_t    reset:1;        //6
+	uint32_t    read_sr:1;      //7
+	uint32_t    op_main:1;      //8
+	uint32_t    op_spare:1;     //9
+	uint32_t    done:1;         //10
+#ifdef LS1FSOC
+        uint32_t    ecc_rd:1;         //11
+	uint32_t    ecc_wr:1;         //12
+	uint32_t    int_en:1;         //13
+        uint32_t    resv14:1;         //14
+	uint32_t    ram_op:1;         //15
+#elif LS1GSOC
         uint32_t    resv1:5;//11-15 reserved
+#endif        
         uint32_t    nand_rdy:4;//16-19
         uint32_t    nand_ce:4;//20-23
-        uint32_t    resv2:8;//24-32 reserved
+#ifdef LS1FSOC
+	uint32_t    ecc_dma_req:1;         //24
+	uint32_t    nul_dma_req:1;         //25
+#endif        
+        uint32_t    resv26:8;//26-31 reserved
 };
 struct ls1g_nand_dma_desc{
         uint32_t    orderad;
@@ -460,8 +486,9 @@ static void nand_setup(unsigned int flags ,struct ls1g_nand_info *info)
     nand_base->op_num = (flags & NAND_OP_NUM)==NAND_OP_NUM ? info->nand_regs.op_num: info->nand_op_num;
     nand_base->cs_rdy_map = (flags & NAND_CS_RDY_MAP)==NAND_CS_RDY_MAP ? info->nand_regs.cs_rdy_map: info->nand_cs_rdy_map;
     if(flags & NAND_CMD){
-        nand_base->cmd = (info->nand_regs.cmd) &(~0xff);
-        nand_base->cmd = info->nand_regs.cmd;
+//        nand_base->cmd = (info->nand_regs.cmd) &(~0xff);
+        nand_base->cmd = (info->nand_regs.cmd & (~1));
+        nand_base->cmd = info->nand_regs.cmd ;
 /*        if(info->nand_regs.cmd & 0x20){
                         i = 100;
             while(!ls1g_nand_status(info)){
@@ -539,7 +566,13 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
                 info->nand_regs.addrh =  SPARE_ADDRH(page_addr);
                 info->nand_regs.addrl = SPARE_ADDRL(page_addr) + mtd->writesize;
                 info->nand_regs.op_num = info->buf_count;
-               /*nand cmd set */ 
+               /*nand cmd set */
+#ifdef LS1FSOC                
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->int_en = 1;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ram_op = RAM_OP_OFF;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ecc_rd = NAND_ECC_OFF;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ecc_wr = NAND_ECC_OFF;
+#endif
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->read = 1;
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->op_spare = 1;
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->cmd_valid = 1;
@@ -569,6 +602,12 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
                  /*nand cmd set */ 
                 info->nand_regs.cmd = 0; 
                 info->dma_regs.cmd = 0;
+#ifdef LS1FSOC                
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->int_en = 1;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ram_op = RAM_OP_OFF;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ecc_rd = NAND_ECC_OFF;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ecc_wr = NAND_ECC_OFF;
+#endif
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->read = 1;
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->op_spare = 1;
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->op_main = 1;
@@ -619,6 +658,12 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
                /*nand cmd set */ 
                 info->nand_regs.cmd = 0; 
                 info->dma_regs.cmd = 0;
+#ifdef LS1FSOC
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->int_en = 1;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ram_op = RAM_OP_OFF;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ecc_rd = NAND_ECC_OFF;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ecc_wr = NAND_ECC_OFF;
+#endif                
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->write = 1;
                 if(info->seqin_column < mtd->writesize)
                     ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->op_main = 1;
@@ -636,6 +681,10 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
             case NAND_CMD_RESET:
                 info->state = STATE_BUSY;
                /*nand cmd set */ 
+#ifdef LS1FSOC
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->int_en = 0;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ram_op = RAM_OP_OFF;
+#endif
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->reset = 1;
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->cmd_valid = 1; 
                 nand_setup(NAND_CMD,info);
@@ -658,6 +707,10 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
                 info->nand_regs.addrl =  NO_SPARE_ADDRL(page_addr) ;
                /*nand cmd set */ 
                 info->nand_regs.cmd = 0; 
+#ifdef LS1FSOC
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->int_en = 0;
+                ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->ram_op = RAM_OP_OFF;
+#endif                
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->erase_one = 1;
                 ((struct ls1g_nand_cmdset*)&(info->nand_regs.cmd))->cmd_valid = 1; 
                 nand_setup(NAND_ADDRL|NAND_ADDRH|NAND_OP_NUM|NAND_CMD,info);
@@ -738,7 +791,7 @@ int ls1g_nand_detect(struct mtd_info *mtd)
 }
 static void ls1g_nand_init_info(struct ls1g_nand_info *info)
 {
-    *((volatile unsigned int *)0xbfe78018) = 0x30000;
+    *((volatile unsigned int *)0xbfe78018) = 0x400;
     info->num=0;
     info->size=0;
     info->cac_size = 0; 
@@ -754,7 +807,7 @@ static void ls1g_nand_init_info(struct ls1g_nand_info *info)
     info->nand_timing = 0x4<<8 | 0x12;
 #endif
     info->nand_op_num = 0x0;
-    info->nand_cs_rdy_map = 0x00000000;
+    info->nand_cs_rdy_map = 0x88442200;
     info->nand_cmd = 0;
 
     info->dma_orderad = 0xa0811000;
