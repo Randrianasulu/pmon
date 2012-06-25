@@ -277,8 +277,7 @@ locate:
     li  t0, 0xbfe80000
     li  t1, 0x17  // div 4, fast_read + burst_en + memory_en
     sb  t1, 0x4(t0) // sfc_param
-
-#ifdef LS1FSOC/* to adjust the DDR frequency */
+#if 0
 	li v0,0xbfc00000+(NVRAM_POS+PLL_OFFS)
 	lw a1,(v0)
 
@@ -292,70 +291,30 @@ locate:
 
 	b 2f
 	nop
+#endif
 1:
-#define DDRCFG_DATA (0x8888|(CPU_MULT-1)|((DDR_MULT-3)<<8))
+#define DDRCFG_DATA (0x8888|(CPU_MULT-4)|((DDR_MULT-3)<<8))
     li  a1, DDRCFG_DATA   // 1fboard 25MHz
 2:
     li  a0, 0xbfe78030
     sw  a1, 0x0(a0)
+    sw  a1, 0x0(a0)
+    sw  a1, 0x0(a0)
     nop
+DELAY(0x3000)
+#if 0
 	lw	a2, 0x0(a0)
 	xor a2,a1
 	andi a2,0xf0f
 	bnez a2,2b
 	nop
-#else
-    li  a0, 0xbfe78030
-    /*31:dc_div_en,30-26:dc_div,25:cpu_div_en,24-20:cpu_div,19:ddr_div_en,18-14:ddr_div*/
-#if 0
-    li v1,0x92298000
-    li  a1, 0x39f0a
-#else
-	li v0,0xbfc00000+(NVRAM_POS+PLL_OFFS)
-	lw v1,4(v0)
-	lw a1,(v0)
-
-	li v0,0xfffc0000
-	and v0,a1
-	bnez v0,1f
-	nop
-
-	andi v0,v1,0x3f
-	bnez v0,1f
-	nop
-
-	li v0,(1<<31)|(1<<25)|(1<<19)
-	and a2,v0,v1
-	bne a2,v0,1f
-	nop
-
-	beqz v1,1f
-	nop
-	nop
-	b 2f
-	nop
-1:
-    li v1, 0x8a290000//(1<<31)|(4<<26)|(1<<25)|(1<<20)|(1<<19)|(2<<14)|0x2a00
-    li  a1, 0x31812
-
-2:
 #endif
-	or v1,0x2a00
-    sw v1,4(a0)
-    sw a1,(a0);
-
-1:
-   lw v1,(a0)
-   bne a1,v1,1b
-   nop
-    DELAY(0x3000)
-	
-#endif
-
 /*disable all gpio*/
 	li a0,0xbfd00000
 	sw zero,0x10c0(a0)
 	sw zero,0x10c4(a0)
+	sw zero,0x10c8(a0)
+	sw zero,0x420(a0)
 
 	li a0,0
 	bal	initserial
@@ -379,6 +338,8 @@ locate:
 	bal	hexserial
 	nop
 	PRINTSTR("\r\n")
+/* while:  bal  while
+*/        nop
 
 	bnez s0,1f
 	nop
@@ -429,7 +390,7 @@ cpu_win_fixup:
         // uncached instruction fetch patch
 #endif 
 
-
+#if 0
 	/* 
 	 * Now determine DRAM configuration and size by
 	 * reading the I2C EEROM on the DIMMS
@@ -444,7 +405,7 @@ cpu_win_fixup:
 	li	t0,0xbfd010f8
 	li	t1,0x0
 	sw	t1,(t0)
-
+#endif
 
 #ddr2config by cww 20090901
         PRINTSTR("DDR2 config begin_2\r\n")
@@ -453,24 +414,38 @@ cpu_win_fixup:
         PRINTSTR("DDR2 config end\r\n")
 
 	li a0,0xbfd00000
-	lw a2,0x424(a0);
+	sw zero,0x420(a0)
 #ifdef CONFIG_DDR16BIT
 /*16bit ddr and disable conf*/ 
-	li a1,0x110000
+	li a1,0x3
         li      msize,0x08000000
 #else
 /*disable conf*/
-	li a1,0x100000
+	li a1,0x2
         li      msize,0x10000000
 #endif
-	or a2,a1
+
+#ifndef GMAC0
+        li  a2 0x800000 //bit 23   gmac0 shut
+        or  a1,a2    
+#endif
+#ifndef GMAC1
+        li  a2, 0x1000000 //bit 24  gmac1 shut
+        or  a1,a2    
+#endif
 
 /*100M phy*/
-	ori a2,0xf
-#ifndef CONFIG_PHY100M
-	xor a2,0xf	
+#ifdef  CONFIG_PHY100M 
+#ifdef GMAC0
+        li a2,0x500 //bit 8, bit 10
+        or  a1,a2    
 #endif
-	sw a2,0x424(a0);
+#ifdef GMAC1
+        li  a2,0xac0 //bit 9, bit 11, bit 6, bit 7
+        or  a1,a2    
+#endif
+#endif
+	sw a1,0x420(a0);
 
 
 #define CF_7_SE         (1 << 3)        /* Secondary cache enable */
@@ -601,12 +576,12 @@ tgt_setddr:
 	bal inputhex
 	nop
 	move t0,v0
-	PRINTSTR("\r\ninput 0xbfe78034:");
-	bal inputhex
-	nop
+//	PRINTSTR("\r\ninput 0xbfe78034:");
+//	bal inputhex
+//	nop
 	li v1,0xbfe78030
 	sw t0,(v1)
-	sw v0,4(v1)
+//	sw v0,4(v1)
 	li a0,0
 	bal initserial
 	nop
@@ -972,7 +947,7 @@ LEAF(initserial)
 	sb	v1, NSREG(NS16550_FIFO)(v0)
 	li	v1, CFCR_DLAB
 	sb	v1, NSREG(NS16550_CFCR)(v0)
-#ifdef LS1FSOC
+#if 0
 	li a0, 0xbfe78030
 	lw a0,(a0)
 	and a0,0x700
@@ -984,49 +959,8 @@ LEAF(initserial)
 	li a0,2*16*CONS_BAUD
 	divu v1,a0
 	mflo v1
- //	li	v1, ((APB_CLK*DDR_MULT)/(2*16*CONS_BAUD))     // 8MHz crystal,   M[7:3]=6     1fboard
 #else
-	move	v1,a0
-	bnez	v1,2f
-	nop
-	li	v1,33333333
-	li	a0,0xbfe78030
-	lw	a1,4(a0)
-	li	a2,0xc00
-	and	a1,a2
-	beq 	a1,a2,2f
-	nop
-	lw	a1,(a0)
-	andi	a2,a1,0x3f
-	addiu	a2,12
-	sll     a2,10
-	srl a1,8
-	andi	a1,0x3ff
-	addu	a1,a2
-	li	a2,(33333333>>11)
-	multu   a1,a2
-	mflo    v1
-	lw	a1,4(a0)
-	srl	a1,14
-	andi    a2,a1,0x20
-	beqz    a2,1f
-	nop
-	andi    a1,0x1f
-	divu    v1,a1
-	mflo    v1
-	b 2f
-	nop
-1:
-	srl v1,1	
-2:
-#if 0
-/*save div,for serial debug*/
-	.set mips32
-	mtc0 v1,$25,1
-	.set mips0
-#endif
-	li a1,2*16*CONS_BAUD
-	divu v1,v1,a1
+ 	li	v1, ((APB_CLK*DDR_MULT)/(2*16*CONS_BAUD))     // 8MHz crystal,   M[7:3]=6     1fboard
 #endif
 	sb	v1, NSREG(NS16550_DATA)(v0)
 	srl	v1, 8

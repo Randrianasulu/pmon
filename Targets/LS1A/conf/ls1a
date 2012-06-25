@@ -75,8 +75,8 @@ select		cmd_shell		# Shell commands, vers, help, eval
 #
 select		mod_uart_ns16550	# Standard UART driver
 option		APB_CLK=33333333
-option 		CPU_MULT=8
-option 		DDR_MULT=5
+option 		CPU_MULT=9
+option 		DDR_MULT=4
 option		CONS_BAUD=B115200
 select		ext2
 select 		yaffsfs
@@ -102,7 +102,7 @@ option		NOSNOOP			# Caches are no-snooping
 #
 #option		HAVE_TOD		# Time-Of-Day clock
 option		HAVE_NVENV		#  Platform has non-volatile env mem
-option		HAVE_LOGO		# Output splash logo
+#option		HAVE_LOGO		# Output splash logo
 option		USE_SUPERIO_UART
 #option		USE_LEGACY_RTC
 #option		GODSONEV2A
@@ -143,8 +143,10 @@ pci*		at pcibr?
 #### Networking Devices
 
 syn0		at localbus0
-syn1		at localbus0
+#syn1		at localbus0
 option GMAC_PHY_BASE=1
+option      GMAC0
+#option      GMAC1
 option GMAC0_ADDR=0xbfe10000
 option GMAC1_ADDR=0xbfe20000
 select      gmac
@@ -153,7 +155,7 @@ select      gmac
 #gt2		at localbus? base 6
 # fxp normally only used for debugging (enable/disable both)
 #dmfe0		at localbus0
-sdcard0		at localbus0 flags 0
+#sdcard0		at localbus0 flags 0
 #uhci*		 at pci? dev ? function ?
 #ohci0		 at pci? dev ? function ?
 #lohci0		at localbus0 base 0xbfe08000

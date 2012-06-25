@@ -406,29 +406,6 @@ tgt_devconfig()
 #if LS1FSOC
 	/*ls1f usb reset stop*/
 	*(volatile int *)0xbff10204 = 0x40000000;
-#else
-	/*ls1g usb reset stop*/
-	*(volatile int *)0xbfd00424 |= 0x80000000;
-#endif
-
-#if LS1GSOC
-/*
- * if found syn1,then set io multiplexing
- * gmac1 use UART0,UART1
- */
-{
-int i;
-extern struct cfdata cfdata[];
-for(i=0;cfdata[i].cf_driver;i++)
-{
-	if(strcmp(cfdata[i].cf_driver->cd_name,"syn") == 0 && cfdata[i].cf_unit == 1)
-	{
-		*(volatile int *)0xbfd00420 |= 0x18;
-	break;
-	}
- 
-}
-}
 #endif
 
     printf("====before configure\n");
@@ -446,7 +423,7 @@ for(i=0;cfdata[i].cf_driver;i++)
 	if(!rc){ 
 		kbd_available=1;
 	}
-	psaux_init();
+	//psaux_init();
    
 #endif
    printf("devconfig done.\n");
@@ -606,22 +583,13 @@ _probe_frequencies()
                                                                                
 /*clock manager register*/
 #define PLL_FREQ_REG(x) *(volatile unsigned int *)(0xbfe78030+x)
-#ifdef LS1FSOC
 	{
-	int val= PLL_FREQ_REG(0);
-        md_pipefreq = ((val&7)+1)*APB_CLK;        /* NB FPGA*/
-        md_cpufreq  =  (((val>>8)&7)+3)*APB_CLK;
+//	int val= PLL_FREQ_REG(0);
+//        md_pipefreq = ((val&7)+1)*APB_CLK;        /* NB FPGA*/
+//        md_cpufreq  =  (((val>>8)&7)+3)*APB_CLK;
+        md_pipefreq = CPU_MULT*APB_CLK;        /* NB FPGA*/
+        md_cpufreq  = DDR_MULT*APB_CLK;
 	}
-#else
-	{
-	int pll,ctrl,clk;
-	pll=PLL_FREQ_REG(0);
-	ctrl=PLL_FREQ_REG(4);
-	clk=(12+(pll&0x3f))*33333333/2 + ((pll>>8)&0x3ff)*33333333/2/1024;
-        md_pipefreq = ((ctrl&0x300)==0x300)?33333333:(ctrl&(1<<25))?clk/((ctrl>>20)&0x1f):clk/2;
-        md_cpufreq  = ((ctrl&0xc00)==0xc00)?33333333:(ctrl&(1<<19))?clk/((ctrl>>14)&0x1f):clk/2;
-	}
-#endif
 
         clk_invalid = 1;
 #ifdef HAVE_TOD
@@ -941,8 +909,6 @@ tgt_mapenv(int (*func) __P((char *, char *)))
 
 	sprintf(env, "0x%08x",(pll_reg0=*(volatile int *)0xbfe78030));
 	(*func)("pll_reg0", env);
-	sprintf(env, "0x%08x",(pll_reg1=*(volatile int *)0xbfe78034));
-	(*func)("pll_reg1", env);
 
 	bcopy(&nvram[XRES_OFFS], &xres, 2);
 	bcopy(&nvram[YRES_OFFS], &yres, 2);
@@ -1167,8 +1133,6 @@ tgt_setenv(char *name, char *value)
 	} 
 	else if(strcmp("pll_reg0",name) == 0)
 		pll_reg0=strtoul(value,0,0);
-	else if(strcmp("pll_reg1",name) == 0)
-		pll_reg1=strtoul(value,0,0);
 	else if(strcmp("xres",name) == 0)
 		xres=strtoul(value,0,0);
 	else if(strcmp("yres",name) == 0)
