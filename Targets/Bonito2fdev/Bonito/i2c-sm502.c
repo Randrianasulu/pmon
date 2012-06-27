@@ -273,7 +273,7 @@ unsigned char i2c_rec_b(unsigned char *addr,int addrlen,unsigned char* buf ,int 
 
 unsigned char i2c_send_b(unsigned char *addr,int addrlen,unsigned char * buf ,int count)
 {
-	return i2c_send_b(addr,addrlen,buf,count);
+	return i2c_send_s(addr,addrlen,buf,count);
 }
 //----------------------
 /*
