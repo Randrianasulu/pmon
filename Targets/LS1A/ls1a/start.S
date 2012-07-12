@@ -426,7 +426,7 @@ cpu_win_fixup:
 #endif
 
 #ifndef GMAC0
-        li  a2 0x800000 //bit 23   gmac0 shut
+        li  a2, 0x800000 //bit 23   gmac0 shut
         or  a1,a2    
 #endif
 #ifndef GMAC1
