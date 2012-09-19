@@ -1695,8 +1695,8 @@ END(i2cread)
         .set    noreorder
         .set    mips3
 ddr2_config:
-#ifdef __MYDEBUG__
     la      t0, ddr2_reg_data
+#ifdef __MYDEBUG__
 	bal tgt_testchar
 	nop
 	beqz v0,1f
