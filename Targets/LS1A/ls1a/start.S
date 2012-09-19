@@ -277,15 +277,17 @@ locate:
     li  t0, 0xbfe80000
     li  t1, 0x17  // div 4, fast_read + burst_en + memory_en
     sb  t1, 0x4(t0) // sfc_param
-#if 0
+#if 1
 	li v0,0xbfc00000+(NVRAM_POS+PLL_OFFS)
 	lw a1,(v0)
 
 	li v0,0xffff0000
 	and v0,a1
-	bnez v0,1f
+	li v1,0x12340000
+	bne v0,v1,1f
 	nop
 
+	and a1,0xffff
 	li  v0, 0x8888
 	or  a1, a1, v0
 
@@ -865,7 +867,17 @@ LEAF(tgt_putchar)
 	nop
 #endif
 	nop
+.set noat
+	move 	AT,ra
 	la	v0, COM1_BASE_ADDR
+	bal 1f
+	nop
+	la	v0, COM2_BASE_ADDR
+	bal 1f
+	nop
+	jr AT
+	nop
+.set at
 1:
 	lbu	v1, NSREG(NS16550_LSR)(v0)
 	and	v1, LSR_TXRDY
@@ -941,7 +953,18 @@ LEAF(initserial)
 	jr ra 
 	nop
 #endif
+.set noat
+	move 	AT,ra
 	la	v0, COM1_BASE_ADDR
+	bal 1f
+	nop
+	la	v0, COM2_BASE_ADDR
+	bal 1f
+	nop
+	jr AT
+	nop
+.set at
+	
 1:
 	li	v1, FIFO_ENABLE|FIFO_RCV_RST|FIFO_XMT_RST|FIFO_TRIGGER_4
 	sb	v1, NSREG(NS16550_FIFO)(v0)

@@ -582,13 +582,19 @@ _probe_frequencies()
                                                                                
                                                                                
 /*clock manager register*/
-#define PLL_FREQ_REG(x) *(volatile unsigned int *)(0xbfe78030+x)
+#define PLL_FREQ_REG(x) *(volatile unsigned int *)(0xbfc00000+(NVRAM_POS+PLL_OFFS+x*4))
 	{
-//	int val= PLL_FREQ_REG(0);
-//        md_pipefreq = ((val&7)+1)*APB_CLK;        /* NB FPGA*/
-//        md_cpufreq  =  (((val>>8)&7)+3)*APB_CLK;
-        md_pipefreq = CPU_MULT*APB_CLK;        /* NB FPGA*/
-        md_cpufreq  = DDR_MULT*APB_CLK;
+		int val= PLL_FREQ_REG(0);
+		if((val&0xffff0000) == 0x12340000)
+		{
+			md_pipefreq = ((val&7)+4)*APB_CLK;        /* NB FPGA*/
+			md_cpufreq  =  (((val>>8)&7)+3)*APB_CLK;
+		}
+		else
+		{
+			md_pipefreq = CPU_MULT*APB_CLK;        /* NB FPGA*/
+			md_cpufreq  = DDR_MULT*APB_CLK;
+		}
 	}
 
         clk_invalid = 1;
@@ -907,7 +913,8 @@ tgt_mapenv(int (*func) __P((char *, char *)))
 	    hwethadr[2], hwethadr[3], hwethadr[4], hwethadr[5]);
 	(*func)("ethaddr", env);
 
-	sprintf(env, "0x%08x",(pll_reg0=*(volatile int *)0xbfe78030));
+	bcopy(&nvram[PLL_OFFS], &pll_reg0, 4);
+	sprintf(env, "0x%08x",pll_reg0);
 	(*func)("pll_reg0", env);
 
 	bcopy(&nvram[XRES_OFFS], &xres, 2);
