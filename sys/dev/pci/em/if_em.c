@@ -515,6 +515,63 @@ e1000_ether_ioctl(ifp, cmd, data)
                 cmd_wrprom_em0(p[0],p[1]);
                 }
                 break;
+       case SIOCWRPHY:
+                {
+                long *p=data;
+		int ac;
+		char **av;
+		int i;
+		int phybase;
+		unsigned data;
+		struct e1000_adapter *adapter;
+		adapter = sc->priv;
+		ac = p[0];
+		av = p[1];
+	if(ac>1)
+	{
+	 //offset:data,data
+	 int i;
+	 int offset;
+	 int data;
+	 for(i=1;i<ac;i++)
+	 {
+	 	char *p=av[i];
+		char *nextp;
+	 	int offset=strtoul(p,&nextp,0);
+		while(*nextp && nextp!=p)
+		{
+		p=++nextp;
+		data=strtoul(p,&nextp,0);
+		if(nextp==p)break;
+		e1000_write_phy_reg(&adapter->hw, offset, data);
+		}
+	 }
+	}
+		}
+                break;
+       case	SIOCRDPHY:
+                {
+                long *p=data;
+		int ac;
+		char **av;
+                //myRTL = sc;
+                //cmd_reprom(p[0],p[1]);
+		int i;
+		unsigned data;
+		struct e1000_adapter *adapter;
+		adapter = sc->priv;
+		ac = p[0];
+		av = p[1];
+		for(i=0;i<32;i++)
+		{
+		data = 0;
+		e1000_read_phy_reg(&adapter->hw, i, &data);
+		if((i&0xf)==0)printf("\n%02x: ",i);
+		printf("%04x ",data);
+		}
+		printf("\n");
+                }
+                break;
 
 	default:
 		error = EINVAL;
