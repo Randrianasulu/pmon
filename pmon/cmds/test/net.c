@@ -74,6 +74,16 @@ struct in_aliasreq data;
 		setsin (SIN(ifra->ifra_addr), AF_INET, inet_addr("0.0.0.0"));
 		(void) ioctl(s, SIOCSIFADDR, ifra);
 		close(s);
+	    {
+		struct ifnet *ifp;
+		char *argv[]={"writephy","0:0x2100",0};
+                long arg[2]={2,(long)argv};
+		ifp = ifunit(dev->dv_xname);
+		if(ifp)
+		{
+		ifp->if_ioctl(ifp,SIOCWRPHY,arg);
+		}
+	    }
 
 
 		delay1(8000);
