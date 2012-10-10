@@ -757,8 +757,8 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
   //                  _NAND_SET_REG(0xc,0x30f0); 
                     _NAND_SET_REG(0x0,0x21); 
 
-                    while(!((id_val_l |= _NAND_IDL) & 0xff))
-                    while(!(id_val_h = _NAND_IDH));
+                    do id_val_h = _NAND_IDH;
+                    while(!((id_val_l |= _NAND_IDL) & 0xff));
 
 //                    _NAND_SET_REG(0xc,timing);
                     data[0]  = (id_val_h & 0xff);
@@ -786,7 +786,7 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
 int ls1g_nand_detect(struct mtd_info *mtd)
 {
         printf("NANDFlash info:\nerasesize\t%d B\nwritesize\t%d B\noobsize  \t%d B\n",mtd->erasesize, mtd->writesize,mtd->oobsize );
-        return (mtd->erasesize != 1<<17 || mtd->writesize != 1<<11 || mtd->oobsize != 1<<6);
+        return (mtd->erasesize < 1<<17 || mtd->writesize != 1<<11 || mtd->oobsize != 1<<6);
 
 }
 static void ls1g_nand_init_info(struct ls1g_nand_info *info)
