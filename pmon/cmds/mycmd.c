@@ -272,7 +272,7 @@ if(argc<3)return -1;
 	}
         if(!fsrc||!fdst)return -1;
         fp0=open(fsrc,O_RDONLY);
-        fp1=open(fdst,O_RDWR|O_CREAT|O_TRUNC);
+        fp1=open(fdst,O_WRONLY|O_CREAT|O_TRUNC);
 
 
         if(!fp0||!fp1){printf("open file error!\n");free(buf);return -1;}
