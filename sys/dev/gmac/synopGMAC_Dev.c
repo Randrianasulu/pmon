@@ -2431,7 +2431,7 @@ u32 synopGMAC_get_interrupt_type(synopGMACdevice *gmacdev)
 //	TR("DMA status reg is  %08x\n",data);
 	//data = data & ~0x84;	//sw: some bits shoud not be cleaned
 	synopGMACWriteReg(gmacdev->DmaBase, DmaStatus ,data); //manju: I think this is the appropriate location to clear the interrupts
-        plat_delay(DEFAULT_LOOP_VARIABLE);
+        //plat_delay(DEFAULT_LOOP_VARIABLE);
 	if(data & DmaIntErrorMask)	interrupts |= synopGMACDmaError;
 	if(data & DmaIntRxNormMask)	interrupts |= synopGMACDmaRxNormal;
 	if(data & DmaIntRxAbnMask)	interrupts |= synopGMACDmaRxAbnormal;

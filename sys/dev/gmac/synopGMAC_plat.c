@@ -87,7 +87,6 @@ return gmac_dmamap(addr,size);
   */
 void plat_delay(u32 delay)
 {
-	while (delay--);
 	return;
 }
 
