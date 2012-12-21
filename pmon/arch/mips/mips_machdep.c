@@ -283,7 +283,7 @@ extern int ticks;
 /*for toolchain mips-elf-gcc mips3 use 32 fpu regs*/
 void tgt_fpuenable()
 {
-#if __mips < 3
+#if __mips < 3 || __mips==32
 asm(\
 "mfc0 $2,$12;\n" \
 "li   $3,0x30000000 #ST0_CU1;\n" \
