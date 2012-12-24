@@ -130,7 +130,7 @@ void tgt_putchar(char c)
 cvs->printf("%%c",c);
 #endif
 }
-void tgt_puts(char *str)
+int tgt_puts(char *str)
 {
 #ifndef NOMSG
 cvs->printf("%%s",str);
