@@ -156,6 +156,7 @@ struct usb_config_descriptor {
 
 struct usb_device {
 	int devnum;			/* Device number on USB bus */
+	int speed;			/*ZQX--from Uboot*/
 	int slow;			/* Slow device? */
 	char mf[32];			/* manufacturer */
 	char prod[32];			/* product */
@@ -186,6 +187,7 @@ struct usb_device {
 	volatile unsigned long status;
 	int act_len;			/* transfered bytes */
 	int maxchild;			/* Number of ports if hub */
+	int portnr;
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
 	void *hc_private;
@@ -379,6 +381,8 @@ int usb_new_device(struct usb_device *dev);
 #define usb_pipeendpoint(pipe)	(((pipe) >> 15) & 0xf)
 #define usb_pipedata(pipe)	(((pipe) >> 19) & 1)
 #define usb_pipeslow(pipe)	(((pipe) >> 26) & 1)
+//ZQX
+#define usb_pipespeed(pipe)	(((pipe) >> 26) & 3)
 #define usb_pipetype(pipe)	(((pipe) >> 30) & 3)
 #define usb_pipeisoc(pipe)	(usb_pipetype((pipe)) == PIPE_ISOCHRONOUS)
 #define usb_pipeint(pipe)	(usb_pipetype((pipe)) == PIPE_INTERRUPT)

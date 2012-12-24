@@ -365,7 +365,8 @@ define ahcibus {}
 file sys/dev/usb/usb.c			  mod_usb
 file sys/dev/usb/usb_storage.c    mod_usb_storage needs-flag
 file sys/dev/usb/part.c     	  mod_usb_storage
-file sys/dev/usb/usb-ohci.c		  mod_usb_ohci needs-flag	
+file sys/dev/usb/usb-ohci.c		  mod_usb_ohci needs-flag
+file sys/dev/usb/usb_ehci_core.c	  mod_usb_ehci	
 file sys/dev/usb/usb_kbd.c		  mod_usb_kbd & mod_usb	needs-flag
 file sys/dev/usb/cmd_usb.c		  mod_usb & mod_usb_storage
 

@@ -100,7 +100,7 @@ struct usb_device usb_dev[USB_MAX_DEVICE];
 
 int dev_index;
 static int running;
-static int asynch_allowed;
+static int asynch_allowed = 1;
 static struct devrequest setup_packet;
 
 struct hostcontroller host_controller;
@@ -346,8 +346,8 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe,
 	setup_packet.value = swap_16(value);
 	setup_packet.index = swap_16(index);
 	setup_packet.length = swap_16(size);
- 	//USB_PRINTF("usb_control_msg: request: 0x%X, requesttype: 0x%X\nvalue 0x%X index 0x%X length 0x%X\n",
-		//request,requesttype,value,index,size);
+ 	USB_PRINTF("usb_control_msg: request: 0x%X, requesttype: 0x%X value 0x%X index 0x%X length 0x%X\n",
+		request,requesttype,value,index,size);
 	dev->status=USB_ST_NOT_PROC; /*not yet processed */
 
 	submit_control_msg(dev,pipe,data,size,&setup_packet);
@@ -1201,15 +1201,16 @@ int usb_new_device(struct usb_device *dev)
 	/* We still haven't set the Address yet */
 	addr = dev->devnum;
 	dev->devnum = 0;
-
-#undef NEW_INIT_SEQ
+#define NEW_INIT_SEQ		//ZQX
 #ifdef NEW_INIT_SEQ
-	/* this is a Windows scheme of initialization sequence, with double
-	 * reset of the device. Some equipment is said to work only with such
-	 * init sequence; this patch is based on the work by Alan Stern:
-	 * http://sourceforge.net/mailarchive/forum.php?thread_id=5729457&forum_id=5398
+
+	/* This is a Windows scheme of initialization sequence, with double
+	 * reset of the device (Linux uses the same sequence)
+	 * Some equipment is said to work only with such init sequence; this
+	 * patch is based on the work by Alan Stern:
+	 * http://sourceforge.net/mailarchive/forum.php?
+	 * thread_id=5729457&forum_id=5398
 	 */
-	int j;
 	struct usb_device_descriptor *desc;
 	int port = -1;
 	struct usb_device *parent = dev->parent;
@@ -1218,21 +1219,27 @@ int usb_new_device(struct usb_device *dev)
 	/* send 64-byte GET-DEVICE-DESCRIPTOR request.  Since the descriptor is
 	 * only 18 bytes long, this will terminate with a short packet.  But if
 	 * the maxpacket size is 8 or 16 the device may be waiting to transmit
-	 * some more. */
+	 * some more, or keeps on retransmitting the 8 byte header. */
 
 	desc = (struct usb_device_descriptor *)tmpbuf;
-	desc->bMaxPacketSize0 = 0;
-	for (j = 0; j < 3; ++j) {
-		err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
-		if (err < 0) {
-			USB_PRINTF("usb_new_device: 64 byte descr\n");
-			break;
-		}
+	dev->descriptor.bMaxPacketSize0 = 64;	    /* Start off at 64 bytes  */
+	/* Default to 64 byte max packet size */
+//	dev->maxpacketsize = PACKET_SIZE_64;
+	dev->maxpacketsize = 3;
+
+	dev->epmaxpacketin[0] = 64;
+	dev->epmaxpacketout[0] = 64;
+
+	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
+	if (err < 0) {
+		USB_PRINTF("usb_new_device: usb_get_descriptor() failed\n");
+		return 1;
 	}
 	dev->descriptor.bMaxPacketSize0 = desc->bMaxPacketSize0;
 
 	/* find the port number we're at */
 	if (parent) {
+		int j;
 
 		for (j = 0; j < parent->maxchild; j++) {
 			if (parent->children[j] == dev) {
@@ -1241,7 +1248,7 @@ int usb_new_device(struct usb_device *dev)
 			}
 		}
 		if (port < 0) {
-			printf("usb_new_device: cannot locate device's port..\n");
+			printf("usb_new_device:cannot locate device's port.\n");
 			return 1;
 		}
 
@@ -1753,7 +1760,21 @@ void usb_hub_port_connect_change(struct usb_device *dev, int port)
 	/* Allocate a new device struct for it */
 	assert(dev->hc_private!=NULL);
 	usb=usb_alloc_new_device(dev->hc_private);
-	usb->slow = (portstatus & USB_PORT_STAT_LOW_SPEED) ? 1 : 0;
+//	usb->slow = (portstatus & USB_PORT_STAT_LOW_SPEED) ? 1 : 0;
+
+/*ZQX---'slow' work as 'speed' (member of usb_device) */
+	if (portstatus & USB_PORT_STAT_HIGH_SPEED)
+		usb->speed = 2;
+	else if (portstatus & USB_PORT_STAT_LOW_SPEED)
+		usb->speed = 1;
+	else
+		usb->speed = 0;
+
+
+/***ZQX	 THIS IS IMPORTANT!!!***/
+	usb->slow = usb->speed;
+	printf("ZHUOQIXIANG---------NEW DEVICE slow:%d; speed:%d\n",usb->slow, usb->speed);
+
 
 	dev->children[port] = usb;
 	usb->parent=dev;

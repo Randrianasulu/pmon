@@ -203,6 +203,7 @@
 #define USB_PORT_FEAT_RESET          4
 #define USB_PORT_FEAT_POWER          8
 #define USB_PORT_FEAT_LOWSPEED       9
+#define USB_PORT_FEAT_HIGHSPEED      10
 #define USB_PORT_FEAT_C_CONNECTION   16
 #define USB_PORT_FEAT_C_ENABLE       17
 #define USB_PORT_FEAT_C_SUSPEND      18
@@ -217,6 +218,7 @@
 #define USB_PORT_STAT_RESET         0x0010
 #define USB_PORT_STAT_POWER         0x0100
 #define USB_PORT_STAT_LOW_SPEED     0x0200
+#define USB_PORT_STAT_HIGH_SPEED    0x0400	/*ZQX FOR USB2.0*/
 
 /* wPortChange bits */
 #define USB_PORT_STAT_C_CONNECTION  0x0001
