@@ -472,6 +472,39 @@ static int i2cs(int argc,char **argv)
 	return 0;
 }
 
+static int cmd_cpufreq(int argc, char **argv)
+{
+int i;
+int cnt;
+int timeout;
+int sec;
+int cur;
+        for(i = 2;  i != 0; i--) {
+                cnt = CPU_GetCOUNT();
+                timeout = 10000000;
+		sec = tgt_getsec();
+                                                                               
+                do {
+                        timeout--;
+                        cur = tgt_getsec();
+                } while(timeout != 0 && ((cur == sec)||(cur !=((sec+1)%60))) && (CPU_GetCOUNT() - cnt<0x30000000));
+                cnt = CPU_GetCOUNT() - cnt;
+                if(timeout == 0) {
+                        break;          /* Get out if clock is not running */
+                }
+        }
+                                                                               
+	/*
+	 *  Calculate the external bus clock frequency.
+	 */
+	if (timeout != 0) {
+	        printf("cpu fre %u\n", cnt / 10000*20000);                                                                      
+	}
+	else	printf("time out!\n");
+ return 0;
+}
+
+
 
 
 static const Cmd Cmds[] =
@@ -480,6 +513,7 @@ static const Cmd Cmds[] =
 	{"pnps",	"", 0, "select pnp ops for d1,m1 ", pnps, 0, 99, CMD_REPEAT},
 	{"dumpsis",	"", 0, "dump sis registers", dumpsis, 0, 99, CMD_REPEAT},
 	{"i2cs","slotno #slot 0-1 for dimm,slot 2 for ics95220,3 for ddrcfg,3 revert for revert to default ddr setting", 0, "select i2c ops for d1,m1", i2cs, 0, 99, CMD_REPEAT},
+	{"cpufreq",	"", 0, "cacl cpu freq", cmd_cpufreq, 0, 99, CMD_REPEAT},
 	{0, 0}
 };
 
