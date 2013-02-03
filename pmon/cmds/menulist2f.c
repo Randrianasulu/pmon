@@ -281,6 +281,7 @@ static int show_main(int flag, const char* path)
 	int not_delay = FALSE;
 	int not_erased = TRUE;
 	int selected_menu_num = 1; 
+	int showmenu;
 
 	//if (load_list_menu(path))
 	retid = load_list_menu(path);
@@ -293,6 +294,7 @@ static int show_main(int flag, const char* path)
 	}
 	
 	selected_menu_num = atoi(get_option_value("default")) + 1;
+	showmenu = atoi(get_option_value("showmenu"));
 	dly = atoi(get_option_value("timeout"));
 	if (dly < 0)
 	{
@@ -304,7 +306,13 @@ static int show_main(int flag, const char* path)
 	{
 		getchar();
 		ioctl (STDIN, FIONREAD, &cnt);
+		showmenu = 1;
+		if(dly<5)
+		 dly = 5;
 	}
+
+	if(showmenu)
+	{
 	__scr_clear();
 	draw_main(selected_menu_num, path);
 	
@@ -379,6 +387,7 @@ static int show_main(int flag, const char* path)
 JUST_BOOT:
 	__scr_clear();
 	__set_cursor(0,0);
+	}
 	do_cmd_boot_load(selected_menu_num - 1, 0);
 	//printf ("The selected kernel entry is wrong, try default entry from al.\n ");
 	return 1;
