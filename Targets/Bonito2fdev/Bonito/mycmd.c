@@ -1,3 +1,8 @@
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <netdb.h>
 #include "time.h"
 #define nr_printf printf
 #define nr_gets gets
@@ -504,6 +509,85 @@ int cur;
  return 0;
 }
 
+int netcaclfreq(int argc, char **argv)
+{
+	char *host;
+	int connect_fd;
+	int sock;
+	struct sockaddr_in sin;
+	struct hostent *hp;
+	int sec;
+	int err;
+	int i;
+	int cnt, cnt1;
+	int timeout;
+	int cur;
+
+	host=argv[1];
+
+	//set socket,and get number of socket
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+
+	//sin_family = AF_INET,and bind
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(8888);
+
+
+	//get the message of host
+	hp = gethostbyname(host);
+	if(hp)
+	{
+		sin.sin_family = hp->h_addrtype;
+		bcopy(hp->h_addr, (void *)&sin.sin_addr, hp->h_length);
+	}
+	else
+		goto error;
+
+	err = connect(sock,&sin, sizeof(sin));
+	if(err < 0)
+		goto error;
+
+#if 0
+	for(i=0;i<2000;i++)
+	{
+	err = read(sock, &sec, 4);
+	if(err<=0) goto error;
+	}
+#endif
+
+        for(i = 2;  i != 0; i--) {
+                timeout = 10000000;
+                cnt = CPU_GetCOUNT();
+		 write(sock,&cnt,4);
+		err = read(sock, &sec, 4);
+		if(err<=0) goto error;
+                                                                               
+                do {
+                        timeout--;
+		cnt1 = CPU_GetCOUNT();
+		 write(sock,&cnt1,4);
+		err = read(sock, &cur, 4);
+		if(err<=0) goto error;
+                } while(timeout != 0 && (cur == sec) && (CPU_GetCOUNT() - cnt<0x30000000));
+                cnt = cnt1 - cnt;
+                if(timeout == 0) {
+                        break;          /* Get out if clock is not running */
+                }
+        }
+	/*
+	 *  Calculate the external bus clock frequency.
+	 */
+	if (timeout != 0) {
+	        printf("cpu fre %u\n", cnt / 10000*20000);                                                                      
+	}
+	else	printf("time out!\n");
+	
+		close(sock);
+
+	return 0;
+error:
+	return -1;
+}
 
 
 
@@ -514,6 +598,7 @@ static const Cmd Cmds[] =
 	{"dumpsis",	"", 0, "dump sis registers", dumpsis, 0, 99, CMD_REPEAT},
 	{"i2cs","slotno #slot 0-1 for dimm,slot 2 for ics95220,3 for ddrcfg,3 revert for revert to default ddr setting", 0, "select i2c ops for d1,m1", i2cs, 0, 99, CMD_REPEAT},
 	{"cpufreq",	"", 0, "cacl cpu freq", cmd_cpufreq, 0, 99, CMD_REPEAT},
+	{"netcaclfreq",	"ip", 0, "cacl cpu freq", netcaclfreq, 0, 99, CMD_REPEAT},
 	{0, 0}
 };
 
