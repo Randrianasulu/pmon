@@ -28,7 +28,7 @@ static volatile char *mmio = 0;
 static void i2c_sleep(int ntime)
 {
 	int i,j=0;
-	for(i=0;i<ntime;i++)
+	//for(i=0;i<ntime;i++)
 	*GPIO_DIR_REG;
 	//delay(ntime);
 }
