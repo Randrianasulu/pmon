@@ -828,106 +828,31 @@ do_caches:
 	li      a0, 0xbfe00164
         sw      zero, 0(a0);
 
+/* enable cache and run on cache address */
+
         mfc0   a0,COP_0_CONFIG
         and    a0,a0,~((1<<12) | 3)
-	or     a0,a0,2
+	or     a0,a0,3
         mtc0   a0,COP_0_CONFIG
 
-#ifdef DEBUG_LOCORE
-	TTYDBG("Init caches done, cfg = ")
-	mfc0	a0, COP_0_CONFIG
-	bal	hexserial
+	la a0, 1f;
+	addu a0,s0
+	li a1,~0x20000000
+	and a0,a1
+	jr a0
 	nop
-	TTYDBG("\r\n\r\n")
-#endif
+1:
 
-/* zhb */
-#if 0
-/*	li	t0, 0		*/
-/*	li	t1, 0x90000	*/
-/*1:	addiu	t0, 1		*/
-/*	bne	t0, t1, 1b	*/
-	nop
 
-	TTYDBG("Testing memory...\r\n")
-	
-	li	t7, 10
-tmem:
-	li	t0, 0xa0000000+1*1024*1024
-	li	t1, 0xa0000000
-	li	t2, 0xffffffff
-1:
-	sw	t2, 0(t1)
-	lw	t3, 0(t1)
-	bne	t3, t2, 1f
-	nop
-	not	t2
-	sw	t2, 0(t1)
-	lw	t3, 0(t1)
-	bne	t3, t2, 1f
-	nop
-	not	t2
-	subu	t2, 1
-	addu	t1, 4
-	beq	t1, t0, 2f
-	nop
-	and	t4, t1, 0x000fffff
-	bnez	t4, skipdot
-	li	a0, '.'
-	bal	tgt_putchar
-	nop
-skipdot:
-	b	1b
-	nop
-1:
-	TTYDBG("Memory test failed at ");
-	move	a0,	t1
-	bal	hexserial
-	nop
-	TTYDBG("\r\nWrite=");
-	move	a0, t2
-	bal	hexserial
-	nop
-	TTYDBG("\r\nRead=");
-	move	a0, t3
-	bal	hexserial
-	nop
-1:
-	b	1b
-	nop
-2:
-	TTYDBG("Testing ok...\r\n");
-	sub	t7,1
-	beqz	t7, 1f
-	nop
-	b	tmem
-	nop
-1:	
-	b	1b
-	nop
-#endif
 #ifdef USE_SM502_UART0
 #define HAVE_TARGET_GETCHAR
 #endif
 #include "machine/newtest/mydebug.S"
 bootnow:
 	TTYDBG("Copy PMON to execute location...\r\n")
-#ifdef DEBUG_LOCORE
-	TTYDBG("  start = 0x")
 	la	a0, start
-	bal	hexserial
-	nop
-	TTYDBG("\r\n  s0 = 0x")
-	move	a0, s0
-	bal	hexserial
-	nop
-	TTYDBG("\r\n")
-#endif
-	la	a0, start
-	li	a1, 0xbfc00000
+	li	a1, 0x9fc00000
 	la	a2, _edata
-        or      a0, 0xa0000000
-        or      a2, 0xa0000000
 	subu	t1, a2, a0
 	srl	t1, t1, 2
 
@@ -965,52 +890,17 @@ bootnow:
 
 
 	TTYDBG("Copy PMON to execute location done.\r\n")
-/* zhb */
-#if 0
-zhb:
-	TTYDBG("Testing...\r\n")
-	la	a0, start
-	li	a1, 0xbfc00000
-	la	a2, _edata
-        or      a0, 0xa0000000
-        or      a2, 0xa0000000
-/*	subu	s6, a2, a0*/
-/*	srl	s6, s6, 2*/
 
-	move	t0, a0
-	move	t1, a1
-	move	t2, a2
-	/* copy text section */
-	
-1:	lw	t4, 0(t1)
-	nop
-	lw	t5, 0(t0)
-	addu	t0, 4
-	addu	t1, 4
-	beq	t4, t5, 2f
-	nop
-	move	a0, t0
-	subu	a0, 4
-	bal	hexserial
-	nop
-	TTYDBG	(" ")
-	move	a0, t4
-	bal	hexserial
-	nop
-	TTYDBG	(" ")
-	move	a0, t5
-	bal	hexserial
-	nop
-	TTYDBG	("\r\n")
-2:	bne	t2, t0, 1b
-	nop
-	TTYDBG	("test ok!\r\n")
-/*
-3:	beqz	zero, 3b
-	nop
-*/
-#endif
-
+       li    $2, 0x80000000;
+       addu  $3,$2,512*1024/4;
+10:
+       cache   3, 0($2);
+       cache   3, 1($2);
+       cache   3, 2($2);
+       cache   3, 3($2);
+       addu    $2, 32;
+       bne         $2,$3, 10b;
+       nop;
 	
 
 	TTYDBG("sp=");
@@ -1020,13 +910,6 @@ zhb:
 
 	li	a0, 4096*1024
 	sw	a0, CpuTertiaryCacheSize /* Set L3 cache size */
-
-#if 0
-        mfc0   a0,COP_0_CONFIG
-        and    a0,a0,0xfffffff8
-        or     a0,a0,0x3
-        mtc0   a0,COP_0_CONFIG
-#endif
 
 
     /* pass pointer to kseg1 tgt_putchar */
