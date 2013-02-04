@@ -50,7 +50,7 @@
 #include <file.h>
 #include "fat.h"
 #include <diskfs.h>
-#define MAX_BUFSZ_CLUSTS 2048
+static int MAX_BUFSZ_CLUSTS=32;
 
 extern int errno;
 
@@ -434,6 +434,7 @@ int fat_init(int fd, struct fat_sc *fsc, int partition)
 	fsc->SecPerClust = bpb->bpbSecPerClust;
 	fsc->BytesPerClust = fsc->SecPerClust*SECTORSIZE;
 
+	MAX_BUFSZ_CLUSTS = 0x100000/fsc->BytesPerClust;
 
 	fsc->LastSectorBuffer = malloc(fsc->BytesPerClust*MAX_BUFSZ_CLUSTS);
 
