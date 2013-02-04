@@ -55,6 +55,7 @@
 #include <pmon.h>
 #include <exec.h>
 #include <file.h>
+#include <sys/device.h>
 
 #include "mod_debugger.h"
 #include "mod_symbols.h"
@@ -67,7 +68,6 @@
 #include <flash.h>
 #include <dev/pflash_tgt.h>
 extern void    *callvec;
-unsigned int show_menu;
 
 #include "cmd_hist.h"		/* Test if command history selected */
 #include "cmd_more.h"		/* Test if more command is selected */
@@ -123,9 +123,13 @@ static int load_menu_list()
 {
         char* rootdev = NULL;
         char* path = NULL;
+        struct device *dev, *next_dev;
+        char load[256];
+	int retid;
+	int cnt;
+		
 
 
-                show_menu=1;
                 if (path == NULL)
                 {
                         path = malloc(512);
@@ -142,61 +146,53 @@ static int load_menu_list()
                         rootdev = "/dev/fs/ext2@wd0";
                 }
 
+
+		ioctl (STDIN, FIONREAD, &cnt);
+		if(!cnt)
+		{
+
+		for (dev  = TAILQ_FIRST(&alldevs); dev != NULL; dev = next_dev) {
+			next_dev = TAILQ_NEXT(dev, dv_list);
+			if(dev->dv_class != DV_DISK) {
+				continue;
+			}
+
+			if (strncmp(dev->dv_xname, "usb", 3) == 0) {
+				sprintf(load, "bl -d ide /dev/fs/ext2@%s/boot/boot.cfg", dev->dv_xname);
+				retid = do_cmd(load);
+				if (retid == 0) {
+					return 1;
+				}
+				sprintf(load, "bl -d ide /dev/fs/fat@%s/boot/boot.cfg", dev->dv_xname);
+				retid = do_cmd(load);
+				if (retid == 0) {
+					return 1;
+				}
+				sprintf(load, "bl -d ide /dev/fs/iso9660@%s/boot/boot.cfg", dev->dv_xname);
+				retid = do_cmd(load);
+				if (retid == 0) {
+					return 1;
+				}
+			}
+		}
+		}
+
                 sprintf(path, "%s/boot/boot.cfg", rootdev);
                 if (check_config(path) == 1)
                 {
                         sprintf(path, "bl -d ide %s/boot/boot.cfg", rootdev);
                         if (do_cmd(path) == 0)
                         {
-                                show_menu = 0;
-                                //                                      video_cls();
                                 free(path);
                                 path = NULL;
                                 return 1;
                         }
                 }
-                else
-                {
-                        sprintf(path, "/dev/fs/ext2@wd0/boot/boot.cfg", rootdev);
-                        if (check_config(path) == 1)
-                        {
-                                sprintf(path, "bl -d ide /dev/fs/ext2@wd0/boot/boot.cfg", rootdev);
-                                if (do_cmd(path) == 0)
-                                {
-                                        show_menu = 0;
-                                        //                                              video_cls();
-                                        free(path);
-                                        path = NULL;
-                                        return 1;
-                                }
-                        }
-                }
-#if 0
-                if( check_ide() == 1 )// GOT IDE
-                {
-                        if( do_cmd ("bl -d ide /dev/fs/ext2@wd0/boot.cfg") ==0 )
-                        {
-                                show_menu=0;
-                                video_cls();
-                                return 1;
-                        }
-                }
-                else if( check_cdrom () == 1 ) // GOT CDROM
-                {
-                        if( do_cmd ("bl -d cdrom /dev/fs/ext2@wd0/boot.cfg") ==0 )
-                        {
-                                show_menu=0;
-                                video_cls();
-                                return 1;
-                        }
-                }
-#endif
+
                 free(path);
                 path = NULL;
                 //                      video_cls();
-                show_menu=0;
                 return 0;
-        show_menu=0;
         return 1;
 
 }
