@@ -82,7 +82,6 @@
 #include <machine/cpu.h>
 
 #include "usb.h"
-
 #undef USB_DEBUG
 //#define USB_DEBUG
 
@@ -102,6 +101,8 @@ int dev_index;
 static int running;
 static int asynch_allowed = 1;
 static struct devrequest setup_packet;
+/*FOR EHCI_OHCI SWITCH*/
+int hc_switch = 0;
 
 struct hostcontroller host_controller;
 SLIST_HEAD(usbdriver_list, usb_driver) usbdrivers= SLIST_HEAD_INITIALIZER(usbdrivers);
@@ -1201,8 +1202,9 @@ int usb_new_device(struct usb_device *dev)
 	/* We still haven't set the Address yet */
 	addr = dev->devnum;
 	dev->devnum = 0;
-#define NEW_INIT_SEQ		//ZQX
-#ifdef NEW_INIT_SEQ
+/*EHCI--INIT_SEQ*/
+if (hc_switch)
+{
 
 	/* This is a Windows scheme of initialization sequence, with double
 	 * reset of the device (Linux uses the same sequence)
@@ -1259,14 +1261,18 @@ int usb_new_device(struct usb_device *dev)
 			return 1;
 		}
 	}
-#else
+}
+/*OHCI--INIT_SEQ*/
+else
+{
+
 	/* and this is the old and known way of initializing devices */
 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, &dev->descriptor, 8);
 	if (err < 8) {
 		printf("\n      USB device not responding, giving up (status=%lX)\n",dev->status);
 		return 1;
 	}
-#endif
+}
 	dev->epmaxpacketin [0] = dev->descriptor.bMaxPacketSize0;
 	dev->epmaxpacketout[0] = dev->descriptor.bMaxPacketSize0;
 	switch (dev->descriptor.bMaxPacketSize0) {
@@ -1422,7 +1428,7 @@ void usb_scan_devices(void * hc_private)
  */
 
 #undef	USB_HUB_DEBUG
-//#define	USB_HUB_DEBUG
+#define	USB_HUB_DEBUG
 
 #ifdef	USB_HUB_DEBUG
 #define	USB_HUB_PRINTF(fmt,args...)	printf (fmt ,##args)
@@ -1666,7 +1672,7 @@ static int hub_port_reset(struct usb_device *dev, int port,
 
 		usb_set_port_feature(dev, port + 1, USB_PORT_FEAT_RESET);
 		wait_ms(200);
-
+		
 		if (usb_get_port_status(dev, port + 1, &portsts)<0) {
 			USB_HUB_PRINTF("get_port_status failed status %lX\n",dev->status);
 			return -1;
@@ -1723,7 +1729,7 @@ void usb_hub_port_connect_change(struct usb_device *dev, int port)
 	struct usb_device *usb;
 	struct usb_port_status portsts;
 	unsigned short portstatus, portchange;
-
+printf("\n***************usb_hub_port_connect_change***********\n");
 	/* Check status */
 	if (usb_get_port_status(dev, port + 1, &portsts)<0) {
 		USB_HUB_PRINTF("get_port_status failed\n");
@@ -1919,7 +1925,26 @@ int usb_hub_configure(struct usb_device *dev)
 		USB_HUB_PRINTF("Port %d Status %X Change %X\n",i+1,portstatus,portchange);
 		if (portchange & USB_PORT_STAT_C_CONNECTION) {
 			USB_HUB_PRINTF("port %d connection change\n", i + 1);
-			usb_hub_port_connect_change(dev, i);
+/*ZQX---------some change here*/
+			/*EHCI IS ON*/
+			if(hc_switch==1){
+				/*THE HIGH DEVICE*/
+				if(!ehci_do_judge(dev, i+1)){
+					usb_hub_port_connect_change(dev, i);
+				}
+				else{
+					/* Clear the connection change status */
+					usb_clear_port_feature(dev, i + 1, USB_PORT_FEAT_C_CONNECTION);
+					/* Reset the port */
+					if (hub_port_reset(dev, i, &portstatus) < 0)
+						printf("cannot reset port %i!?\n", i + 1);
+				
+				}
+			}
+			/*EHCI IS NOT SURE, OHCI DEFINITELY IS ON*/
+			else{
+				usb_hub_port_connect_change(dev, i);
+			}
 		}
 		if (portchange & USB_PORT_STAT_C_ENABLE) {
 			USB_HUB_PRINTF("port %d enable change, status %x\n", i + 1, portstatus);

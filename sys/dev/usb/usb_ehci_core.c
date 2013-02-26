@@ -281,7 +281,6 @@ static int ehci_reset(void)
 	cmd =(cmd & ~CMD_RUN)|CMD_RESET;      //zw:solve the restart error
 #endif
 	ehci_writel(&hcor->or_usbcmd, cmd);
-printf("hcor->or_usbcmd's address ................................................%x.\n",hcor->or_usbcmd);
 
 	ret = handshake((uint32_t *)&hcor->or_usbcmd, CMD_RESET, 0, 250 * 1000);
 	if (ret < 0) {
@@ -670,9 +669,9 @@ ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *buffer,
 	uint32_t reg;
 	uint32_t *status_reg;
 	int ret;
-	printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~In ehci_submit_root()~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
-	if (le16_to_cpu(req->index) >= CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS) {
+//ZQX-------------"CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS+ 1"-----SO THE SECOND PORT CAN BE USED...
+	if (le16_to_cpu(req->index) >= CONFIG_SYS_USB_EHCI_MAX_ROOT_PORTS+ 1) {
 		printf("The request port(%d) is not configured\n",
 			le16_to_cpu(req->index) - 1);
 		return -1;
@@ -739,6 +738,7 @@ ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *buffer,
 		case USB_DT_HUB:
 			debug("USB_DT_HUB config\n");
 			srcptr = &descriptor.hub;
+//ZQX
 			srclen = 0x8;
 			break;
 		default:
@@ -834,8 +834,11 @@ ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *buffer,
 			    !ehci_is_TDI() &&
 			    EHCI_PS_IS_LOWSPEED(reg)) {
 				/* Low speed device, give up ownership. */
-				debug("port %d low speed --> companion\n",
-				      req->index - 1);
+//				debug("port %d low speed --> companion\n",
+//				      req->index - 1);
+				printf("port %d low speed --> companion\n",
+				      req->index);
+
 				reg |= EHCI_PS_PO;
 				ehci_writel(status_reg, reg);
 				break;
@@ -933,7 +936,7 @@ unknown:
 	return -1;
 }
 
-int usb_lowlevel_stop(void)
+int ehci_lowlevel_stop(void)
 {
 	return ehci_hcd_stop();
 }
@@ -1049,6 +1052,24 @@ ehci_submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
  *
  *
  */
+int ehci_do_judge(struct usb_device *dev, int port)
+{
+	uint32_t reg;
+	uint32_t *status_reg;	
+	status_reg = (uint32_t *)&hcor->or_portsc[port - 1];
+
+	reg = ehci_readl(status_reg);
+	printf("ZQX---------------REG=%x\n",reg);
+	if ((reg & (EHCI_PS_PE | EHCI_PS_CS)) == EHCI_PS_CS &&
+			    !ehci_is_TDI() &&
+			    EHCI_PS_IS_LOWSPEED(reg)){
+	return 1;
+	}
+	else 
+		return 0;
+
+	
+}
 
 
 
@@ -1091,7 +1112,7 @@ static void lehci_attach(struct device *parent, struct device *self, void *aux)
 	struct confargs *cf = aux;
 	
 //	addr = (uint32_t)cf->ca_baseaddr;
-	printf("\nlehci_attach-------------------------------------------------begin!!!\n");
+	printf("\n--------lehci_attach-------\n");
 	if (ehci_hcd_init() != 0)
 		printf("hcd init fail!\n");
 
@@ -1112,7 +1133,9 @@ static void lehci_attach(struct device *parent, struct device *self, void *aux)
 
 	ehci->hc.uop = &ehci_usb_op;
 	TAILQ_INSERT_TAIL(&host_controller, &ehci->hc, hc_list);
-
+/*init sequence of EHCI*/
+	extern int hc_switch;
+	hc_switch++;
 	/* if lowlevel init is OK, scan the bus for devices
 	 * i.e. search HUBs and configure them */
 	if (result == 0) {

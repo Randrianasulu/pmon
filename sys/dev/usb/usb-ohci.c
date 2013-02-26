@@ -624,6 +624,7 @@ static void lohci_attach(struct device *parent, struct device *self, void *aux)
 	static int ohci_dev_index = 0;
 	struct confargs *cf = aux;
 
+	printf("\n-----lohci_atttch------\n");
 	/* Or we just return false in the match function */
 	if(ohci_dev_index >= MAX_OHCI_C) {
 		printf("Exceed max controller limits\n");
@@ -647,8 +648,12 @@ static void lohci_attach(struct device *parent, struct device *self, void *aux)
 	ohci->sc_ih = pci_intr_establish(pc, ih, IPL_BIO, hc_interrupt, ohci,
 	   self->dv_xname);
 #endif
-	ohci->rdev = usb_alloc_new_device(ohci);
 
+/*init sequence of EHCI*/
+	extern int hc_switch;
+	hc_switch-- ;
+	ohci->rdev = usb_alloc_new_device(ohci);
+	
     /*do the enumeration of  the USB devices attached to the USB HUB(here root hub) 
     ports.*/
     usb_new_device(ohci->rdev);
