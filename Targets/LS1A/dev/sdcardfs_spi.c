@@ -656,11 +656,7 @@ sdcardmatch(parent, match, aux)
     struct device *parent;
     void *match, *aux;
 {
-    struct confargs *ca = aux;
-    if (!strncmp(ca->ca_name, "sdcard",6))
     return 1;
-    else
-    return 0;
 }
 
 
