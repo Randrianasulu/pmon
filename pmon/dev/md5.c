@@ -351,11 +351,14 @@ if(argc<2) return -1;
  if(ret <= 0 ) break; 
  md5_update (buf, ret);
  }
+
+ close(fd);
  
  p= md5_final ();
  for(i=0;i<16;i++)
  printf("%02x",p[i]);
  printf("\n");
+
 
 	return 0;
 }
