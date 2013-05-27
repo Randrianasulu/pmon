@@ -7,7 +7,8 @@
 #include <pmon.h>
 #include <include/types.h>
 #include <pflash.h>
-unsigned int SPI_BASE=0x1fe80000;
+
+#define SPI_BASE  0x1fe80000
 #define PMON_ADDR 0xa1000000
 #define FLASH_ADDR 0x000000
 
@@ -21,9 +22,29 @@ unsigned int SPI_BASE=0x1fe80000;
 #define PARAM2    0x6
 
 #define RFEMPTY 1
+#define SPIF_PAGE_SIZE  256
+
 
 #define SET_SPI(addr,val)        KSEG1_STORE8(SPI_BASE+addr,val)
 #define GET_SPI(addr)            KSEG1_LOAD8(SPI_BASE+addr)
+
+#define  CS_L    SET_SPI(SOFTCS,0x01)
+#define  CS_H    SET_SPI(SOFTCS,0x11)
+#define  SEND_CMD(x)     do{ SET_SPI(TXFIFO,(x));                    \
+                            while((GET_SPI(SPSR)&RFEMPTY) == RFEMPTY);  \
+                                GET_SPI(RXFIFO);                        \
+                        }while(0)
+
+#define  GET_DATA(x)     do{ SET_SPI(TXFIFO,0xff);                    \
+                            while((GET_SPI(SPSR)&RFEMPTY) == RFEMPTY);  \
+                        (x) = GET_SPI(RXFIFO);                        \
+                        }while(0)
+
+#define  SEND_DATA(x) SEND_CMD(x)
+
+
+
+
 
 
 int write_sr(char val);
@@ -40,119 +61,86 @@ void spi_initr()
 {
   	SET_SPI(PARAM, 0x47);             //espr:0100
 }
-
-
-
-
-///////////////////read status reg /////////////////
-
 int read_sr(void)
 {
-	int val;
-	
-	SET_SPI(SOFTCS,0x01);
-	SET_SPI(TXFIFO,0x05);
-	while((GET_SPI(SPSR))&RFEMPTY);
-
-	val = GET_SPI(RXFIFO);
-	SET_SPI(TXFIFO,0x00);
-
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY);
-
-	val = GET_SPI(RXFIFO);
-	
-	SET_SPI(SOFTCS,0x11);
-      
-	return val;
+    unsigned char val;
+    CS_L;
+    SEND_CMD(0x05);
+    GET_DATA(val);
+    CS_H;
+    return val;
 }
+int wait_sr(void)
+{
+    unsigned char val;
 
+    CS_L;
+    SEND_CMD(0x05);
+    do{
+        GET_DATA(val);
+    }while(val&0x1);
+    CS_H;
+    return val;
+}
 
 ////////////set write enable//////////
 int set_wren(void)
 {
-	int res;
-	
-	res = read_sr();
-	while(res&0x01 == 1)
-	{
-		res = read_sr();
-	}
-	
-	SET_SPI(SOFTCS,0x01);
-	
-	SET_SPI(TXFIFO,0x6);
-       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-	}
-	GET_SPI(RXFIFO);
+    unsigned char val;
+    wait_sr();
+    CS_L;
+    SEND_CMD(0x6);
+    CS_H;
 
-	SET_SPI(SOFTCS,0x11);
-
-	return 1;
+    CS_L;
+    SEND_CMD(0x05);
+    do{
+        GET_DATA(val);
+    }while(!(val&0x2));
+    CS_H;
+    return 1;
 }
 
 ///////////////////////write status reg///////////////////////
-int write_sr(char val)
+int write_sr(char sr)
 {
-	int res;
-	
-	set_wren();
-	
-	res = read_sr();
-	while(res&0x01 == 1)
-	{
-		res = read_sr();
-	}
-	
-	SET_SPI(SOFTCS,0x01);
-
-	SET_SPI(TXFIFO,0x01);
-       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-
-	SET_SPI(TXFIFO,val);
-       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-	SET_SPI(SOFTCS,0x11);
-	
-	return 1;
-	
+    unsigned char res,val;
+    set_wren();
+    wait_sr();
+    CS_L;
+    SEND_CMD(0x1);
+    SEND_DATA(sr);
+    CS_H;
+    return 1;
 }
 
 ///////////erase all memory/////////////
 int erase_all(void)
 {
-	int res;
-	int i=1;
-        spi_initw();
-	set_wren();
-	res = read_sr();
-	while(res&0x01 == 1)
-	{
-		res = read_sr();
-	}
-	SET_SPI(SOFTCS,0x1);
-	
-	SET_SPI(TXFIFO,0xC7);
-       	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-	
-	SET_SPI(SOFTCS,0x11);
-        while(i++){
-            if(read_sr() & 0x1 == 0x1){
-                if(i % 10000 == 0)
-                    printf(".");
-            }else{
-                printf("done...\n");
-                break;
-            }   
-        }
-	return 1;
+    int res;
+    int i=1,val;
+
+    spi_initw();
+    write_sr(0);
+    set_wren();
+    wait_sr();
+
+    CS_L;
+    SEND_CMD(0xc7);
+    CS_H;
+
+    while(i++){
+        //printf("val---==%x\n",read_sr());
+        if(read_sr() & 0x3){
+            //if(i % 10000 == 0)
+           //     printf(".");
+            //res=100;while(res--);
+        }else{
+            //printf("done...\n");
+            break;
+        }   
+    }
+    return 1;
 }
 
 
@@ -161,107 +149,44 @@ void spi_read_id(void)
 {
     unsigned char val;
     spi_initw();
-    val = read_sr();
-    while(val&0x01 == 1)
-    {
-        val = read_sr();
-    }
-    /*CE 0*/
-    SET_SPI(SOFTCS,0x01);
-    /*READ ID CMD*/
-    SET_SPI(TXFIFO,0x9f);
-    while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-    }
-    GET_SPI(RXFIFO);
-
-    /*Manufacturer’s ID*/
-    SET_SPI(TXFIFO,0x00);
-    while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-    }
-    val = GET_SPI(RXFIFO);
+    wait_sr();
+    CS_L;
+    SEND_CMD(0x9F);
+    GET_DATA(val); 
     printf("Manufacturer's ID:         %x\n",val);
-
-    /*Device ID:Memory Type*/
-    SET_SPI(TXFIFO,0x00);
-    while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-    }
-    val = GET_SPI(RXFIFO);
+    GET_DATA(val); 
     printf("Device ID-memory_type:     %x\n",val);
-    
-    /*Device ID:Memory Capacity*/
-    SET_SPI(TXFIFO,0x00);
-    while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-    }
-    val = GET_SPI(RXFIFO);
+    GET_DATA(val); 
     printf("Device ID-memory_capacity: %x\n",val);
-    
-    /*CE 1*/
-    SET_SPI(SOFTCS,0x11);
-
+    CS_H;
 }
 
 void spi_write_byte(unsigned int addr,unsigned char data)
 {
-    /*byte_program,CE 0, cmd 0x2,addr2,addr1,addr0,data in,CE 1*/
-	unsigned char addr2,addr1,addr0;
-        unsigned char val;
-	addr2 = (addr & 0xff0000)>>16;
-    	addr1 = (addr & 0x00ff00)>>8;
-	addr0 = (addr & 0x0000ff);
-        set_wren();
-        val = read_sr();
-        while(val&0x01 == 1)
-        {
-            val = read_sr();
-        }
-	SET_SPI(SOFTCS,0x01);/*CE 0*/
+    /*byte_prog$31m,CE 0, cmd 0x2,addr2,addr1,addr0,data in,CE 1*/
+    unsigned char addr2,addr1,addr0;
+    unsigned char val;
+    addr2 = (addr & 0xff0000)>>16;
+    addr1 = (addr & 0x00ff00)>>8;
+    addr0 = (addr & 0x0000ff);
+    set_wren();
+    wait_sr();
+    CS_L;
 
-        SET_SPI(TXFIFO,0x2);/*byte_program */
-        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-        }
-        val = GET_SPI(RXFIFO);
-        
-        /*send addr2*/
-        SET_SPI(TXFIFO,addr2);     
-        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-        }
-        val = GET_SPI(RXFIFO);
-        
-        /*send addr1*/
-        SET_SPI(TXFIFO,addr1);
-        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-        }
-        val = GET_SPI(RXFIFO);
-        
-        /*send addr0*/
-        SET_SPI(TXFIFO,addr0);
-        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-        }
-        val = GET_SPI(RXFIFO);
-
-        /*send data(one byte)*/
-       	SET_SPI(TXFIFO,data);
-        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-        }
-        val = GET_SPI(RXFIFO);
-        
-        /*CE 1*/
-	SET_SPI(SOFTCS,0x11);
+    SEND_CMD(0x2);
+    SEND_DATA(addr2);
+    SEND_DATA(addr1);
+    SEND_DATA(addr0);
+    SEND_DATA(data);
+    CS_H;
 
 }
+
+
 int write_pmon_byte(int argc,char ** argv)
 {
     unsigned int addr;
-   unsigned char val; 
+    unsigned char val; 
     if(argc != 3){
         printf("\nuse: write_pmon_byte  dst(flash addr) data\n");
         return -1;
@@ -269,267 +194,174 @@ int write_pmon_byte(int argc,char ** argv)
     addr = strtoul(argv[1],0,0);
     val = strtoul(argv[2],0,0);
     spi_write_byte(addr,val);
-return 0;
+    return 0;
 
 }
-
-
 int write_pmon(int argc,char **argv)
 {
-	long int j=0;
-        unsigned char val;
-        unsigned int ramaddr,flashaddr,size;
-	if(argc != 4){
-            printf("\nuse: write_pmon src(ram addr) dst(flash addr) size\n");
-            return -1;
-        }
+    long int j=0;
+    unsigned char val;
+    unsigned int ramaddr,flashaddr,size;
+    if(argc != 4){
+        printf("\nuse: write_pmon src(ram addr) dst(flash addr) size\n");
+        return -1;
+    }
 
-        ramaddr = strtoul(argv[1],0,0);
-        flashaddr = strtoul(argv[2],0,0);
-        size = strtoul(argv[3],0,0);
-        
-	spi_initw();
-        write_sr(0);
-// read flash id command
-        spi_read_id();
-	val = GET_SPI(SPSR);
-	printf("====spsr value:%x\n",val);
-	
-	SET_SPI(0x5,0x10);
-// erase the flash     
-	write_sr(0x00);
-//	erase_all();
-        printf("\nfrom ram 0x%08x  to flash 0x%08x size 0x%08x \n\nprogramming            ",ramaddr,flashaddr,size);
-        for(j=0;size > 0;flashaddr++,ramaddr++,size--,j++)
-        {
-            spi_write_byte(flashaddr,*((unsigned char*)ramaddr));
-            if(j % 0x1000 == 0)
-                printf("\b\b\b\b\b\b\b\b\b\b0x%08x",j);
-        }
-        printf("\b\b\b\b\b\b\b\b\b\b0x%08x end...\n",j);
+    ramaddr = strtoul(argv[1],0,0);
+    flashaddr = strtoul(argv[2],0,0);
+    size = strtoul(argv[3],0,0);
 
-        SET_SPI(0x5,0x11);
-	return 1;
+    spi_erase_area(flashaddr,flashaddr+size,0x10000);
+    CS_L;
+    // erase the flash     
+    write_sr(0x00);
+    printf("\nfrom ram 0x%08x  to flash 0x%08x size 0x%08x \n\nprogramming            ",ramaddr,flashaddr,size);
+    for(j=0;size > 0;flashaddr++,ramaddr++,size--,j++)
+    {
+        spi_write_byte(flashaddr,*((unsigned char*)ramaddr));
+        if(j % 0x1000 == 0)
+            printf("\b\b\b\b\b\b\b\b\b\b0x%08x",j);
+    }
+    printf("\b\b\b\b\b\b\b\b\b\b0x%08x end...\n",j);
+    CS_H;
+    return 1;
 }
-
-int read_pmon_byte(unsigned int addr,unsigned int num)
-{
-        unsigned char val,data;
-	val = read_sr();
-	while(val&0x01 == 1)
-	{
-		val = read_sr();
-	}
-	
-	SET_SPI(0x5,0x01);
-// read flash command 
-	SET_SPI(TXFIFO,0x03);
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-	
-// addr
-	SET_SPI(TXFIFO,0x00);
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-        GET_SPI(RXFIFO);
-	
-	SET_SPI(TXFIFO,0x00);
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-	
-	SET_SPI(TXFIFO,0x00);
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-	
-        
-        SET_SPI(TXFIFO,0x00);
-        while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-
-        }
-        data = GET_SPI(RXFIFO);
-	SET_SPI(0x5,0x11);
-        return data;
-}
-
 int read_pmon(int argc,char **argv)
 {
-	unsigned char addr2,addr1,addr0;
-	unsigned char data;
-	int val,base=0;
-	int addr;
-	int i;
-        if(argc != 3)
-        {
-            printf("\nuse: read_pmon addr(flash) size\n");
-            return -1;
-        }
-        addr = strtoul(argv[1],0,0);
-        i = strtoul(argv[2],0,0);
-	spi_initw();
-	val = read_sr();
-	while(val&0x01 == 1)
-	{
-		val = read_sr();
-	}
-	
-	SET_SPI(0x5,0x01);
-// read flash command 
-	SET_SPI(TXFIFO,0x03);
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-	
-// addr
-	SET_SPI(TXFIFO,((addr >> 16)&0xff));
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-        GET_SPI(RXFIFO);
-	
-	SET_SPI(TXFIFO,((addr >> 8)&0xff));
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-	
-	SET_SPI(TXFIFO,(addr & 0xff));
-	while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-	}
-	GET_SPI(RXFIFO);
-// addr end
-	
-        
-        printf("\n");
-        while(i--)
-	{
-		SET_SPI(TXFIFO,0x00);
-		while((GET_SPI(SPSR))&RFEMPTY == RFEMPTY){
-      			
-		}
-	        data = GET_SPI(RXFIFO);
-                if(base % 16 == 0 ){
-                    printf("0x%08x    ",base);
-                }
-                printf("%02x ",data);
-                if(base % 16 == 7)
-                    printf("  ");
-                if(base % 16 == 15)
-                    printf("\n");
-		base++;	
-	}
-        printf("\n");
-	return 1;
-	
-}
+    unsigned char addr2,addr1,addr0;
+    unsigned char data;
+    int val,base=0;
+    int addr;
+    int i;
+    if(argc != 3)
+    {
+        printf("\nuse: read_pmon addr(flash) size\n");
+        return -1;
+    }
+    addr = strtoul(argv[1],0,0);
+    i = strtoul(argv[2],0,0);
+    spi_initw();
+    CS_L;
+    SEND_CMD(0x03);
+    SEND_DATA(addr>>16);
+    SEND_DATA(addr>>8);
+    SEND_DATA(addr);
+    printf("\n");
+    while(i--)
+    {
 
+        GET_DATA(data);
+        if(base % 16 == 0 ){
+            printf("0x%08x    ",base);
+        }
+        printf("%02x ",data);
+        if(base % 16 == 7)
+            printf("  ");
+        if(base % 16 == 15)
+            printf("\n");
+        base++;	
+    }
+    printf("\n");
+    CS_H;
+    return 1;
+
+}
 int spi_erase_area(unsigned int saddr,unsigned int eaddr,unsigned sectorsize)
 {
-	unsigned int addr;
-       	spi_initw(); 
+    unsigned int addr;
+    spi_initw(); 
 
-	for(addr=saddr;addr<eaddr;addr+=sectorsize)
-	{
+    for(addr=saddr;addr<eaddr;addr+=sectorsize)
+    {
+//        printf(". ");
+        set_wren();
+        wait_sr();
 
-	SET_SPI(SOFTCS,0x11);
-
-	set_wren();
-
-	write_sr(0x00);
-
-	while(read_sr()&1);
-
-	set_wren();
-
-	SET_SPI(SOFTCS,0x01);
-
-	SET_SPI(TXFIFO,0xd8);
-       	while((GET_SPI(SPSR))&RFEMPTY);
-	GET_SPI(RXFIFO);
-	SET_SPI(TXFIFO,addr >> 16);
-
-       	while((GET_SPI(SPSR))&RFEMPTY);
-	GET_SPI(RXFIFO);
-
-	SET_SPI(TXFIFO,addr >> 8);
-       	while((GET_SPI(SPSR))&RFEMPTY);
-	GET_SPI(RXFIFO);
-
-	SET_SPI(TXFIFO,addr);
-	
-       	while((GET_SPI(SPSR))&RFEMPTY);
-	GET_SPI(RXFIFO);
-	
-	SET_SPI(SOFTCS,0x11);
-
-	while(read_sr()&1);
-	}
-	SET_SPI(SOFTCS,0x11);
-	delay(10);
-
-	return 0;
+        CS_L;
+        SEND_CMD(0xd8);
+        SEND_DATA(addr>>16);
+        SEND_DATA(addr>>8);
+        SEND_DATA(addr);
+        CS_H;
+    }
+    wait_sr();
+    //printf("\n");
+    return 0;
 }
+
+void spi_write_page(unsigned int addr,unsigned char *buf,unsigned int num)
+{
+    /*byte_prog$31m,CE 0, cmd 0x2,addr2,addr1,addr0,data in,CE 1*/
+    unsigned char addr2,addr1,addr0;
+    unsigned int i,real_num;
+    addr2 = (addr & 0xff0000)>>16;
+    addr1 = (addr & 0x00ff00)>>8;
+    addr0 = (addr & 0x0000ff);
+    set_wren();
+    wait_sr();
+    real_num = min(num,SPIF_PAGE_SIZE);
+
+    CS_L;
+    SEND_CMD(0x2);
+    SEND_DATA(addr2);
+    SEND_DATA(addr1);
+    SEND_DATA(addr0);
+    for(i=0;i<real_num;i++){
+        SEND_DATA(buf[i]);
+    }
+    CS_H;
+
+}
+
 
 int spi_write_area(int flashaddr,char *buffer,int size)
 {
-	int j;
-	spi_initw();
-	SET_SPI(0x5,0x10);
-	write_sr(0x00);
+    int j,i;
+    spi_initw();
+
+    write_sr(0x00);
+    if(getenv("spi-page")){
+        for(j=0;(size > 0 &&(flashaddr & (SPIF_PAGE_SIZE -1 )));flashaddr++,size--,j++){
+            spi_write_byte(flashaddr,*buffer++);
+        }
+        for(;size >= SPIF_PAGE_SIZE;){
+            spi_write_page(flashaddr,buffer,SPIF_PAGE_SIZE);
+            buffer += SPIF_PAGE_SIZE;
+            flashaddr += SPIF_PAGE_SIZE;
+            size -= SPIF_PAGE_SIZE;
+            j += SPIF_PAGE_SIZE;
+        } 
+        spi_write_page(flashaddr,buffer,size);
+    }else{
         for(j=0;size > 0;flashaddr++,size--,j++)
         {
+            //        if((j&0xffff)==0)printf("%x\n",j);
             spi_write_byte(flashaddr,buffer[j]);
         }
-
-	SET_SPI(SOFTCS,0x11);
-	delay(10);
-	return 0;
+    }
+    wait_sr();
+    return 0;
 }
+
 
 
 int spi_read_area(int flashaddr,char *buffer,int size)
 {
-	int i;
-	spi_initw();
+    int i;
+    spi_initw();
 
-	SET_SPI(SOFTCS,0x01);
+    CS_L;
+    SEND_CMD(0x03);
+    SEND_DATA(flashaddr>>16);
+    SEND_DATA(flashaddr>>8);
+    SEND_DATA(flashaddr);
+    for(i=0;i<size;i++)
+    {
+        GET_DATA(buffer[i]);
+    }
+    CS_H;
 
-	SET_SPI(TXFIFO,0x03);
-
-        while((GET_SPI(SPSR))&RFEMPTY);
-        GET_SPI(RXFIFO);
-        
-        SET_SPI(TXFIFO,flashaddr>>16);     
-        while((GET_SPI(SPSR))&RFEMPTY);
-        GET_SPI(RXFIFO);
-
-        SET_SPI(TXFIFO,flashaddr>>8);     
-        while((GET_SPI(SPSR))&RFEMPTY);
-        GET_SPI(RXFIFO);
-
-        SET_SPI(TXFIFO,flashaddr);     
-        while((GET_SPI(SPSR))&RFEMPTY);
-        GET_SPI(RXFIFO);
-        
-
-        for(i=0;i<size;i++)
-        {
-        SET_SPI(TXFIFO,0);     
-        while((GET_SPI(SPSR))&RFEMPTY);
-        buffer[i] = GET_SPI(RXFIFO);
-        }
-
-        SET_SPI(SOFTCS,0x11);
-	delay(10);
-	return 0;
+    return 0;
 }
 
 struct fl_device myflash = {
@@ -549,14 +381,10 @@ int fl_program_device(void *fl_base, void *data_base, int data_size, int verbose
 {
 	struct fl_map *map;
 	int off;
-	int spibase;
 	map = fl_find_map(fl_base);
 	off = (int)(fl_base - map->fl_map_base) + map->fl_map_offset;
-	spibase = SPI_BASE;
-	SPI_BASE = (map->fl_map_base == 0xbe000000)?0x1fec0000:0x1fe80000;
 	spi_write_area(off,data_base,data_size);
 	spi_initr();
-	SPI_BASE = spibase;
 	return 0;
 }
 
@@ -565,14 +393,10 @@ int fl_erase_device(void *fl_base, int size, int verbose)
 {
 	struct fl_map *map;
 	int off;
-	int spibase;
 	map = fl_find_map(fl_base);
 	off = (int)(fl_base - map->fl_map_base) + map->fl_map_offset;
-	spibase = SPI_BASE;
-	SPI_BASE = (map->fl_map_base == 0xbe000000)?0x1fec0000:0x1fe80000;
 	spi_erase_area(off,off+size,0x10000);
 	spi_initr();
-	SPI_BASE = spibase;
 return 0;
 }
 
