@@ -1207,7 +1207,7 @@ static void rtl8139_init_ring(struct nic *nic)
 	
 	buf = (buf+15) & ~15;
 	nic->tx_buffer = (unsigned char *)CACHED_TO_UNCACHED(buf);
-	nic->tx_dma =(unsigned char *)vtophys(buf);
+	nic->tx_dma =(unsigned char *) _pci_dmamap(buf,0);
 
 	/*
 	 * allocate Rx buffer and init it
@@ -1218,7 +1218,7 @@ static void rtl8139_init_ring(struct nic *nic)
 
 	buf = (buf+15) & ~15;
 	nic->rx_buffer = (unsigned char *)CACHED_TO_UNCACHED(buf);
-	nic->rx_dma =(unsigned char *)vtophys(buf);
+	nic->rx_dma =(unsigned char *) _pci_dmamap(buf,0);
 
 	
 	for(i = 0; i< 4; i++){
