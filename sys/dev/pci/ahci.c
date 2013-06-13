@@ -187,7 +187,11 @@ static void lahci_attach(struct device * parent, struct device * self, void *aux
 	u32 linkmap;
 	ahci_sata_info_t info;
 
-		
+	*(volatile int *)0xbfd00424 |= 0x80000000;
+//      *(volatile int *)0xbfd00418  = 0x38682650; //100MHZ
+        *(volatile int *)0xbfd00418  = 0x38502650; //125MHZ
+        *(volatile int *)0xbfe30000 &= 0x0;
+
 	regbase = (bus_space_handle_t)cf->ca_baseaddr;;
 	if(ahci_init_one(regbase)){
 		printf("ahci_init_one failed.\n");
@@ -195,7 +199,7 @@ static void lahci_attach(struct device * parent, struct device * self, void *aux
 	
 	linkmap = probe_ent->link_port_map;
 	printf("linkmap=%x\n",linkmap);
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < 2; i++) {
 		if (((linkmap >> i) & 0x01)) {
 			info.sata_reg_base = regbase + 100 + i * 0x80;
 			info.flags = i;

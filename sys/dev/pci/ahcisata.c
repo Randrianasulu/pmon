@@ -102,6 +102,8 @@ static int curr_device = -1;
 static int lba48[32];
 static int fault_timeout;
 
+int flags_port;
+
 static int ahcisata_match(struct device *, void *, void *);
 static void ahcisata_attach(struct device *, struct device *, void *);
 static int ahci_sata_initialize(u32 reg,u32 flags);
@@ -551,6 +553,9 @@ static int ahci_port_start(u8 port)
 	volatile u8 *port_mmio = (volatile u8 *)pp->port_mmio;
 	u32 port_status;
 	u32 mem;
+	flags_port = 0;
+        if(port == 0x1)
+ 	     flags_port = 0x1;
 
 	printf("Enter start port: %d\n", port);
 	port_status = readl(port_mmio + PORT_SCR_STAT);
@@ -611,6 +616,7 @@ static int get_ahci_device_data(u8 port, u8 *fis, int fis_len, u8 *buf,
 		int buf_len, u8 *cdb,int is_write)
 {
 
+	if(flags_port)   port = 1;
 	struct ahci_ioports *pp = &(probe_ent->port[port]);
 	volatile u8 *port_mmio = (volatile u8 *)pp->port_mmio;
 	u32 opts;
@@ -670,8 +676,8 @@ static int get_ahci_device_data(u8 port, u8 *fis, int fis_len, u8 *buf,
 		printf("timeout exit!\n");
 		return -1;
 	}
-	printf("get_ahci_device_data: %d byte transferred.\n",
-			pp->cmd_slot->status);
+	//printf("get_ahci_device_data: %d byte transferred.\n",
+//			pp->cmd_slot->status);
 
 	/* Indicates the current byte count that has transferred on device
 	 * writes(system memory to device) or 
@@ -746,7 +752,7 @@ static int ata_scsiop_inquiry(int port)
 		sata_dev_desc[port].lba48 = 1;
 		lba48[port] = 1;
 	}
-	dump_ataid(/*ataid[port]*/ (hd_driveid_t *)tmpid );
+//	dump_ataid(/*ataid[port]*/ (hd_driveid_t *)tmpid );
 	return 0;
 }
 
