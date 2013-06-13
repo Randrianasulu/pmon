@@ -368,7 +368,7 @@ DELAY(0x3000)
         sw      t1, 0x80+id*8(t0)         ;  \
         sw      $0, 0x84+id*8(t0)
 
-#if 1 /* fixup cpu window */
+#ifndef    USE_PCI /* fixup cpu window */
 cpu_win_fixup:
         //
         // hit         = (paddr & mask) == (mmap & mask)

@@ -219,6 +219,7 @@ option  CONFIG_VIDEO_LOGO
 option	CONFIG_VIDEO_BMP_LOGO
 option 	CONFIG_VIDEO_16BPP
 #option 	CONFIG_VIDEO_32BPP
+option 	USE_PCI
 select		cmd_call		# Call a function command
 select		ide
 option		CONFIG_FB_DYN

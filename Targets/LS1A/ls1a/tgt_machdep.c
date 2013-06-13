@@ -360,7 +360,12 @@ int init_kbd()
 int psaux_init(void);
 extern int video_hw_init (void);
 
-int have_pci=0;		//sw
+#ifdef USE_PCI
+int have_pci=1;
+#else
+int have_pci=0;
+#endif
+
 extern int fb_init(unsigned long,unsigned long);
 extern int dc_init();
 

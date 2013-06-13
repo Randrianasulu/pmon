@@ -74,7 +74,7 @@ int _max_pci_bus = 0;
 /* PCI mem regions in PCI space */
 
 /* soft versions of above */
-static pcireg_t pci_local_mem_pci_base;
+static pcireg_t pci_local_mem_pci_base = 0;
 
 
 /****************************/
@@ -144,7 +144,7 @@ _pci_hwinit(initialise, iot, memt)
 	bus_dmamap_tag._dmamap_offs = 0;
 
 
-	pci_local_mem_pci_base = 0x80000000;
+	//pci_local_mem_pci_base = 0x80000000;
 
 //sw: code form 2f	
 /*set pci base0 address and window size*/
