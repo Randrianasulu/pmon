@@ -294,6 +294,16 @@ else{
 }
 }
 
+
+void gmac_watchdog(struct ifnet *ifp)
+{
+	synopGMACPciNetworkAdapter *adapter;
+	adapter = (struct synopGMACNetworkAdapter *) ifp->if_softc;
+	synopGMAC_linux_cable_unplug_function(adapter);
+	ifp->if_timer = 2;
+}
+
+
 s32 synopGMAC_check_phy_init (synopGMACPciNetworkAdapter *adapter) 
 {	
 struct ethtool_cmd cmd;
@@ -1015,10 +1025,12 @@ int synopGMAC_intr_handler(struct synopGMACNetworkAdapter * tp)
 		TR("%s:: synopGMAC_tx_int_status = %08x\n",__FUNCTION__,synopGMAC_read_mmc_tx_int_status(gmacdev));
 	}
 
+#if 0
 	//if(dma_status_reg & GmacLineIntfIntr)
 	{
 		synopGMAC_linux_cable_unplug_function(adapter);
 	}
+#endif
 	/*Now lets handle the DMA interrupts*/  
         interrupt = synopGMAC_get_interrupt_type(gmacdev);
 //sw
@@ -2372,6 +2384,8 @@ s32  synopGMAC_init_network_interface(char* xname,u64 synopGMACMappedAddr)
 	ifp->if_ioctl = (int *)gmac_ether_ioctl;
 //	ifp->if_ioctl = (int *)synopGMAC_dummy_ioctl;
 	ifp->if_reset = (int *)synopGMAC_dummy_reset;
+	ifp->if_watchdog = gmac_watchdog;
+	ifp->if_timer = 2;
 	
 	ifp->if_snd.ifq_maxlen = TRANSMIT_DESC_SIZE - 1;	//defined in Dev.h value is 12, too small?
 
