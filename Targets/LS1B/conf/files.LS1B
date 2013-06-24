@@ -17,6 +17,8 @@ file	sys/dev/gmac/synopGMAC_network_interface.c  gmac
 file	sys/dev/gmac/synopGMAC_plat.c               gmac
 file	sys/dev/gmac/if_gmac.c gmac
 
+file 	Targets/LS1B/dev/net_lakers.c		    lakers
+
 file	Targets/LS1B/dev/can.c
 file    Targets/LS1B/dev/spi_w.c
 file    sys/dev/nand/cmdlinepart.c  nand needs-flag
@@ -31,6 +33,9 @@ file    Targets/LS1B/dev/localbus.c		localbus
 
 device	syn: ether, ifnet
 attach	syn at localbus
+
+device  lakers: ether, ifnet
+attach  lakers at localbus
 
 device	sdcard
 attach	sdcard at localbus

@@ -134,6 +134,7 @@ loopdev0	at mainbus0
 
 #### Networking Devices
 
+#lakers0		at localbus0
 syn0		at localbus0
 #syn1		at localbus0
 option GMAC_PHY_BASE=1
