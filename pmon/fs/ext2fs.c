@@ -598,7 +598,96 @@ static int ext2_read_file(int fd,void *read_start,size_t size,size_t pos,struct 
 			return (int)size;
 		}
 	}
-	printf("I can't read so big files,give me a email!\n");
+	//triple
+
+	addr_start=&(inode->i_block[14]);
+	devio_lseek(fd,(off_t)*addr_start*RAW_BLOCK_SIZE+START_PARTION,0);
+	re=devio_read(fd,buff,RAW_BLOCK_SIZE);
+	if(re!=RAW_BLOCK_SIZE)
+	{
+		printf("Read the iblock[13] error!\n");
+		free((char*)buff);	/* spark add */
+		return 0;
+	}
+	d_addr_start=(__u32 *)buff;
+	index_buff=(__u8 *)malloc(RAW_BLOCK_SIZE);
+	if(!index_buff)
+	{
+		printf("Can't alloc memory!\n");
+		return 0;
+	}
+
+		start_block=(position/RAW_BLOCK_SIZE-12-RAW_BLOCK_SIZE/4-RAW_BLOCK_SIZE/4*RAW_BLOCK_SIZE/4)/(RAW_BLOCK_SIZE/4*RAW_BLOCK_SIZE/4);
+	for(i=start_block;i<RAW_BLOCK_SIZE/4-1;i++)
+	{	
+		devio_lseek(fd,(off_t)*(d_addr_start+i)*RAW_BLOCK_SIZE+START_PARTION,0);
+		re=devio_read(fd,index_buff,RAW_BLOCK_SIZE);
+		if(re!=RAW_BLOCK_SIZE)
+		{
+			printf("Can't read index block!\n");
+			return 0;
+		}
+		addr_start=(__u32 *)index_buff;
+		start_block=(position/RAW_BLOCK_SIZE-12-RAW_BLOCK_SIZE/4-RAW_BLOCK_SIZE/4*RAW_BLOCK_SIZE/4-RAW_BLOCK_SIZE/4*RAW_BLOCK_SIZE/4*i)/(RAW_BLOCK_SIZE/4);
+		re=ReadFromIndexBlock2(fd,start_block,RAW_BLOCK_SIZE/4-1,&start,&read_size,&position,addr_start);
+		if(re)
+		{
+			printf("Can't read the double index block!\n");
+			free((char*)buff);
+			free((char*)index_buff);	/* spark add */
+			return 0;
+		}
+		if(!read_size) {
+			free((char*)buff);		/* spark add */
+			free((char*)index_buff);
+			return (int)size;
+		}
+	}
+	return 0;
+}
+
+static int ReadFromIndexBlock2(int fd,__u32 start_index,__u32 end_index,__u8 **start,	size_t *size,size_t *position,__u32 *d_addr_start)
+{
+//addr_start is a array
+//start_block1 is arrys's index
+	__u32 start_block;
+	__u32 *addr_start;
+	__u8 *index_buff;
+	int i, re;
+
+	if(start_index>end_index)
+		return 0;
+
+	index_buff=(__u8 *)malloc(RAW_BLOCK_SIZE);
+	if(!index_buff)
+	{
+		printf("Can't alloc memory!\n");
+		return 0;
+	}
+
+	for(i=start_index;i<end_index;i++)
+	{	
+		devio_lseek(fd,(off_t)*(d_addr_start+i)*RAW_BLOCK_SIZE+START_PARTION,0);
+		re=devio_read(fd,index_buff,RAW_BLOCK_SIZE);
+		if(re!=RAW_BLOCK_SIZE)
+		{
+			printf("Can't read index block!\n");
+			return 0;
+		}
+		addr_start=(__u32 *)index_buff;
+		start_block= (*position/RAW_BLOCK_SIZE-12)%(RAW_BLOCK_SIZE/4);
+		re=ReadFromIndexBlock(fd,start_block,RAW_BLOCK_SIZE/4-1,start,size,position,addr_start);
+		if(re)
+		{
+			printf("Can't read the double index block!\n");
+			free((char*)index_buff);	/* spark add */
+			return 0;
+		}
+		if(!*size) {
+			free((char*)index_buff);
+			return 0;
+		}
+	}
 	return 0;
 }
 int ext2_write(int fd,const void *start,size_t size)
