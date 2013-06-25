@@ -810,11 +810,15 @@ void video_drawsline(char *str, int rows, int cols)
 
 void video_putchar (int xx, int yy, unsigned char c)
 {
+#ifndef VIDEO_NO_CONSOLE
 	video_drawchars (xx, yy + VIDEO_LOGO_HEIGHT, &c, 1);
+#endif
 }
 void video_putchar_xor (int xx, int yy, unsigned char c)
 {
+#ifndef VIDEO_NO_CONSOLE
 	video_drawchars_xor (xx, yy + VIDEO_LOGO_HEIGHT, &c, 1);
+#endif
 }
 /*****************************************************************************/
 #ifdef CONFIG_CONSOLE_CURSOR
@@ -909,7 +913,8 @@ gc300_hw_bitblt(pGD->gdfBytesPP,pGD->winSizeX,pGD->winSizeY, VIDEO_FONT_HEIGHT )
 #else
 
 #if defined(MEM_PRINTTO_VIDEO)
-	video_drawsline(memfb, CONSOLE_ROWS, CONSOLE_COLS);
+	if (CONSOLE_ROWS != 0)
+		video_drawsline(memfb, CONSOLE_ROWS, CONSOLE_COLS);
 #else
 
 #ifdef __mips__
@@ -1022,7 +1027,8 @@ void video_putc (const char c)
 			       console_row * VIDEO_FONT_HEIGHT,
 			       c);
 #ifdef MEM_PRINTTO_VIDEO
-		memfb[console_row * CONSOLE_COLS + console_col] = c;
+		if (CONSOLE_ROWS != 0)
+			memfb[console_row * CONSOLE_COLS + console_col] = c;
 #endif
 		console_col++;
 
@@ -1517,7 +1523,8 @@ void video_cls(void)
 		CONSOLE_SIZE>>2, 
 		CONSOLE_BG_COL);
 #ifdef MEM_PRINTTO_VIDEO
-	memsetl (memfb, CONSOLE_ROWS * CONSOLE_COLS >> 2, CONSOLE_BG_COL);
+	if (CONSOLE_ROWS != 0)
+		memsetl (memfb, CONSOLE_ROWS * CONSOLE_COLS >> 2, CONSOLE_BG_COL);
 #endif
 }
 
@@ -1831,8 +1838,11 @@ int fb_init (unsigned long fbbase,unsigned long iobase)
 
 	memset (console_buffer, ' ', sizeof console_buffer);
 #if defined(MEM_PRINTTO_VIDEO)
-	memfb = malloc(CONSOLE_ROWS * CONSOLE_COLS);
-	memset (memfb, 0, CONSOLE_ROWS * CONSOLE_COLS);
+	if (CONSOLE_ROWS != 0)
+	{
+		memfb = malloc(CONSOLE_ROWS * CONSOLE_COLS);
+		memset (memfb, 0, CONSOLE_ROWS * CONSOLE_COLS);
+	}
 #endif
 	return 0;
 }
