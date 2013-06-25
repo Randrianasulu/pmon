@@ -482,10 +482,10 @@ int ext2_read(int fd,void *read_start,size_t size)
 {
 	int real_size;
 	
-	memset(read_start, 0, size);
 	if ((_file[fd].posn + size) > File_inode->i_size) {
 		size = File_inode->i_size - _file[fd].posn;
 	}
+	memset(read_start, 0, size);
 	real_size=ext2_read_file(fd,read_start,size,_file[fd].posn,File_inode);
 	if ((_file[fd].posn + real_size) > File_inode->i_size) {
 		real_size = File_inode->i_size - _file[fd].posn; 
