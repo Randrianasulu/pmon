@@ -479,7 +479,7 @@ int file_to_mtd_pos(int fd,int *plen)
         if(plen){
             *plen=(p->part_offset+p->part_size)-(file_start+pos);
         }
-        tmp = file_start+pos;
+        tmp = pos;
         return (((((int*)(p->trans_table))[tmp>>17])<<17)|(tmp&((0x1<<17) -1)));
     }
     
