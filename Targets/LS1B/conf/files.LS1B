@@ -2,14 +2,14 @@
 #
 # Bonito Target specific files
 #
-file	Targets/LS1B/ls1b/dc.c
+file	Targets/LS1B/ls1b/dc.c mod_framebuffer
 file	Targets/LS1B/ls1b/tgt_machdep.c
-file	Targets/LS1B/dev/i2c.c
-file	Targets/LS1B/dev/spi.c
-file	Targets/LS1B/dev/ac97.c
-file	Targets/LS1B/ls1b/tgt_cmd.c
-file	Targets/LS1B/ls1b/memscan.c
-file	Targets/LS1B/dev/hpet.c
+file	Targets/LS1B/dev/i2c.c i2c
+file	Targets/LS1B/dev/spi.c spi needs-flag
+file	Targets/LS1B/dev/ac97.c ac97
+file	Targets/LS1B/ls1b/tgt_cmd.c tgtcmd
+file	Targets/LS1B/ls1b/memscan.c memscan
+file	Targets/LS1B/dev/hpet.c hpet needs-flag
 #sw
 file	sys/dev/gmac/synopGMAC_Host.c               gmac
 file	sys/dev/gmac/synopGMAC_Dev.c                gmac
@@ -19,8 +19,8 @@ file	sys/dev/gmac/if_gmac.c gmac
 
 file 	Targets/LS1B/dev/net_lakers.c		    lakers
 
-file	Targets/LS1B/dev/can.c
-file    Targets/LS1B/dev/spi_w.c
+file	Targets/LS1B/dev/can.c can
+file    Targets/LS1B/dev/spi_w.c spi
 file    sys/dev/nand/cmdlinepart.c  nand needs-flag
 file    sys/dev/nand/ls1g-nand.c  nand needs-flag
 

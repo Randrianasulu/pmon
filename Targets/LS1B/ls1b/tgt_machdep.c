@@ -68,6 +68,8 @@
 #include "mod_x86emu.h"
 #include "mod_vgacon.h"
 #include "mod_framebuffer.h"
+#include "hpet.h"
+#include "spi.h"
 #if (NMOD_X86EMU_INT10 > 0)||(NMOD_X86EMU >0)
 extern int vga_bios_init(void);
 #endif
@@ -78,13 +80,7 @@ extern const char *kbd_error_msgs[];
 
 
 #include "flash.h"
-#if (NMOD_FLASH_AMD + NMOD_FLASH_INTEL + NMOD_FLASH_SST) == 0
-#ifdef HAVE_FLASH
-#undef HAVE_FLASH
-#endif
-#else
 #define HAVE_FLASH
-#endif
 
 #define REG_TOY_READ0 0xbfe6402c
 #define REG_TOY_READ1 0xbfe64030
@@ -181,7 +177,7 @@ void addr_tst2(void);
 void movinv1(int iter, ulong p1, ulong p2);
 
 
-//#define	HPET
+#if NHPET
 void hpet_test()
 {
 	hpet_init();
@@ -193,6 +189,7 @@ void hpet_test()
 //	hpet_intr();
 
 }
+#endif
 
 #define NMOD_SDCARD_STORAGE  1
 
@@ -242,7 +239,6 @@ int ls1f_gmac_init()
 void
 initmips(unsigned int memsz)
 {
-//	memsz=64;
 	
 	
 	/*
@@ -1254,17 +1250,21 @@ cksum(void *p, size_t s, int set)
 void
 nvram_get(char *buffer)
 {
+#if NSPI
 	spi_read_area(NVRAM_POS,buffer,NVRAM_SECSIZE);
 	spi_initr();
+#endif
 }
 
 void
 nvram_put(char *buffer)
 {
+#if NSPI
 	int i;
 	spi_erase_area(NVRAM_POS,NVRAM_POS+NVRAM_SECSIZE,0x10000);
 	spi_write_area(NVRAM_POS,buffer,NVRAM_SECSIZE);
 	spi_initr();
+#endif
 }
 
 #endif
@@ -1321,7 +1321,7 @@ tgt_getmachtype()
 /*
  *  Create stubs if network is not compiled in
  */
-#ifdef INET
+#if 1//def INET
 void
 tgt_netpoll()
 {
