@@ -72,7 +72,7 @@ typedef	unsigned long long	u_int64_t;
 /* LONGLONG */
 typedef	unsigned long long	 uint64_t;
 
-#if __mips >= 3
+#if __mips >= 3 && __mips != 32
 #define	HAVE_QUAD
 typedef int64_t		       register_t;
 typedef int64_t		     f_register_t;
