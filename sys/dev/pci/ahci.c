@@ -201,7 +201,7 @@ static void lahci_attach(struct device * parent, struct device * self, void *aux
 	printf("linkmap=%x\n",linkmap);
 	for (i = 0; i < 2; i++) {
 		if (((linkmap >> i) & 0x01)) {
-			info.sata_reg_base = regbase + 100 + i * 0x80;
+			info.sata_reg_base = regbase + 0x100 + i * 0x80;
 			info.flags = i;
 			info.aa_link.aa_type=0xff; //just for not match ide
 			config_found(self,(void *)&info,NULL);
