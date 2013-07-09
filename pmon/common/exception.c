@@ -226,7 +226,7 @@ extern char _pmon_snap_trap;
 		if (flag) {
 			addpchist (md_get_excpc(frame));
 			if (trace_verbose) {
-#if NCMD_L > 0
+#if 1//NCMD_L > 0
 				char tmp[80];
 				md_disasm (tmp, md_get_excpc(frame));
 				printf ("%s\r\n", tmp);
