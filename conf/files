@@ -134,7 +134,7 @@ file sys/net/route.c			sys
 file sys/net/rtsock.c			sys
 
 file sys/netinet/if_ether.c		ether
-file sys/netinet/in.c			inet
+file sys/netinet/in.c			inet	needs-flag
 file sys/netinet/in_cksum.c		inet
 file sys/netinet/in_pcb.c		inet
 file sys/netinet/in_proto.c		inet
