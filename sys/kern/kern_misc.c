@@ -57,6 +57,7 @@
 
 #include <pmon.h>
 #include <linux/io.h>
+#include "mod_debugger.h"
 #undef MYPRINT
 
 #define PORT3fd (mips_io_port_base+0x3fd)
@@ -137,7 +138,9 @@ panic(msg)
 	const char *msg;
 {
 	printf("PMON PANIC '%s'\n", msg);
+#if NMOD_DEBUGGER
 	md_do_stacktrace(NULL, -1, -1, 0);
+#endif
 	tgt_reboot();
 	while(1);
 }
@@ -413,7 +416,9 @@ static int here = 0;
 	if(here) {		/* Don't recurse */
 		splhigh();
 		printf("ifpoll recursed!\n");
+#if NMOD_DEBUGGER
 		md_do_stacktrace(0, -1, 0, 0);
+#endif
 		while(1);
 	}
 

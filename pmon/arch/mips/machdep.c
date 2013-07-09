@@ -55,6 +55,7 @@
 #include <machine/trap.h>
 
 #include <pmon.h>
+#include "mod_debugger.h"
 
 extern int memorysize;
 extern u_int8_t end[];
@@ -143,7 +144,9 @@ md_dumpexc(struct trapframe *tf)
 	printf("ENTLO0=%llp, ENTLO1=%llp\r\n\r\n", tf->entlo0, tf->entlo1);
 	dsp_rregs(&w);
 	printf("\r\n");
+#if NMOD_DEBUGGER
 	md_do_stacktrace(0, 0, 0, 0);
+#endif
 }
 
 /*
