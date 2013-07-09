@@ -188,6 +188,81 @@ strtol(const char *nptr,char **endptr,int base)
     return result;
 }
 
+unsigned long long
+strtoull(const char *nptr,char **endptr,int base)
+{
+#if __mips >= 3
+    int c;
+    unsigned long long  result = 0L;
+    unsigned long long limit;
+    int negative = 0;
+    int overflow = 0;
+    int digit;
+
+    while ((c = *nptr) && isspace(c)) /* skip leading white space */
+      nptr++;
+
+    if ((c = *nptr) == '+' || c == '-') { /* handle signs */
+	negative = (c == '-');
+	nptr++;
+    }
+
+    if (base == 0) {		/* determine base if unknown */
+	base = 10;
+	if (*nptr == '0') {
+	    base = 8;
+	    nptr++;
+	    if ((c = *nptr) == 'x' || c == 'X') {
+		base = 16;
+		nptr++;
+	    }
+	}
+    } else if (base == 16 && *nptr == '0') {	
+	/* discard 0x/0X prefix if hex */
+	nptr++;
+	if ((c = *nptr == 'x') || c == 'X')
+	  nptr++;
+    }
+
+    limit = ULONGLONG_MAX / base;	/* ensure no overflow */
+
+    nptr--;			/* convert the number */
+    while ((c = *++nptr) != 0) {
+	if (isdigit(c))
+	  digit = c - '0';
+	else if(isalpha(c))
+	  digit = c - (isupper(c) ? 'A' : 'a') + 10;
+	else
+	  break;
+	if (digit < 0 || digit >= base)
+	  break;
+	if (result > limit)
+	  overflow = 1;
+	if (!overflow) {
+	    result = base * result;
+	    if (digit > ULONGLONG_MAX - result)
+	      overflow = 1;
+	    else	
+	      result += digit;
+	}
+    }
+    if (negative && !overflow)	/* BIZARRE, but ANSI says we should do this! */
+      result = 0L - result;
+    if (overflow) {
+	extern int errno;
+	errno = ERANGE;
+	result = ULONGLONG_MAX;
+    }
+
+    if (endptr != NULL)		/* point at tail */
+      *endptr = (char *)nptr;
+    return result;
+
+#else
+return strtoul(nptr,endptr,base);
+#endif
+}
+
 
 char *sys_errlist[] = {
 	"Undefined error: 0",			/*  0 - ENOERROR */
@@ -336,4 +411,52 @@ alarm(secs)
 	if (oitv.it_value.tv_usec)
 		oitv.it_value.tv_sec++;
 	return (oitv.it_value.tv_sec);
+}
+
+int highmemcpy(long long dst,long long src,long long count)
+{
+#if __mips >= 3
+asm(
+".set noreorder\n"
+"1:\n"
+"beqz %2,2f\n"
+"nop\n"
+"lb $2,(%0)\n"
+"sb $2,(%1)\n"
+"daddiu %0,1\n"
+"daddiu %1,1\n"
+"b 1b\n"
+"daddiu %2,-1\n"
+"2:\n"
+".set reorder\n"
+::"r"(src),"r"(dst),"r"(count)
+:"$2"
+);
+#else
+ memcpy(dst,src,count);
+#endif
+return 0;
+}
+
+int highmemset(long long addr,char c,long long count)
+{
+#if __mips >= 3
+asm(
+".set noreorder\n"
+"1:\n"
+"beqz %2,2f\n"
+"nop\n"
+"sb %1,(%0)\n"
+"daddiu %0,1\n"
+"b 1b\n"
+"daddiu %2,-1\n"
+"2:\n"
+".set reorder\n"
+::"r"(addr),"r"(c),"r"(count)
+:"$2"
+);
+#else
+memset(addr,c,count);
+#endif
+return 0;
 }
