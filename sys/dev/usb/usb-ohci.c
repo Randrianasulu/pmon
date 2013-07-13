@@ -2597,7 +2597,7 @@ int submit_common_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
     lurb_priv = &ohci_urb[dev_num][ed_num];
 
 	if (usb_pipetype(pipe) != PIPE_INTERRUPT) { /*FIXME, might not done bulk*/
-		dev->status = stat;
+		//dev->status = stat;
 		dev->act_len = transfer_len;
 		/* free TDs in urb_priv */
 		urb_free_priv(lurb_priv);
