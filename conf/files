@@ -377,6 +377,7 @@ file sys/dev/nand/nand_ecc.c      nand
 file sys/dev/nand/nand_ids.c      nand
 file sys/dev/nand/nand_bbt.c      nand
 file pmon/fs/mtd.c		  nand
+file    sys/dev/nand/cmdlinepart.c  nand needs-flag
 device loopdev
 attach loopdev at mainbus
 file    pmon/dev/loopdev.c loopdev needs-flag
