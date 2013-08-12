@@ -373,6 +373,140 @@ extern int dc_init();
 extern unsigned long GPU_fbaddr;
 #endif
 
+#if 1
+
+#ifndef CONFIG_PM
+#define CONFIG_PM
+#endif 
+
+#ifdef CONFIG_PM
+extern  enum{
+OF_BUF_CONFIG=0,
+OF_BUF_ADDR=0x20,
+OF_BUF_STRIDE=0x40,
+OF_BUF_ORIG=0x60,
+OF_DITHER_CONFIG=0x120,
+OF_DITHER_TABLE_LOW=0x140,
+OF_DITHER_TABLE_HIGH=0x160,
+OF_PAN_CONFIG=0x180,
+OF_PAN_TIMING=0x1a0,
+OF_HDISPLAY=0x1c0,
+OF_HSYNC=0x1e0,
+OF_VDISPLAY=0x240,
+OF_VSYNC=0x260,
+OF_DBLBUF=0x340,
+};
+
+#define SB2F_LCD_BASE_VA   0xbc301240
+
+#define	SB2F_LCD_BASE1_VA (SB2F_LCD_BASE_VA + 0x10)
+
+unsigned int dc_initreg[10];
+unsigned int dc_initreg1[10];
+int sb2f_drv_suspend()
+{
+#if 1
+  	dc_initreg[0] = *(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_HDISPLAY);
+  	dc_initreg[1] = *(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_HSYNC);
+  	dc_initreg[2] = *(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_VDISPLAY );
+  	dc_initreg[3] = *(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_VSYNC);
+  	dc_initreg[4] = *(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_STRIDE);
+  	dc_initreg[5] = *(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_ADDR);
+  	dc_initreg[6] = *(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_DBLBUF);
+
+#endif
+	int i = 0;
+	for (; i < 7; i++)
+		printf("dc0_reg[%d] : 0x%x\n", i, dc_initreg[i]);
+#if 1
+  	dc_initreg1[0] = *(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_HDISPLAY);
+  	dc_initreg1[1] = *(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_HSYNC);
+  	dc_initreg1[2] = *(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_VDISPLAY );
+  	dc_initreg1[3] = *(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_VSYNC);
+  	dc_initreg1[4] = *(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_BUF_STRIDE);
+  	dc_initreg1[5] = *(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_BUF_ADDR);
+  	dc_initreg1[6] = *(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_DBLBUF);
+	for (i = 0; i < 7; i++)
+		printf("dc1_reg[%d] : 0x%x\n", i, dc_initreg1[i]);
+#endif 
+
+	dc_initreg1[7] = *(volatile unsigned int *)0xbfd00414;
+   	/*output pix1 clock  pll ctrl*/
+   	dc_initreg1[8] = *(volatile unsigned int *)0xbfd00410;
+   	/*output pix2 clock pll ctrl */
+   	dc_initreg1[9] = *(volatile unsigned int *)0xbfd00424;
+//  	*(volatile unsigned char *)(0xbfe4c000) = 'B';
+
+	return 0;
+}
+
+
+int sb2f_drv_resume()
+{
+
+	
+  	//*(volatile unsigned char *)(0xbfe4c000) = 'K';
+
+	*(volatile unsigned int *)0xbfd00414 = dc_initreg1[7] + 1;
+   	/*output pix1 clock  pll ctrl*/
+   	*(volatile unsigned int *)0xbfd00410 = dc_initreg1[8];
+   	/*output pix2 clock pll ctrl */
+   	//*(volatile unsigned int *)0xbfd00424 = 0xc5ea641e;
+   	*(volatile unsigned int *)0xbfd00424 = dc_initreg1[9];
+
+#if 1
+   	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_CONFIG) = 0x00000000;
+	// framebuffer configuration RGB565
+	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_CONFIG) = 0x00000003;
+	//*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_ADDR) = 0xe400000;
+	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_ADDR) = dc_initreg[5];
+	//*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_ADDR) = 0xd800000;
+	//*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_DBLBUF) = 0xc800000;
+	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_DBLBUF) = dc_initreg[6];
+	//*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_DBLBUF) = 0xd800000;
+	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_DITHER_CONFIG) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_DITHER_TABLE_LOW) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_DITHER_TABLE_HIGH) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_PAN_CONFIG) = 0x80001311;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_PAN_TIMING) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_HDISPLAY)= dc_initreg[0] ;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_HSYNC)= dc_initreg[1];
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_VDISPLAY ) =dc_initreg[2];
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_VSYNC)= dc_initreg[3];
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_CONFIG) = 0x00100103;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE_VA + OF_BUF_STRIDE)=dc_initreg[4];
+#endif 
+#if 1	
+   	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_BUF_CONFIG) = 0x00000000;
+	// framebuffer configuration RGB565
+	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_BUF_CONFIG) = 0x00000003;
+	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_BUF_ADDR) = dc_initreg1[5];
+	//*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_DBLBUF) = 0xce00000;
+	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_DBLBUF) = dc_initreg1[6];
+	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_DITHER_CONFIG) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_DITHER_TABLE_LOW) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_DITHER_TABLE_HIGH) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_PAN_CONFIG) = 0x80001311;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_PAN_TIMING) = 0x00000000;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_HDISPLAY)= dc_initreg1[0] ;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_HSYNC)= dc_initreg1[1];
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_VDISPLAY ) =dc_initreg1[2];
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_VSYNC)= dc_initreg1[3];
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_BUF_CONFIG) = 0x00100103;
+  	*(volatile unsigned int *)(SB2F_LCD_BASE1_VA + OF_BUF_STRIDE)=dc_initreg1[4];
+#endif 
+
+	//printk("====================sb2f==\n");
+	return 0;
+}
+
+#else
+#define sb2f_drv_suspend NULL
+#define sb2f_drv_resume NULL
+#endif
+
+#endif 
+
 void
 tgt_devconfig()
 {
