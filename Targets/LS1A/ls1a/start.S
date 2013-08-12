@@ -199,11 +199,26 @@ ext_map_and_reboot:
 #endif
 
 	/*acpi: set ddr autorefresh and suspend */
+	#enable ddr confspace
+	li  t0, 0xbfd00420	
+	lw	t1, 0x0(t0)
+	li  t2, 0xfffffffd
+	and t1, t1, t2
+	sw  t1, 0x0(t0)
+
 	li	t0, 0xaffffe30
 	lw	t1, 0x4(t0)
 	li	t2, 0x1
 	or	t1, t1, t2
 	sw	t1, 0x4(t0)
+
+	#disable ddr confspace
+	li  t0, 0xbfd00420	
+	lw	t1, 0x0(t0)
+	li  t2, 0x1
+	or  t1, t1, t2
+	sw  t1, 0x0(t0)
+
 
 	li	t0, 0xbfe7c008
 	lw	t1, 0x0(t0)
@@ -392,12 +407,12 @@ cpu_win_fixup:
         // uncached instruction fetch patch
 #endif 
 
-#if 0
 	/* 
 	 * Now determine DRAM configuration and size by
 	 * reading the I2C EEROM on the DIMMS
 	 */
 
+#if 0
 	/*
 	 * set gpio 66 to make ddr #CKE low
 	 */
@@ -529,14 +544,18 @@ acpi_begin:
 #if 0
 	PRINTSTR("ACPI_MEM_CEHCK=")
 	li	a1, 0
-	li	t0, 0xa0000000
-	li	t2, 0xa0100000
+	#li	t0, 0xa0000000
+	#li	t2, 0xa0100000
+	li	t0, 0x80200000
+	li	t2, 0x81200000
 1:	lw	t1,(t0)
 	addu	a1, a1, t1
 	addiu t0, t0, 4
 	bne	t0,t2,1b
 	nop
 	addu a0,a1,zero
+	#li t0, 0x80100000
+	#sw a1, (t0)
 	bal	hexserial
 	nop
 	PRINTSTR("\r\n")
