@@ -39,15 +39,6 @@ void flush_cache2()
 {
 asm volatile(\
 ".set mips3;\\n" \\
-"	mfc0	\$3, \$15;			# read processor ID register;\\n" \\
-" 	li		\$2, 0x6303;				#godson2f prid;\\n" \\
-" 	beq		\$2, \$3, godson_2f;\\n" \\
-" 	nop;\\n" \\
-"	li		\$2, 0x6302;				#godson2e prid;\\n" \\
-"	bne	\$2, \$3,11f ;\\n" \\
-"	nop;\\n" \\
-"# godson2e;\\n" \\
-" godson_2f: " \\
 "	li	  \$2, 0x80000000;\\n" \\
 "   addu  \$3,\$2,512*1024/4;\\n" \\
 "10:\\n" \\
@@ -58,7 +49,6 @@ asm volatile(\
 "	addu	\$2, 32;\\n" \\
 "	bne	    \$2,\$3, 10b;\\n" \\
 "	nop;\\n" \\
-"11:\\n" \\
 :::"\$2","\$3"
 );
 }
