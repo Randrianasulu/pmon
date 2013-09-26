@@ -141,12 +141,12 @@ int ejtag_serial (int op, struct DevEntry *dev, unsigned long param, int data)
 		case OP_TXRDY:
 			return 1;
 		case OP_TX:
-			*(volatile char *)0xff2001e0=data;
+			*(volatile char *)CONFIG_EJTAG_SERIAL=data;
 			break;
 		case OP_RXRDY:
-			return *(volatile char *)0xff2001e1;
+			return *(volatile char *)(CONFIG_EJTAG_SERIAL+1);
 		case OP_RX:
-			return *(volatile char *)0xff2001e0;
+			return *(volatile char *)CONFIG_EJTAG_SERIAL;
 	}
 	return 0;
 }

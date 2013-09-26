@@ -778,8 +778,8 @@ END(hexserial)
 
 LEAF(tgt_putchar)
 #ifdef CONFIG_EJTAG_SERIAL
-	lui v0,0xff20;
-	sb a0,0x1e0(v0);
+	li v0,CONFIG_EJTAG_SERIAL;
+	sb a0,(v0);
 	nop
 	nop
 	jr ra 
@@ -800,8 +800,8 @@ END(tgt_putchar)
 
 LEAF(tgt_testchar)
 #ifdef CONFIG_EJTAG_SERIAL
-	lui v0,0xff20;
-	lb v0,0x1e1(v0);
+	li v0,CONFIG_EJTAG_SERIAL;
+	lb v0,1(v0);
 	jr ra 
 	nop
 #endif
@@ -815,8 +815,8 @@ END(tgt_testchar)
 
 LEAF(tgt_getchar)
 #ifdef CONFIG_EJTAG_SERIAL
-	lui v0,0xff20;
-	lb v0,0x1e0(v0);
+	li v0,CONFIG_EJTAG_SERIAL;
+	lb v0,(v0);
 	jr ra 
 	nop
 #endif
