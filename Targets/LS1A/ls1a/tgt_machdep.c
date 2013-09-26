@@ -1508,9 +1508,9 @@ tgt_reboot()
     #endif
 
 	/*enable watch dog*/
-outl(0xbfe5c060,1);
-outl(0xbfe5c064,1);
-outl(0xbfe5c068,1);
+outl(0xbfe7c060,1);
+outl(0xbfe7c064,1);
+outl(0xbfe7c068,1);
 
 	while(1);
 
