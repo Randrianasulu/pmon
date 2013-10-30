@@ -124,6 +124,7 @@ void mv_error(unsigned long *adr, unsigned long good, unsigned long bad);
 void print_err( unsigned long *adr, unsigned long good, unsigned long bad, unsigned long xor);
 static void init_legacy_rtc(void);
 
+#ifdef CONFIG_EJTAG_SERIAL
 /*used for debug,only work on ejtag mode*/
 int ejtag_serial (int op, struct DevEntry *dev, unsigned long param, int data)
 {
@@ -145,6 +146,7 @@ int ejtag_serial (int op, struct DevEntry *dev, unsigned long param, int data)
 	}
 	return 0;
 }
+#endif
 
 ConfigEntry	ConfigTable[] =
 {
