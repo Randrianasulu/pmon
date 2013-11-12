@@ -308,7 +308,13 @@ s32 synopGMAC_check_phy_init (synopGMACPciNetworkAdapter *adapter)
 {	
 struct ethtool_cmd cmd;
 synopGMACdevice            *gmacdev = adapter->synopGMACdev;
-	
+if(getenv("gmacspeed"))
+{
+		gmacdev->DuplexMode = FULLDUPLEX;
+		gmacdev->Speed      =   strtoul(getenv("gmacspeed"),0,0);
+}
+else
+{
 
 
 	if(!mii_link_ok(&adapter->mii))
@@ -332,6 +338,7 @@ synopGMACdevice            *gmacdev = adapter->synopGMACdev;
 		gmacdev->Speed      =   SPEED10;
 
 	}
+}
 
 	return gmacdev->Speed|(gmacdev->DuplexMode<<4);
 }

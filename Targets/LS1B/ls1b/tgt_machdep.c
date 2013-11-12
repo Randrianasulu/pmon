@@ -70,6 +70,7 @@
 #include "mod_framebuffer.h"
 #include "hpet.h"
 #include "spi.h"
+#include "switch.h"
 #if (NMOD_X86EMU_INT10 > 0)||(NMOD_X86EMU >0)
 extern int vga_bios_init(void);
 #endif
@@ -368,6 +369,10 @@ tgt_devconfig()
         vga_available=1;
 	else 
         vga_available=0;
+#endif
+
+#ifdef NSWITCH
+    switch_init();
 #endif
 
     config_init();

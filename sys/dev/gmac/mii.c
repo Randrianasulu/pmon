@@ -114,6 +114,8 @@ static int mii_ethtool_gset(struct mii_if_info *mii, struct ethtool_cmd *ecmd)
 
 static int mii_link_ok (struct mii_if_info *mii)
 {
+if(getenv("gmacspeed"))
+	return 1;
 	/* first, a dummy read, needed to latch some MII phys */
 	mii->mdio_read(mii->dev, mii->phy_id, MII_BMSR);
 	if (mii->mdio_read(mii->dev, mii->phy_id, MII_BMSR) & BMSR_LSTATUS)
