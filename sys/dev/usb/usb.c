@@ -82,6 +82,7 @@
 #include <machine/cpu.h>
 
 #include "usb.h"
+#include <mod_usb_ehci.h>
 #undef USB_DEBUG
 //#define USB_DEBUG
 
@@ -1927,6 +1928,7 @@ int usb_hub_configure(struct usb_device *dev)
 			USB_HUB_PRINTF("port %d connection change\n", i + 1);
 /*ZQX---------some change here*/
 			/*EHCI IS ON*/
+#if NMOD_USB_EHCI
 			if(hc_switch==1){
 				/*THE HIGH DEVICE*/
 				if(!ehci_do_judge(dev, i+1)){
@@ -1942,7 +1944,9 @@ int usb_hub_configure(struct usb_device *dev)
 				}
 			}
 			/*EHCI IS NOT SURE, OHCI DEFINITELY IS ON*/
-			else{
+			else
+#endif
+			{
 				usb_hub_port_connect_change(dev, i);
 			}
 		}
