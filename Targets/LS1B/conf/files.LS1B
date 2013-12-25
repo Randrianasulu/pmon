@@ -47,6 +47,9 @@ file	Targets/LS1B/dev/sdcardfs_spi.c sdcard needs-flag
 device lohci: usbbus 
 attach lohci at localbus
 
+device lehci: usbbus 
+attach lehci at localbus
+
 #
 # Media Indepedent Interface (mii)
 #

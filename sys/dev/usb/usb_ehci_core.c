@@ -568,7 +568,6 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 */
 
 	/* Wait for TDs to be processed. */
-	ts = get_timer(0);
 	vtd = td;
 	do {
 		/* Invalidate dcache */
@@ -576,7 +575,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		token = hc32_to_cpu(vtd->qt_token);
 		if (!(token & 0x80))
 			break;
-	} while (get_timer(ts) < CONFIG_SYS_HZ);
+	} while (1);
 //ZQX
 //	printf("ZHUOQIXIANG----THE TOKEN OF VTD=%x\n",token);
 
@@ -1071,26 +1070,6 @@ int ehci_do_judge(struct usb_device *dev, int port)
 	
 }
 
-
-
-static unsigned long timestamp;
-
-
-static unsigned long get_timer(unsigned long  base)
-{
-	unsigned int count;
-	unsigned int expirelo = read_c0_compare();
-
-	/* Check to see if we have missed any timestamps. */
-	count = read_c0_count();
-	while ((count - expirelo) < 0x7fffffff) {
-		expirelo += CYCLES_PER_JIFFY;
-		timestamp++;
-	}
-	write_c0_compare(expirelo);
-
-	return (timestamp - base);
-}
 
 struct usb_ops ehci_usb_op = {
 	.submit_bulk_msg	= 	ehci_submit_bulk_msg,

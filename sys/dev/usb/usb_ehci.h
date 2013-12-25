@@ -191,11 +191,12 @@ void ehci_flush_cache(ulong start_addr, ulong size)
 
 
 //ZQX
-#define debug 				printf
+//#define debug 				printf
+#define debug 				
 
 //typedef unsigned int uint32_t;
-//typedef unsigned int __u32;
-//typedef unsigned short __u16;
+typedef unsigned int __u32;
+typedef unsigned short __u16;
 
 #define __sw32(x) \
 	((__u32)( \
