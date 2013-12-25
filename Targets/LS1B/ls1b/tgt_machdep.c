@@ -371,7 +371,7 @@ tgt_devconfig()
         vga_available=0;
 #endif
 
-#ifdef NSWITCH
+#if NSWITCH
     switch_init();
 #endif
 
