@@ -972,7 +972,7 @@ int ehci_lowlevel_init(void)
 
 	reg = ehci_readl(&hccr->cr_hcsparams);
 	descriptor.hub.bNbrPorts = HCS_N_PORTS(reg);
-	printf("Register %x NbrPorts %d\n", reg, descriptor.hub.bNbrPorts);
+	//printf("Register %x NbrPorts %d\n", reg, descriptor.hub.bNbrPorts);
 	/* Port Indicators */
 	if (HCS_INDICATOR(reg))
 		descriptor.hub.wHubCharacteristics |= 0x80;
@@ -996,7 +996,7 @@ int ehci_lowlevel_init(void)
 	cmd = ehci_readl(&hcor->or_usbcmd);
 	wait_ms(5);
 	reg = HC_VERSION(ehci_readl(&hccr->cr_capbase));
-	printf("USB EHCI %x.%02x\n", reg >> 8, reg & 0xff);
+	printf("\nUSB EHCI %x.%02x\n", reg >> 8, reg & 0xff);
 
 	rootdev = 0;
 
@@ -1058,7 +1058,7 @@ int ehci_do_judge(struct usb_device *dev, int port)
 	status_reg = (uint32_t *)&hcor->or_portsc[port - 1];
 
 	reg = ehci_readl(status_reg);
-	printf("ZQX---------------REG=%x\n",reg);
+	//printf("REG=%x\n",reg);
 	if ((reg & (EHCI_PS_PE | EHCI_PS_CS)) == EHCI_PS_CS &&
 			    !ehci_is_TDI() &&
 			    EHCI_PS_IS_LOWSPEED(reg)){
@@ -1091,7 +1091,6 @@ static void lehci_attach(struct device *parent, struct device *self, void *aux)
 	struct confargs *cf = aux;
 	
 //	addr = (uint32_t)cf->ca_baseaddr;
-	printf("\n--------lehci_attach-------\n");
 	if (ehci_hcd_init() != 0)
 		printf("hcd init fail!\n");
 
@@ -1107,7 +1106,7 @@ static void lehci_attach(struct device *parent, struct device *self, void *aux)
 //	asynch_allowed = 1;
 	usb_hub_reset();
 	/* init low_level USB */
-	printf("USB:   ");
+	//printf("USB:   ");
 	result = ehci_lowlevel_init();
 
 	ehci->hc.uop = &ehci_usb_op;
@@ -1118,10 +1117,10 @@ static void lehci_attach(struct device *parent, struct device *self, void *aux)
 	/* if lowlevel init is OK, scan the bus for devices
 	 * i.e. search HUBs and configure them */
 	if (result == 0) {
-		printf("scanning bus for devices........................................\n");
+		printf("scanning bus for devices\n");
 		usb_scan_devices(ehci);
 		usb_started = 1;
-		printf("That's it, init ehci over........................................\n");
+		printf("That's it, init ehci over\n");
 	
 	} else {
 		printf("Error, couldn't init Lowlevel part\n");

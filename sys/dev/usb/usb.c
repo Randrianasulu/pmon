@@ -1429,7 +1429,6 @@ void usb_scan_devices(void * hc_private)
  */
 
 #undef	USB_HUB_DEBUG
-#define	USB_HUB_DEBUG
 
 #ifdef	USB_HUB_DEBUG
 #define	USB_HUB_PRINTF(fmt,args...)	printf (fmt ,##args)
@@ -1730,7 +1729,6 @@ void usb_hub_port_connect_change(struct usb_device *dev, int port)
 	struct usb_device *usb;
 	struct usb_port_status portsts;
 	unsigned short portstatus, portchange;
-printf("\n***************usb_hub_port_connect_change***********\n");
 	/* Check status */
 	if (usb_get_port_status(dev, port + 1, &portsts)<0) {
 		USB_HUB_PRINTF("get_port_status failed\n");
@@ -1780,7 +1778,7 @@ printf("\n***************usb_hub_port_connect_change***********\n");
 
 /***ZQX	 THIS IS IMPORTANT!!!***/
 	usb->slow = usb->speed;
-	printf("ZHUOQIXIANG---------NEW DEVICE slow:%d; speed:%d\n",usb->slow, usb->speed);
+	USB_HUB_PRINTF("NEW DEVICE slow:%d; speed:%d\n",usb->slow, usb->speed);
 
 
 	dev->children[port] = usb;
@@ -1926,7 +1924,6 @@ int usb_hub_configure(struct usb_device *dev)
 		USB_HUB_PRINTF("Port %d Status %X Change %X\n",i+1,portstatus,portchange);
 		if (portchange & USB_PORT_STAT_C_CONNECTION) {
 			USB_HUB_PRINTF("port %d connection change\n", i + 1);
-/*ZQX---------some change here*/
 			/*EHCI IS ON*/
 #if NMOD_USB_EHCI
 			if(hc_switch==1){

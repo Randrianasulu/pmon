@@ -36,7 +36,7 @@ int ehci_hcd_init(void)
 	hccr = (struct ehci_hccr *)(0xbfe00000);
 	hcor = (struct ehci_hcor *)((uint32_t) hccr
 			+ HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
-	printf("LS1B init hccr %x,and hcor %x hc_length %d,hcsparams=%d,hccparams=%d\n",(uint32_t) hccr,(uint32_t) hcor,HC_LENGTH(ehci_readl(&hccr->cr_capbase)),ehci_readl(&hccr->cr_hcsparams),ehci_readl(&hccr->cr_hccparams));
+	//printf("LS1A/B init hccr %x,and hcor %x hc_length %d,hcsparams=%d,hccparams=%d\n",(uint32_t) hccr,(uint32_t) hcor,HC_LENGTH(ehci_readl(&hccr->cr_capbase)),ehci_readl(&hccr->cr_hcsparams),ehci_readl(&hccr->cr_hccparams));
 	return 0;
 }
 
