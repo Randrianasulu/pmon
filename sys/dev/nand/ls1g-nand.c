@@ -10,8 +10,30 @@
 #define __iomem
 #endif
 
-#define DMA_ACCESS_ADDR     0x1fe78040
-#define ORDER_REG_ADDR      (0xbfd01160)
+#define CKSEG1ADDR(a) ((a)|0xa0000000)
+#ifdef LS2HSOC
+#define LS2H_CHIP_CFG_REG_BASE				0x1fd00000
+#define LS2H_DMA_ORDER_REG				(LS2H_CHIP_CFG_REG_BASE + 0x0100)
+#define LS2H_NAND_REG_BASE				0x1fee0000
+
+
+#define ORDER_REG_ADDR		(CKSEG1ADDR(LS2H_DMA_ORDER_REG))
+#define  NAND_REG_BASE	  LS2H_NAND_REG_BASE
+#else
+
+#define  ORDER_REG_ADDR      (0xbfd01160)
+#define  NAND_REG_BASE	  0x1fe78000
+#endif
+#define DMA_ACCESS_ADDR	  (NAND_REG_BASE+0x40)
+#define  _NAND_BASE      CKSEG1ADDR(NAND_REG_BASE)
+#define  _NAND_IDL      ( *((volatile unsigned int*)(_NAND_BASE+0x10)))
+#define  _NAND_IDH       (*((volatile unsigned int*)(_NAND_BASE+0x14)))
+#define  _NAND_PARAM	(*((volatile unsigned int*)(_NAND_BASE+0x18)))
+#define  _NAND_SET_REG(x,y)   do{*((volatile unsigned int*)(_NAND_BASE+x)) = (y);}while(0)                           
+#define  _NAND_READ_REG(x,y)  do{(y) =  *((volatile unsigned int*)(_NAND_BASE+x));}while(0) 
+
+
+
 #define MAX_BUFF_SIZE	4096
 #define PAGE_SHIFT      12
 #ifdef LS1GSOC
@@ -376,9 +398,9 @@ static void ls1g_nand_init_mtd(struct mtd_info *mtd,struct ls1g_nand_info *info)
 //        mtd->owner = THIS_MODULE;
 }
 #define write_z_cmd  do{                                    \
-            *((volatile unsigned int *)(0xbfe78000)) = 0;   \
-            *((volatile unsigned int *)(0xbfe78000)) = 0;   \
-            *((volatile unsigned int *)(0xbfe78000)) = 400; \
+            *((volatile unsigned int *)(_NAND_BASE)) = 0;   \
+            *((volatile unsigned int *)(_NAND_BASE)) = 0;   \
+            *((volatile unsigned int *)(_NAND_BASE)) = 400; \
     }while(0)
 
 
@@ -509,7 +531,7 @@ static  int sync_dma(struct ls1g_nand_info *info)
 {
     int status_time;
     status_time=STATUS_TIME_LOOP_WS;
-    while(!(*((volatile unsigned int*)0xbfe78000) & (0x1<<10))){
+    while(!(*((volatile unsigned int*)_NAND_BASE) & (0x1<<10))){
         if(!(status_time--)){
 			/*time out,so clear cmd,fixme */
             write_z_cmd;
@@ -743,12 +765,6 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
                 info->buf_start = 0;
 //                info->cac_size = info->buf_count;
                 {
-#define  _NAND_IDL      ( *((volatile unsigned int*)(0xbfe78010)))
-#define  _NAND_IDH       (*((volatile unsigned int*)(0xbfe78014)))
-#define  _NAND_BASE      0xbfe78000
-#define  _NAND_SET_REG(x,y)   do{*((volatile unsigned int*)(_NAND_BASE+x)) = (y);}while(0)                           
-#define  _NAND_READ_REG(x,y)  do{(y) =  *((volatile unsigned int*)(_NAND_BASE+x));}while(0) 
-
 
                     unsigned int id_val_l=0,id_val_h=0;
                     unsigned int timing = 0;
@@ -791,7 +807,7 @@ int ls1g_nand_detect(struct mtd_info *mtd)
 }
 static void ls1g_nand_init_info(struct ls1g_nand_info *info)
 {
-    *((volatile unsigned int *)0xbfe78018) = 0x400;
+    _NAND_PARAM = 0x400;
     info->num=0;
     info->size=0;
     info->cac_size = 0; 
@@ -829,7 +845,7 @@ int ls1g_nand_pmon_info_init(struct ls1g_nand_info *info,struct mtd_info *mtd)
             return -1;
 	info->drcmr_dat_phys = (info->drcmr_dat) & 0x1fffffff;
 
-        info->mmio_base = 0x1fe78000 | 0xa0000000;
+        info->mmio_base = NAND_REG_BASE | 0xa0000000;
     	
         info->data_buff = ((unsigned int)(malloc(MAX_BUFF_SIZE + 32,M_DMAMAP,M_WAITOK)) + 0x1f)&(~0x1f);
         info->data_buff = (unsigned char *)((((unsigned int)info->data_buff+0x1f) & (~0x1f))&0xfffffff|0x80000000);
@@ -887,8 +903,6 @@ static void find_good_part(struct mtd_info *ls1g_soc_mtd)
 #define __ww(addr,val)  *((volatile unsigned int*)(addr)) = (val)
 #define __rw(addr,val)  val =  *((volatile unsigned int*)(addr))
 #define __display(addr,num) do{for(i=0;i<num;i++){printf("0x%08x:0x%08x\n",(addr+i*sizeof(int)),*((volatile unsigned int*)(addr+i*sizeof(int))));}}while(0)
-#define NAND_REG_BASE   0xbfe78000
-#define NAND_DEV        0x1fe78040
 #define DMA_DESP        0xa0800000
 #define DMA_DESP_ORDER  0x00800008
 #define DMA_ASK_ORDER   0x00800004
@@ -898,9 +912,9 @@ static void find_good_part(struct mtd_info *ls1g_soc_mtd)
 #define STATUS_TIME 100
 
 #define cmd_to_zero  do{            \
-            __ww(NAND_REG_BASE,0);  \
-            __ww(NAND_REG_BASE,0);  \
-            __ww(NAND_REG_BASE,0x400);  \
+            __ww(_NAND_BASE,0);  \
+            __ww(_NAND_BASE,0);  \
+            __ww(_NAND_BASE,0x400);  \
 }while(0)
 
 unsigned int verify_erase(unsigned int addr,int all)
@@ -910,7 +924,7 @@ unsigned int verify_erase(unsigned int addr,int all)
     unsigned int val=0;
     __ww(DMA_DESP+0,0);
     __ww(DMA_DESP+0x4,DDR_PHY); 
-    __ww(DMA_DESP+0x8,NAND_DEV); 
+    __ww(DMA_DESP+0x8,DMA_ACCESS_ADDR); 
     __ww(DMA_DESP+0xc,0x8400);
     __ww(DMA_DESP+0x10,0x0); 
     __ww(DMA_DESP+0x14,0x1); 
@@ -919,11 +933,11 @@ unsigned int verify_erase(unsigned int addr,int all)
 
 
 
-    __ww(NAND_REG_BASE+0x0,0x0);
-    __ww(NAND_REG_BASE+0x4,addr<<(12+6));
-    __ww(NAND_REG_BASE+0x1c,0x21000);//main + spare
-    __ww(NAND_REG_BASE+0x0,0x300);
-    __ww(NAND_REG_BASE+0x0,0x303);
+    __ww(_NAND_BASE+0x0,0x0);
+    __ww(_NAND_BASE+0x4,addr<<(12+6));
+    __ww(_NAND_BASE+0x1c,0x21000);//main + spare
+    __ww(_NAND_BASE+0x0,0x300);
+    __ww(_NAND_BASE+0x0,0x303);
     
     udelay(5000);
     while(1){
@@ -938,227 +952,11 @@ unsigned int verify_erase(unsigned int addr,int all)
     return flag;
 }
 
-void nanderase_verify(int argc,char ** argv)
-{
-    int i=0,flag=0;
-    int status_time ;
-    char *detail;
-//    all =strtoul(argv[1],0,0);
-    detail = argv[1];
-    flag=strncmp(detail,"detail",6);
-    __ww(NAND_REG_BASE+0x0,0x0);   
-    __ww(NAND_REG_BASE+0x0,0x41);
-    __ww(NAND_REG_BASE+0x4,0x00);
-    status_time = STATUS_TIME;
-
-       printf("erase blockaddr: 0x%08x",i); 
-    for(i=0;i<1024;i++){
-        printf("\b\b\b\b\b\b\b\b");
-        printf("%08x",i<<(11+6)); 
-        __ww(NAND_REG_BASE+0x4,i<<(11+6));   
-        __ww(NAND_REG_BASE+0x0,0x8);
-        __ww(NAND_REG_BASE+0x0,0x9);
-            udelay(2000);
-        while((*((volatile unsigned int *)(NAND_REG_BASE)) & 0x1<<16) == 0)
-        {
-            if(!(status_time--)){
-                cmd_to_zero;
-                status_time = STATUS_TIME;
-                break;
-            }
-            udelay(80);
-        }
-        if(verify_erase(i,flag)){printf("BLOCK:%d,addr:0x%08x,some error or bad block\n",i,i<<(11+6));}
-    }
-    printf("\nerase all nandflash ok...\n");
-
-
-
-
-#if 0  
-    //  __ww(NAND_REG_BASE+0x0,0x9);
-//    udelay(1000000);
-//    __display(NAND_REG_BASE,0x10);
-//    return 0;  
-
-//    __ww(NAND_REG_BASE+0x0,0x0);
-//        udelay(1000000);
-//    __display(NAND_REG_BASE,0x1);  
-//    __ww(NAND_REG_BASE+0x0,0x0);
-//    __display(NAND_REG_BASE,0x1);
-
-    __ww(DMA_DESP,0xa0081100); 
-    __ww(DMA_DESP+0x4,DDR_PHY); 
-    __ww(DMA_DESP+0x8,NAND_DEV); 
-    __ww(DMA_DESP+0xc,0x10);
-    __ww(DMA_DESP+0x10,0x0); 
-    __ww(DMA_DESP+0x14,0x1); 
-    __ww(DMA_DESP+0x18,0x0);
-//    udelay(1000000);
-   __ww(0xbfd01160,DMA_DESP_ORDER);
-//    udelay(1000000);
-__display(DMA_DESP,0x10);
-  __display(0xbfd01160,0x1);
-//    udelay(1000000);
-    __ww(NAND_REG_BASE+0x4,0x800); 
-    __ww(NAND_REG_BASE+0x1c,0x40); 
-//    udelay(1000000);
-   __display(NAND_REG_BASE,0X4); 
-    __ww(NAND_REG_BASE,0x203);
-//    udelay(1000000);
-   __display(NAND_REG_BASE,0X4); 
-    __ww(0xbfd01160,0x8000004);
-   __display(0xa8000000,0x8); 
-   __display(DDR_ADDR,0x10);
-
-//   while(1);
-#endif 
-}
-void nanderase(void)
-{
-    int i=0;
-    int status_time ;
-    __ww(NAND_REG_BASE+0x0,0x0);   
-    __ww(NAND_REG_BASE+0x0,0x41);
-    __ww(NAND_REG_BASE+0x4,0x00);
-
-    status_time = STATUS_TIME;
-
-       printf("erase blockaddr: 0x%08x",i); 
-    for(i=0;i<1024;i++){
-        printf("\b\b\b\b\b\b\b\b");
-       printf("%08x",i<<(11+6)); 
-        __ww(NAND_REG_BASE+0x4,i<<(11+6));   
-        __ww(NAND_REG_BASE+0x0,0x8);
-        __ww(NAND_REG_BASE+0x0,0x9);
-            udelay(2000);
-        while((*((volatile unsigned int *)(NAND_REG_BASE)) & 0x1<<16) == 0)
-        {
-            if(!(status_time--)){
-                cmd_to_zero;
-                status_time = STATUS_TIME;
-                break;
-            }
-            udelay(80);
-        }
-    }
-    printf("\nerase all nandflash ok...\n");
-}
-#include "nand_gpio.c"
-
-static void nand_read_id(void)
-{
-    unsigned int cmd_id = 0x21;
-    unsigned int cmd_reg = 0xbfe78000;
-    unsigned int id_reg =  0xbfe78010;
-    unsigned int id_val=0;
-    unsigned int id_val_h=0;
-    *((volatile unsigned int *)(0xbfe7800c))=0x30f0;
-    *((volatile unsigned int *)(0xbfe78000))=0x21;
-#define    IDL  *((volatile unsigned int*)(0xbfe78010))  
-#define    IDH  *((volatile unsigned int*)(0xbfe78014))  
-    while(1){
-        while(((id_val |= IDL) & 0xff)  == 0){
-            id_val_h = IDH;
-        }
-        break;
-    }
-    /*
-    __asm__ __volatile__(
-            ".set mips3\n"
-            "\tlw $4,%1\n"
-            "\tlw $5,%2\n"
-            "\tsw $4,0($5)\n"
-//            "\tla,a0,%0i"
-            "1:\tlw $4,0(%3)\n"
-            "\tbeqz $4,1f\n"
-            "\tmove %0,$4\n"
-            :"=r"(id_val)
-            :"r"(cmd_id),"r"(cmd_reg),"r"(id_reg)
-            );
-*/
-            printf("read_id_l:0x%08x\nread_id_h:0x%08x\n",id_val,id_val_h);
-
-}
 #define TIMING 0xc
 #define OP_NUM  0x1c
 #define ADDR    0x4
 #define CMD     0x0
 static unsigned int nand_num=0;
-
-static void nandwrite_test(int argc,char **argv)/*cmd addr(L,page num) timing op_num(byte) */
-{
-    unsigned int cmd = 0,addr=0,timing=0x412,op_num=0,dma_num=0;
-    unsigned int pages=0,i,val,timeout;
-    if(argc != 5)
-    {
-        printf("\nnandwrite_test : cmd  addr(start write page_num)  timing  op_num(write pages)\n");
-        printf("EXAMPLE:nandwrite_test : 0x203  0x10 0x412 0x5\n\n");
-        return;
-    }
-       nand_num=0; 
-     cmd = strtoul(argv[1],0,0);
-     addr = strtoul(argv[2],0,0);
-     timing = strtoul(argv[3],0,0);
-     op_num = strtoul(argv[4],0,0);
-//     dma_num = strtoul(argv[5],0,0);
-     if(cmd&0x9){addr <<= 12;}
-     else{addr <<= 11;}
-//    pages = (op_num>>11)+1;
-    pages = op_num;
-for(i=0;i<pages;i++){
-     __ww(NAND_REG_BASE+TIMING,timing); 
-     __ww(NAND_REG_BASE+OP_NUM,0x840); 
-     __ww(NAND_REG_BASE+ADDR,addr);
-     __ww(DDR_ADDR,0xffffffff);
-/*dma configure*/
-    __ww(DMA_DESP,0xa0081100); 
-    __ww(DMA_DESP+0x4,DDR_PHY); 
-    __ww(DMA_DESP+0x8,NAND_DEV); 
-    __ww(DMA_DESP+0xc,0x210);
-    __ww(DMA_DESP+0x10,0x0); 
-    __ww(DMA_DESP+0x14,0x1); 
-    __ww(DMA_DESP+0x18,0x1000);
-    __ww(0xbfd01160,DMA_DESP_ORDER);
-/*send cmd*/ 
-     __ww(NAND_REG_BASE+CMD,cmd&0x200);
-     __ww(NAND_REG_BASE+CMD,cmd);
-     udelay(100);
-     while(1){
-        __ww(0xbfd01160,DMA_ASK_ORDER);
-        __rw(DMA_DESP+0x4,val);
-        if(val == (0x210+DDR_PHY)){break;}
-        udelay(20);
-    }
-    timeout=30;
-    udelay(300);
-    __rw(NAND_REG_BASE+CMD,val);
-    while(!(val&0x1<<20)){
-        udelay(20);
-        if(!(timeout--)){nand_num++;break;}
-        __rw(NAND_REG_BASE+CMD,val);
-    }
-    printf("nand_num===0x%08x\n",nand_num);
-    
-}
-
-}
-static const Cmd Cmds[] =
-{
-	{"MyCmds"},
-	{"nanderase_verify","val",0,"hardware test",nanderase_verify,0,99,CMD_REPEAT},
-	{"nanderase","val",0,"hardware test",nanderase,0,99,CMD_REPEAT},
-	{"nandreadid_gpio","val",0,"hardware test",nand_gpio_read_id,0,99,CMD_REPEAT},
-	{"nandreadid","val",0,"hardware test",nand_read_id,0,99,CMD_REPEAT},
-	{"nandwrite_test","val",0,"hardware test",nandwrite_test,0,99,CMD_REPEAT},
-	{0, 0}
-};
-
-static void init_cmd __P((void)) __attribute__ ((constructor));
-static void init_cmd()
-{
-//	cmdlist_expand(Cmds, 1);
-}
 
 static char *mtd_id="nand-flash";
 int ls1g_soc_nand_init(void)
