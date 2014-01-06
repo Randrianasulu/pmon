@@ -54,6 +54,7 @@
 #define MTD_FLAGS_CHAR_MARK 0x8 /*main+oob,but bad_mark auto*/
 #define MTD_FLAGS_GOOD      0x10 /*use good part info*/
 #endif
+#define min(a,b) (((a)<(b))?(a):(b))
 
 LIST_HEAD(mtdfiles, mtdfile) mtdfiles = LIST_HEAD_INITIALIZER(mtdfiles);
 static int mtdidx=0;
@@ -296,7 +297,7 @@ static int
     mtdpriv *priv;
     struct erase_info erase;
     unsigned int start_addr;
-    int maxlen,newpos,retlen,left;
+    unsigned int maxlen,newpos,retlen,left;
     struct mtd_oob_ops ops;
     priv = (mtdpriv *)_file[fd].data;
     p = priv->file;
