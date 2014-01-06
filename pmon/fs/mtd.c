@@ -258,7 +258,7 @@ static int
         ops.mode = MTD_OOB_RAW;
         ops.ooblen = 64;
         ops.ooboffs = 0;
-        ops.oobbuf = buf;
+        ops.oobbuf = buf + p->mtd->writesize;
         ops.datbuf = buf; 
         while(left)
         {
