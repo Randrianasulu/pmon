@@ -99,6 +99,10 @@ extern void *memset(void *, int, size_t);
 
 extern void stringserial(char *);
 
+#ifdef CONFIG_USB_HOTPLUG
+extern int usb_hotplug_handler(void);
+#endif
+
 
 int kbd_available;
 int usb_kbd_available;
@@ -321,6 +325,10 @@ initmips(unsigned int memsz)
 
 #ifdef	HPET
 	hpet_test();
+#endif
+
+#ifdef CONFIG_USB_HOTPLUG
+	tgt_poll_register(1, usb_hotplug_handler, 0);
 #endif
 	
 	/*

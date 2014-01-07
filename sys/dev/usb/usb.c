@@ -80,6 +80,7 @@
 #include <linux/types.h>
 #include <stdio.h>
 #include <machine/cpu.h>
+#include <sys/malloc.h>
 
 #include "usb.h"
 #include <mod_usb_ehci.h>
@@ -1710,6 +1711,107 @@ static int hub_port_reset(struct usb_device *dev, int port,
 
 }
 
+/*
+ *Author : zhaokai@loongson.cn
+ *
+ *add the func to delete device of the usb device from pmon device list
+ *
+ *referent linux kernel usb core driver
+ *
+ */
+extern struct devicelist alldevs;
+
+void usb_disconnect(struct usb_device *usbdev)
+{
+	if (usbdev->match != NULL)
+	{
+		struct device *dev, *next_dev;
+		struct device *localdev = usbdev->match;
+		for (dev  = TAILQ_FIRST(&alldevs); dev != NULL; dev = next_dev)
+		{
+			next_dev = TAILQ_NEXT(dev, dv_list);
+			if (strcmp(dev->dv_xname, localdev->dv_xname) == 0)
+			{   
+				TAILQ_REMOVE(&alldevs, dev, dv_list);
+				free(dev, M_DEVBUF);
+			}
+		}
+	}
+	dev_index--;
+}
+
+/*
+ *Author : zhaokai@loongson.cn
+ *
+ *add the func for status attribution delay after change attribution of port
+ *
+ *referent linux kernel usb core driver
+ *
+ *USB 2.0 spec, 7.1.7.3 / fig 7-29:
+ *
+ * Between connect detection and reset signaling there must be a delay
+ * of 100ms at least for debounce and power-settling.  The corresponding
+ * timer shall restart whenever the downstream port detects a disconnect.
+ * 
+ * Apparently there are some bluetooth and irda-dongles and a number of
+ * low-speed devices for which this debounce period may last over a second.
+ * Not covered by the spec - but easy to deal with.
+ *
+ * This implementation uses a 1500ms total debounce timeout; if the
+ * connection isn't stable by then it returns -ETIMEDOUT.  It checks
+ * every 25ms for transient disconnects.  When the port status has been
+ * unchanged for 100ms it returns the port status.
+ */
+
+#define HUB_DEBOUNCE_TIMEOUT	1500
+#define HUB_DEBOUNCE_STEP	  25
+#define HUB_DEBOUNCE_STABLE	 100
+
+static int hub_port_debounce(struct usb_device *dev, int port1)
+{
+	int ret;
+	int total_time, stable_time = 0;
+	u16 portchange, portstatus;
+	unsigned connection = 0xffff;
+	struct usb_port_status portsts;
+
+	for (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {
+		if (usb_get_port_status(dev, port1 + 1, &portsts)<0) {
+			USB_HUB_PRINTF("get_port_status failed\n");
+			return;
+		}
+
+		portstatus = swap_16(portsts.wPortStatus);
+		portchange = swap_16(portsts.wPortChange);
+
+		if (!(portchange & USB_PORT_STAT_C_CONNECTION) &&
+		     (portstatus & USB_PORT_STAT_CONNECTION) == connection) {
+			stable_time += HUB_DEBOUNCE_STEP;
+			if (stable_time >= HUB_DEBOUNCE_STABLE)
+				break;
+		} else {
+			stable_time = 0;
+			connection = portstatus & USB_PORT_STAT_CONNECTION;
+		}
+
+		if (portchange & USB_PORT_STAT_C_CONNECTION) {
+			usb_clear_port_feature(dev, port1 + 1,
+					USB_PORT_FEAT_C_CONNECTION);
+		}
+
+		if (total_time >= HUB_DEBOUNCE_TIMEOUT)
+			break;
+		wait_ms(HUB_DEBOUNCE_STEP);
+	}
+
+	USB_HUB_PRINTF("debounce: port %d: total %dms stable %dms status 0x%x\n",
+		port1, total_time, stable_time, portstatus);
+
+	if (stable_time < HUB_DEBOUNCE_STABLE)
+		return -1;
+	return portstatus;
+}
+
 /*===========================================================================
 *
 *FUNTION: usb_hub_port_connect_change
@@ -1743,15 +1845,22 @@ void usb_hub_port_connect_change(struct usb_device *dev, int port)
 	/* Clear the connection change status */
 	usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_C_CONNECTION);
 
+	//zhaokai modify for usb hot disconnect, referee linux kernel
 	/* Disconnect any existing devices under this port */
-	if (((!(portstatus & USB_PORT_STAT_CONNECTION)) &&
-	     (!(portstatus & USB_PORT_STAT_ENABLE)))|| (dev->children[port])) {
-		USB_HUB_PRINTF("usb_disconnect(&hub->children[port]);\n");
-		/* Return now if nothing is connected */
-		if (!(portstatus & USB_PORT_STAT_CONNECTION))
-			return;
+	if (dev->children[port]) {
+		USB_HUB_PRINTF("zk : usb_disconnect(&hub->children[port]);\n");
+
+		//zk modify for usb hotplug
+		usb_disconnect(dev->children[port]);
+		dev->children[port] = NULL;
 	}
-	wait_ms(200);
+
+	//zhaokai modify for usb status debounce
+	portstatus = hub_port_debounce(dev, port);
+
+	/* Return now if nothing is connected */
+	if (!(portstatus & USB_PORT_STAT_CONNECTION))
+		return;
 
 	/* Reset the port */
 	if (hub_port_reset(dev, port, &portstatus) < 0) {
@@ -1980,6 +2089,47 @@ int usb_hub_configure(struct usb_device *dev)
 
 	return 0;
 }
+
+
+static unsigned int loop_count = 0;
+
+/*===========================================================================
+*
+*FUNTION: usb_hotplug_handler
+*
+*AUTHOR : zhaokai@loongson.cn
+*
+*DESCRIPTION: This function is used to handle USB device for hotplug.
+*
+*===========================================================================*/
+int usb_hotplug_handler()
+{
+	int i = 0, j = 0;
+	struct usb_port_status portsts;
+	unsigned short status, change;
+
+	loop_count++;
+	if (loop_count < 5000)
+		return;
+	loop_count = 0;
+	
+	for (i =0 ; i < usb_hub_index; i++)
+	{
+		struct usb_device *dev = hub_dev[i].pusb_dev;
+		for (j = 0; j < dev->maxchild; j++)
+		{
+			if (usb_get_port_status(dev, j + 1, &portsts) < 0) { 
+				printf("get_port_status failed\n");
+				continue;
+			}    
+			status = swap_16(portsts.wPortStatus);
+			change = swap_16(portsts.wPortChange);
+			if (change & USB_PORT_STAT_C_CONNECTION)
+					usb_hub_port_connect_change(dev, j);
+		}
+	}
+}
+
 
 /*===========================================================================
 *

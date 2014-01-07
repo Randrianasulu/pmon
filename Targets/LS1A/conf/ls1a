@@ -225,3 +225,4 @@ option 	USE_PCI
 select		cmd_call		# Call a function command
 select		ide
 option		CONFIG_FB_DYN
+option CONFIG_USB_HOTPLUG
