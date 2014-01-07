@@ -2109,7 +2109,7 @@ int usb_hotplug_handler()
 	unsigned short status, change;
 
 	loop_count++;
-	if (loop_count < 5000)
+	if (loop_count < 1000)
 		return;
 	loop_count = 0;
 	

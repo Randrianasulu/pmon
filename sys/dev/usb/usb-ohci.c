@@ -651,7 +651,7 @@ static void lohci_attach(struct device *parent, struct device *self, void *aux)
 
 /*init sequence of EHCI*/
 	extern int hc_switch;
-	hc_switch-- ;
+	hc_switch = 0;
 	ohci->rdev = usb_alloc_new_device(ohci);
 	
     /*do the enumeration of  the USB devices attached to the USB HUB(here root hub) 

@@ -1113,7 +1113,7 @@ static void lehci_attach(struct device *parent, struct device *self, void *aux)
 	TAILQ_INSERT_TAIL(&host_controller, &ehci->hc, hc_list);
 /*init sequence of EHCI*/
 	extern int hc_switch;
-	hc_switch++;
+	hc_switch = 1;
 	/* if lowlevel init is OK, scan the bus for devices
 	 * i.e. search HUBs and configure them */
 	if (result == 0) {
