@@ -1533,4 +1533,10 @@ outl(0xbfe7c068,1);
 	while(1);
 
 }
+void
+tgt_poweroff()/* zmz add */
+{
+	unsigned int* pm1_cnt = (volatile unsigned int *) 0xbfe7c008;
+        *pm1_cnt = (*pm1_cnt) | 0x3d00;
+}                                                                                                                                  
 
