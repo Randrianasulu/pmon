@@ -566,8 +566,16 @@ tgt_devconfig()
 	rc=1;
 	else{
 	init_kbd();
+#if 0
 	rc=kbd_initialize();
-	pckbd_leds(2);
+	*(volatile char *)0xbfe60000 = 0xff;
+#else
+	*(volatile char *)0xbfe60004 = 0x60;
+	*(volatile char *)0xbfe60000 = 0x44;
+	//*(volatile char *)0xbfe60000 = 0xff;
+	rc = 0;
+#endif
+
 	}
 	if(!rc){ 
 		kbd_available=1;
