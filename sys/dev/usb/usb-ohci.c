@@ -79,6 +79,9 @@
 
 #include "usb.h"
 #include "usb-ohci.h"
+#undef vtophys
+
+#define	vtophys(p)			((ohci->pa.pa_id!=-1)? (_pci_dmamap((vm_offset_t)p, 1)):VA_TO_PA(p))
 
 #define OHCI_USE_NPS		  /* force NoPowerSwitching mode */
 #define OHCI_VERBOSE_DEBUG	0 /* not always helpful */
@@ -630,6 +633,7 @@ static void lohci_attach(struct device *parent, struct device *self, void *aux)
 		printf("Exceed max controller limits\n");
 		return;
 	}
+	ohci->pa.pa_id = -1;
 
 	usb_ohci_dev[ohci_dev_index++] = ohci;
 
