@@ -58,7 +58,7 @@ extern char           *heaptop;
 #define COM2_BASE_ADDR	0xbfd003f8
 #define COM3_BASE_ADDR	0xbf004080
 //#define COM1_BASE_ADDR  0xbff003f8
-#define COM1_BASE_ADDR  0xbfe40000 //zgj-5-5
+#define COM1_BASE_ADDR  0xbfe4c000 //zgj-5-5
 //zgj-2010-7-1 #define COM1_BASE_ADDR  0xbff003f8 //cww
 //#define	NS16550HZ	1843200
 //#define	NS16550HZ	(33350000/4)
