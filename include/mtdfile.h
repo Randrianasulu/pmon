@@ -20,6 +20,7 @@ typedef struct mtdfile {
 #define MTDFILE_DYNAMIC 0x0001
 	LIST_ENTRY(mtdfile)	i_next;
         void *trans_table;
+        unsigned int part_size_real;
 	char name[1];
 } mtdfile;
 
