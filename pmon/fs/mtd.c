@@ -47,6 +47,7 @@
 #include <pmon.h>
 #include <linux/mtd/nand.h>
 #include <linux/mtd/partitions.h>
+#include <linux/list.h>
 #if 0
 #define MTD_FLAGS_CHAR      0x1 /*main+oob,all data */
 #define MTD_FLAGS_BLOCK     0x2 /*main;but no OOB */
@@ -55,8 +56,10 @@
 #define MTD_FLAGS_GOOD      0x10 /*use good part info*/
 #endif
 #define min(a,b) (((a)<(b))?(a):(b))
+#define prefetch(x) x
 
 LIST_HEAD(mtdfiles, mtdfile) mtdfiles = LIST_HEAD_INITIALIZER(mtdfiles);
+static struct mtdfile *ptail;
 static int mtdidx=0;
 static struct mtdfile *goodpart0=0;
 
@@ -179,10 +182,11 @@ static int
     LIST_FOREACH(p, &mtdfiles, i_next) {
         if(idx==-1)
         {
+#define ftype(x) ((x==MTD_NANDFLASH)?"nand":(x==MTD_NORFLASH)?"nor":"others")
             if(p->part_offset||(p->part_size!=p->mtd->size))
-                printf("mtd%d: flash:%d size:%d writesize:%d partoffset=0x%x,partsize=%d %s\n",p->index,p->mtd->index,p->mtd->size,p->mtd->writesize,p->part_offset,p->part_size,p->name);
+                printf("mtd%d: flash:%s type:%s size:%d writesize:%d partoffset=0x%x,partsize=%d %s\n",p->index,p->mtd->name,ftype(p->mtd->type),p->mtd->size,p->mtd->writesize,p->part_offset,p->part_size,p->name);
             else
-                printf("mtd%d: flash:%d size:%d writesize:%d %s\n",p->index,p->mtd->index,p->mtd->size,p->mtd->writesize,p->name);
+                printf("mtd%d: flash:%s type:%s size:%d writesize:%d %s\n",p->index,p->mtd->name, ftype(p->mtd->type), p->mtd->size,p->mtd->writesize,p->name);
         }
         else if(p->index==idx) {
             found = 1;
@@ -425,12 +429,12 @@ int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
 
     if(!mtdfiles.lh_first)
     {
-        rmp->i_next.le_next=NULL;
-        rmp->i_next.le_prev=&mtdfiles.lh_first;
-        mtdfiles.lh_first=rmp;
+	LIST_INSERT_HEAD(&mtdfiles, rmp, i_next);
+	ptail = rmp;
     }
     else {
-        LIST_INSERT_AFTER(mtdfiles.lh_first, rmp, i_next);
+        LIST_INSERT_AFTER(ptail, rmp, i_next);
+	ptail = rmp;
     }
     if(mtd->type == MTD_NANDFLASH)
     creat_part_trans_table(rmp);
@@ -494,6 +498,7 @@ int del_mtd_device (struct mtd_info *mtd)
 	LIST_FOREACH(rmp, &mtdfiles, i_next) {
 		if(rmp->mtd==mtd) {
                         if(rmp->refs == 0) {
+				if(ptail == rmp) ptail = list_entry(*rmp->i_next.le_prev, struct mtdfile, i_next.le_next);
 				LIST_REMOVE(rmp, i_next);
                                 mtdidx--;
 				free(rmp);
@@ -616,16 +621,21 @@ static int cmd_flash_erase(int argc,char **argv)
     return 0;
 }
 
-static struct mtd_partition *partitions;
+extern struct cmdline_mtd_partition *partitions;
 static int num_partitions;
-static struct mtd_info *nand_flash_mtd_info;
+static struct list_head mtd_list = LIST_HEAD_INIT(mtd_list);
 
 int nand_flash_add_parts(struct mtd_info *mtd_soc,char *cmdline)
 {
 
     int i;
-    if(!nand_flash_mtd_info) 
-        nand_flash_mtd_info = mtd_soc;
+    struct mtd_partition *partitions;
+    if(!mtd_soc->siblings.next)
+    {
+	INIT_LIST_HEAD(&mtd_soc->siblings);
+	list_add_tail(&mtd_soc->siblings, &mtd_list);
+    }
+	
     num_partitions = parse_cmdline_partitions(mtd_soc,&partitions,0,cmdline);
     if(num_partitions > 0){ 
         for(i=0;i < num_partitions;i++){ 
@@ -635,31 +645,42 @@ int nand_flash_add_parts(struct mtd_info *mtd_soc,char *cmdline)
     return num_partitions;
 }
 
-void first_del_all_parts(struct mtd_info *soc_mtd)
+void first_del_all_parts()
 {
-    int i=0;
-    for(;i<num_partitions;i++){
-        del_mtd_device(soc_mtd);
-    }
+	struct mtdfile *rmp;
+
+	LIST_FOREACH(rmp, &mtdfiles, i_next) {
+	LIST_REMOVE(rmp, i_next);
+	}
 }
 
 int mtd_rescan(char *name,char*value)
 {
-    if(value && nand_flash_mtd_info){
-        first_del_all_parts(nand_flash_mtd_info); 
-        nand_flash_add_parts(nand_flash_mtd_info,value);
+	struct list_head *p;
+	struct mtd_info *mtd;
+    if (value && !list_empty(&mtd_list)){
+        first_del_all_parts(); 
+	list_for_each(p, &mtd_list)
+	{
+	 mtd = list_entry(p, struct mtd_info , siblings);
+         nand_flash_add_parts(mtd ,value);
+	}
     }
     return 1;
 }
 
 int my_mtdparts(int argc,char**argv)
 {
-    struct mtd_partition *parts=partitions;
-    int num=num_partitions,i;
-    printf("device <%s>,#parts = %d\n\n",nand_flash_mtd_info->name,num);     
+    struct cmdline_mtd_partition *part;
+    struct mtd_partition *parts;
+    int i;
+    for (part = partitions; part; part = part->next)
+    {
+    printf("device <%s>,#parts = %d\n\n",part->mtd_id, part->num_parts);     
     printf(" #: name\tsize\t\toffset\t\tmask_flags\n");
-    for(i=0;i<num;i++){
-        printf(" %d: %s\t0x%08x(%dm)\t0x%08x(%dm)\t%x\n",i,parts[i].name,parts[i].size,parts[i].size>>20, parts[i].offset,parts[i].offset>>20,parts[i].mask_flags);
+	    for (i = 0, parts = part->parts; i < part->num_parts; i++){
+		    printf(" %d: %s\t0x%08x(%dm)\t0x%08x(%dm)\t%x\n",i,parts[i].name,parts[i].size,parts[i].size>>20, parts[i].offset,parts[i].offset>>20,parts[i].mask_flags);
+	    }
     }
     printf("\nmtdparts INFO:\n");
     printf("  now-active: \tmtdparts=%s\n",getenv("mtdparts"));
