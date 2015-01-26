@@ -69,14 +69,13 @@ static off_t mtdfile_lseek (int, off_t, int);
 int highmemcpy(long long dst,long long src,long long count);
 void mycacheflush(long long addrin,unsigned int size,unsigned int rw);
 
-#define addr_to_block(x) ((x)>>17)
-#define TO_MIN(x,y,z)   min(min((0x20000 - ((z) & (0x1ffff))),(x)),(y))
+#define TO_MIN(x,y,z)   min(min((p->mtd->erasesize - ((z) & (p->mtd->erasesize-1))),(x)),(y))
 static creat_part_trans_table(mtdfile *p)
 {
     struct mtd_info *mtd=p->mtd;
     struct nand_chip *this = (struct nand_chip*)mtd->priv;
-    int start = addr_to_block(p->part_offset & ~(mtd->erasesize -1));
-    int end = addr_to_block((p->part_offset + p->part_size) & ~(mtd->erasesize-1));
+    int start = p->part_offset/mtd->erasesize;
+    int end = (p->part_offset + p->part_size)/mtd->erasesize;
     int tmp=0,len,good;
     int *table =NULL;
     p->part_size_real = p->part_size;
@@ -89,7 +88,7 @@ static creat_part_trans_table(mtdfile *p)
         if(good==end)break;
         table[tmp]=good++;
     }
-    p->part_size = (tmp+1)<<17; 
+    p->part_size = (tmp+1)*mtd->erasesize; 
     p->trans_table = table;
 }
 
@@ -433,6 +432,7 @@ int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
     else {
         LIST_INSERT_AFTER(mtdfiles.lh_first, rmp, i_next);
     }
+    if(mtd->type == MTD_NANDFLASH)
     creat_part_trans_table(rmp);
     return 0;
 }
@@ -482,7 +482,7 @@ int file_to_mtd_pos(int fd,int *plen)
             *plen=(p->part_offset+p->part_size)-(file_start+pos);
         }
         tmp = pos + priv->open_offset;
-        return (((((int*)(p->trans_table))[tmp>>17])<<17)|(tmp&((0x1<<17) -1)));
+        return p->trans_table?((((((int*)(p->trans_table))[tmp/p->mtd->erasesize])*p->mtd->erasesize)|(tmp&(p->mtd->erasesize -1)))):file_start + pos;
     }
     
 }
