@@ -533,19 +533,41 @@ static void
 
 static int cmd_flash_erase(int argc,char **argv)
 {
-    char *path=0;
-    int fp=-1,start=0,end=0;
+    char *path=0,str[250]={0};
+    int fp=-1,start=0,end=0,retlen;
+    unsigned int c,jffs2=0;
     mtdfile *p;
     mtdpriv *priv;
     struct mtd_info *mtd;
     struct erase_info erase;
+    unsigned char clearmark[12]={0x85,0x19,  0x03,0x20,  0x0c,0x00,0x00,0x00,  0xb1,0xb0,0x1e,0xe4};
+    optind = 0;
+#if 0
     if(argc!=2){
         printf("args error...\n");
         printf("uargs:mtd_erase /dev/mtdx\n");
         printf("example:mtd_erase /dev/mtd0\n\n");
         return -1;
     }
-    path = argv[1];
+#endif
+    while((c = getopt(argc, argv, "hHj")) != EOF) {
+        switch(c){    
+            case 'h':
+            case 'H':
+                sprintf(str,"%s","h mtd_erase");
+                do_cmd(str);
+                return 0;
+            case 'j':
+                jffs2 = 1;
+                break;
+            default :
+                return 0;
+        }
+    }
+    if(optind < argc)
+        path = argv[optind++];
+
+
     if(!path)return -1;
     fp = open(path,O_RDWR|O_CREAT|O_TRUNC);
     if(!fp){printf("open file error!\n");return -1;}
@@ -581,6 +603,11 @@ static int cmd_flash_erase(int argc,char **argv)
             erase.len = mtd->erasesize;
             mtd->erase(mtd,&erase);
             printf("\b\b\b\b\b\b\b\b\b\b%08x  ",start);
+            if(jffs2){
+                p->mtd->write(p->mtd,start,0xc,&retlen,clearmark);
+               if(retlen != retlen)
+                  break; 
+            }
             start += mtd->erasesize;
         }
     }
@@ -642,11 +669,19 @@ int my_mtdparts(int argc,char**argv)
 
 
 
+const Optdesc         mtd_opts[] = {
+	{"-h", "HELP"},
+	{"-H", "HELP"},
+	{"-j", "format the device for jffs2,the clearmark-size is 12 Byte"},
+	{0}
+};
+
+
 static const Cmd Cmds[] =
 {
 	{"MyCmds"},
 	{"mtdparts","0",0,"NANDFlash OPS:mtdparts ",my_mtdparts,0,99,CMD_REPEAT},
-	{"mtd_erase","nand-flash-device",0,"NANDFlash OPS:mtd_erase /dev/mtdx",cmd_flash_erase,0,99,CMD_REPEAT},
+	{"mtd_erase","[option] mtd_dev",mtd_opts,0,cmd_flash_erase,0,99,CMD_REPEAT},
 	{0, 0}
 };
 
