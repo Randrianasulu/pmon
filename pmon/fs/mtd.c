@@ -184,9 +184,9 @@ static int
         {
 #define ftype(x) ((x==MTD_NANDFLASH)?"nand":(x==MTD_NORFLASH)?"nor":"others")
             if(p->part_offset||(p->part_size!=p->mtd->size))
-                printf("mtd%d: flash:%s type:%s size:%d writesize:%d partoffset=0x%x,partsize=%d %s\n",p->index,p->mtd->name,ftype(p->mtd->type),p->mtd->size,p->mtd->writesize,p->part_offset,p->part_size,p->name);
+                printf("mtd%d: flash:%s type:%s size:%d writesize:%d erasesize:%d partoffset=0x%x,partsize=%d %s\n",p->index,p->mtd->name,ftype(p->mtd->type),p->mtd->size,p->mtd->writesize,p->mtd->erasesize,p->part_offset,p->part_size,p->name);
             else
-                printf("mtd%d: flash:%s type:%s size:%d writesize:%d %s\n",p->index,p->mtd->name, ftype(p->mtd->type), p->mtd->size,p->mtd->writesize,p->name);
+                printf("mtd%d: flash:%s type:%s size:%d writesize:%d erasesize:%d %s\n",p->index,p->mtd->name, ftype(p->mtd->type), p->mtd->size,p->mtd->writesize,p->mtd->erasesize, p->name);
         }
         else if(p->index==idx) {
             found = 1;
@@ -252,7 +252,7 @@ static int
     priv = (mtdpriv *)_file[fd].data;
     p = priv->file;
     if(priv->flags & MTD_FLAGS_CHAR || priv->flags & MTD_FLAGS_RAW ||priv->flags & MTD_FLAGS_CHAR_MARK){
-        n-=64;
+        n -= p->mtd->oobsize;
     }
     left = n;
     if (_file[fd].posn + n > priv->open_size)
@@ -261,7 +261,7 @@ static int
         if(n<=0)
             return 0;
         ops.mode = MTD_OOB_RAW;
-        ops.ooblen = 64;
+        ops.ooblen = p->mtd->oobsize;
         ops.ooboffs = 0;
         ops.oobbuf = buf + p->mtd->writesize;
         ops.datbuf = buf; 
@@ -275,7 +275,7 @@ static int
             _file[fd].posn += ops.retlen;
             left -= ops.retlen;
         }
-        return (n-left+64);
+        return (n-left+p->mtd->oobsize);
     }else{
         while(left)
         {
@@ -306,7 +306,7 @@ static int
     priv = (mtdpriv *)_file[fd].data;
     p = priv->file;
     if(priv->flags & MTD_FLAGS_CHAR_MARK || priv->flags & MTD_FLAGS_CHAR|| priv->flags & MTD_FLAGS_RAW)
-        n-=64;
+        n -= p->mtd->oobsize;
     left=n;
     if (_file[fd].posn + n > priv->open_size)
         n = priv->open_size - _file[fd].posn;
@@ -333,7 +333,7 @@ static int
                 p->mtd->erase(p->mtd,&erase);
             }
    //         ops.mode = MTD_OOB_AUTO;
-            ops.ooblen = 64;
+            ops.ooblen = p->mtd->oobsize;
             ops.ooboffs = 0;
             ops.oobbuf = buf+0x800;
             ops.datbuf = buf; 
@@ -343,7 +343,7 @@ static int
             buf += (ops.retlen);
             if(left>ops.retlen) left -=ops.retlen;
             else left=0;
-            return (n-left+64);
+            return (n-left+p->mtd->oobsize);
         }
     }else{
         while(left)
