@@ -125,6 +125,7 @@ struct mtd_oob_buf {
 #define MTD_OOB			64	// Out-of-band data (NAND flash)
 #define MTD_ECC			128	// Device capable of automatic ECC
 
+#define MTD_NO_ERASE		0x1000	/* No erase necessary */
 // Some common devices / combinations of capabilities
 #define MTD_CAP_ROM		0
 #define MTD_CAP_RAM		(MTD_CLEAR_BITS|MTD_SET_BITS|MTD_WRITEB_WRITEABLE)
@@ -388,7 +389,9 @@ struct mtd_info {
 	struct module *owner;
 	int usecount;
 
+
 	void *priv;
+	struct list_head siblings;
 	/*added by zw; If the driver is something smart, like UBI, it may need to maintain
          * its own reference counting. The below functions are only for driver.
          * The driver may register its callbacks. These callbacks are not
@@ -458,7 +461,6 @@ static inline int call_old_write_oob(struct mtd_info *mtd, loff_t from, struct m
 
 extern int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name);
 extern int del_mtd_device (struct mtd_info *mtd);
-extern int nand_flash_add_parts(struct mtd_info *,char*);
 
 extern struct mtd_info *__get_mtd_device(struct mtd_info *mtd, int num);
 
