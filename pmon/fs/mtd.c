@@ -269,7 +269,7 @@ static int
         {
             newpos=file_to_mtd_pos(fd,&maxlen);
             ops.len = min(left,maxlen);
-            ops.len = min(ops.len,0x800);
+            ops.len = min(ops.len,p->mtd->writesize);
             p->mtd->read_oob(p->mtd,newpos,&ops);
             if(ops.retlen<=0)break;
             _file[fd].posn += ops.retlen;
@@ -320,7 +320,7 @@ static int
             start_addr=file_to_mtd_pos(fd,&maxlen);
  //           maxlen=min(left,maxlen);
 //            maxlen=(maxlen+p->mtd->writesize-1)&~(p->mtd->writesize-1);
-            ops.len=min(maxlen,0x800);
+            ops.len=min(maxlen,p->mtd->writesize);
 
             erase.mtd = p->mtd;
             erase.callback = 0;
@@ -335,7 +335,7 @@ static int
    //         ops.mode = MTD_OOB_AUTO;
             ops.ooblen = p->mtd->oobsize;
             ops.ooboffs = 0;
-            ops.oobbuf = buf+0x800;
+            ops.oobbuf = buf+p->mtd->writesize;
             ops.datbuf = buf; 
             p->mtd->write_oob(p->mtd,start_addr,&ops);
             if(ops.retlen<=0)break;
@@ -362,7 +362,6 @@ static int
             {
                 p->mtd->erase(p->mtd,&erase);
             }
-
             p->mtd->write(p->mtd,start_addr,maxlen,&retlen,buf);
 
             if(retlen<=0)break;
@@ -539,7 +538,8 @@ static void
 static int cmd_flash_erase(int argc,char **argv)
 {
     char *path=0,str[250]={0};
-    int fp=-1,start=0,end=0,retlen;
+    int fp=-1,retlen;
+    unsigned int start=0,end=0 ;
     unsigned int c,jffs2=0;
     mtdfile *p;
     mtdpriv *priv;
@@ -607,13 +607,14 @@ static int cmd_flash_erase(int argc,char **argv)
             erase.addr = start;
             erase.len = mtd->erasesize;
             mtd->erase(mtd,&erase);
-            printf("\b\b\b\b\b\b\b\b\b\b%08x  ",start);
+            printf("\b\b\b\b\b\b\b\b\b\b%08x ",start);
             if(jffs2){
                 p->mtd->write(p->mtd,start,0xc,&retlen,clearmark);
                if(retlen != retlen)
                   break; 
             }
             start += mtd->erasesize;
+        
         }
     }
     close(fp);    

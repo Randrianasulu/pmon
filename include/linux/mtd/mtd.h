@@ -20,6 +20,7 @@
 #include <dev/pci/pcivar.h>
 #endif
 #include <sys/types.h>
+#include <linux/list.h>
 typedef int spinlock_t;
 typedef void* wait_queue_head_t;
 typedef off_t loff_t;
