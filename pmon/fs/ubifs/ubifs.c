@@ -1101,7 +1101,7 @@ ubifs_open(int fd, const char *path, int flags, int mode)
 	mtdfile *p;
         LIST_FOREACH(p, &mtdfiles, i_next)
         {
-		if(p->mtd->index==mtdx)
+		if(p->index==mtdx)
 			break;
 	}	
 	if(!p)
