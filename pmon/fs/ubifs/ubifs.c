@@ -1130,6 +1130,14 @@ ubifs_open(int fd, const char *path, int flags, int mode)
         /* ubifs_findfile will resolve symlinks, so we know that we get
          * the real file here */
         //printf("c->vi.ubi_num=%d,c->vi.vol_id=%d,c->vi.vol_size=%d,c->vi.vol_name=%s\n",c->vi.ubi_num,c->vi.vol_id,c->vi.size,c->vi.name);
+	if(!*filename||filename[strlen(filename)-1]=='/')
+	{
+	 ubifs_ls(filename);
+	 ubi_detach_mtd_dev(0, 1); 
+	 ubifs_sb = NULL;
+	return -1;
+	}
+
         inum = ubifs_findfile(ubifs_sb, filename);
         if (!inum) {
 		puts("inum not found");
