@@ -88,7 +88,7 @@ DDR2_CTL_02_DATA_HI:	.word 0x01000101
 //0000000_1 rw_same_en 0000000_0 reg_dimm_enable 0000000_0 reduc 0000000_0 pwrup_srefresh_exit
 DDR2_CTL_03_DATA_LO:	.word 0x01000100
 //0000000_1 swap_port_rw_same_en 0000000_1 swap_en 0000000_0 start 0000000_0 srefresh 
-DDR2_CTL_03_DATA_HI:	.word 0x01010000
+DDR2_CTL_03_DATA_HI:	.word 0x00000000
 //0000000_0 write_modereg 0000000_1 writeinterp 0000000_1 tref_enable 0000000_1 tras_lockout
 DDR2_CTL_04_DATA_LO:	.word 0x01010101
 //000000_01 rtt_0 000000_00 ctrl_raw 000000_10 axi0_w_priority 000000_10 axi0_r_priority 
