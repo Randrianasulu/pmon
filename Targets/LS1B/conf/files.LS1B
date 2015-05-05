@@ -24,6 +24,7 @@ file    Targets/LS1B/dev/spi_w.c spi
 file    sys/dev/nand/ls1g-nand.c  nand needs-flag
 
 file	Targets/LS1B/dev/switch.c switch needs-flag
+file	Targets/LS1B/dev/irq.c
 
 #file 	sys/dev/phy/bcm5461config.c
 
