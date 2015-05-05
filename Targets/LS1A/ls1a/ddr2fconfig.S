@@ -74,7 +74,7 @@ ddr2_reg_data:
 //0000000_0 arefresh 0000000_1 ap 0000000_1 addr_cmp_en 0000000_1 active_aging
 DDR2_CTL_00_DATA_LO:	.word 0x00000101
 // 0000000_1 ddrii_sdram_mode 0000000_1 concurrentap 0000000_1 bank_split_en 0000000_0 auto_refresh_mode 
-DDR2_CTL_00_DATA_HI:	.word 0x01000100 #no_concurrentap
+DDR2_CTL_00_DATA_HI:	.word 0x01000000 #no_concurrentap
 //DDR2_CTL_00_DATA_HI:	.word 0x01010100
 //0000000_0 ecc_disable_w_uc_err 0000000_1 dqs_n_en 0000000_0 dll_bypass_mode 0000000_0 dlllockreg
 //DDR2_CTL_01_DATA_LO:	.word 0x00000100 #dll_by_pass
@@ -84,7 +84,7 @@ DDR2_CTL_01_DATA_HI:	.word 0x00000001
 //0000000_0 no_cmd_init 0000000_0 intrptwritea 0000000_0 intrptreada 0000000_0 intrptapburst
 DDR2_CTL_02_DATA_LO:	.word 0x00000000
 //0000000_1 priority_en 0000000_0 power_down 0000000_1 placement_en 0000000_1 odt_add_turn_clk_en 
-DDR2_CTL_02_DATA_HI:	.word 0x01000101
+DDR2_CTL_02_DATA_HI:	.word 0x00000001
 //0000000_1 rw_same_en 0000000_0 reg_dimm_enable 0000000_0 reduc 0000000_0 pwrup_srefresh_exit
 DDR2_CTL_03_DATA_LO:	.word 0x01000100
 //0000000_1 swap_port_rw_same_en 0000000_1 swap_en 0000000_0 start 0000000_0 srefresh 
