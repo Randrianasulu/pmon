@@ -22,6 +22,7 @@ static int ext2_get_inode(int ,unsigned long ,struct ext2_inode ** );
 static int   ext2_load_linux(int ,int,const unsigned char *);
 static int   ext2_load_file_content(int ,struct ext2_inode * ,unsigned char * );
 static int   read_super_block(int,int);
+static int ReadFromIndexBlock2(int fd,__u32 start_index,__u32 end_index,__u8 **start,	size_t *size,size_t *position,__u32 *d_addr_start);
 int   ext2_open (int, const char *, int, int);
 int   ext2_close (int);
 int   ext2_read (int, void *, size_t);

@@ -116,6 +116,7 @@ void usb_scan_devices(void *);
 
 int usb_hub_probe(struct usb_device *dev, int ifnum);
 void usb_hub_reset(void);
+static int hub_port_reset(struct usb_device *dev, int port, unsigned short *portstat);
 
 
 static int isprint (unsigned char ch)
