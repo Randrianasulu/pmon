@@ -91,7 +91,7 @@ static creat_part_trans_table(mtdfile *p)
         if(good==end)break;
         table[tmp]=good++;
     }
-    p->part_size = (tmp+1)*mtd->erasesize; 
+    p->part_size = tmp*mtd->erasesize; 
     p->trans_table = table;
 }
 
