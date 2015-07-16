@@ -30,14 +30,13 @@
 #define CONFIG_UBIFS_FS_DEBUG
 #define CONFIG_UBIFS_FS_DEBUG_MSG_LVL	3
 #endif
-#include"../ubi/ubi.h"
+
 #include <ubi_uboot.h>
 #include <linux/ctype.h>
 #include <linux/time.h>
 #include <linux/math64.h>
 #include "ubifs-media.h"
-#include<linux/bitops.h>
-#define BITS_PER_LONG 32
+
 struct dentry;
 struct file;
 struct iattr;
@@ -72,12 +71,13 @@ void iput(struct inode *inode);
 #define	atomic_long_sub(a, b)
 
 /* linux/include/time.h */
-
-//struct timespec {
-//	time_t	tv_sec;		/* seconds */
-//	long	tv_nsec;	/* nanoseconds */
-//};
-
+//scl
+#if 0
+struct timespec {
+	time_t	tv_sec;		/* seconds */
+	long	tv_nsec;	/* nanoseconds */
+};
+#endif
 /* linux/include/dcache.h */
 
 /*
@@ -464,8 +464,12 @@ static inline ino_t parent_ino(struct dentry *dentry)
 #define UBIFS_VERSION 1
 
 /* Normal UBIFS messages */
+#ifdef CONFIG_UBIFS_SILENCE_MSG
+#define ubifs_msg(fmt, ...)
+#else
 #define ubifs_msg(fmt, ...) \
 		printk(KERN_NOTICE "UBIFS: " fmt "\n", ##__VA_ARGS__)
+#endif
 /* UBIFS error messages */
 #define ubifs_err(fmt, ...)                                                  \
 	printk(KERN_ERR "UBIFS error (pid %d): %s: " fmt "\n", 0, \
@@ -2103,7 +2107,6 @@ int ubifs_removexattr(struct dentry *dentry, const char *name);
 /* super.c */
 struct inode *ubifs_iget(struct super_block *sb, unsigned long inum);
 int ubifs_iput(struct inode *inode);
- int mount_ubifs(struct ubifs_info *c);
 
 /* recovery.c */
 int ubifs_recover_master_node(struct ubifs_info *c);
@@ -2134,6 +2137,13 @@ void ubifs_compress(const void *in_buf, int in_len, void *out_buf, int *out_len,
 		    int *compr_type);
 int ubifs_decompress(const void *buf, int len, void *out, int *out_len,
 		     int compr_type);
+
+/* these are used in cmd_ubifs.c */
+int ubifs_init(void);
+int ubifs_mount(char *vol_name);
+void ubifs_umount(struct ubifs_info *c);
+int ubifs_ls(char *dir_name);
+int ubifs_load(char *filename, u32 addr, u32 size);
 
 #include "debug.h"
 #include "misc.h"

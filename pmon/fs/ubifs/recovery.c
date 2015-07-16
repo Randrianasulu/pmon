@@ -32,6 +32,9 @@
 
 #include "ubifs.h"
 
+#define ALIGN(x,a)      __ALIGN_MASK((x),(typeof(x))(a)-1)
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+
 /**
  * is_empty - determine whether a buffer is empty (contains all 0xff).
  * @buf: buffer to clean

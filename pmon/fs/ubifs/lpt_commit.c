@@ -25,7 +25,7 @@
  * subsystem.
  */
 
-#include "crca.h"
+#include "crc16.h"
 #include "ubifs.h"
 
 /**
@@ -144,11 +144,11 @@ void ubifs_lpt_free(struct ubifs_info *c, int wr_only)
 
 	free_obsolete_cnodes(c); /* Leftover from a failed commit */
 
-	vfree(c->ltab_cmt);
+//	vfree(c->ltab_cmt);	//scl
 	c->ltab_cmt = NULL;
-	vfree(c->lpt_buf);
+//	vfree(c->lpt_buf);
 	c->lpt_buf = NULL;
-	kfree(c->lsave);
+//	kfree(c->lsave);
 	c->lsave = NULL;
 
 	if (wr_only)
@@ -165,7 +165,7 @@ void ubifs_lpt_free(struct ubifs_info *c, int wr_only)
 	for (i = 0; i < LPROPS_HEAP_CNT; i++)
 		kfree(c->lpt_heap[i].arr);
 	kfree(c->dirty_idx.arr);
-	kfree(c->nroot);
+//	kfree(c->nroot);
 	vfree(c->ltab);
 	kfree(c->lpt_nod_buf);
 }

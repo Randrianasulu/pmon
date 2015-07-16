@@ -2,19 +2,7 @@
  * Copyright (c) International Business Machines Corp., 2006
  * Copyright (c) Nokia Corporation, 2007
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
- * the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Author: Artem Bityutskiy (Битюцкий Артём),
  *         Frank Haverkamp
@@ -33,7 +21,7 @@
  * and add other methods, although it does not seem to be easy to do.
  */
 
-/*#ifdef UBI_LINUX
+#ifdef UBI_LINUX	
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -42,46 +30,22 @@
 #include <linux/miscdevice.h>
 #include <linux/log2.h>
 #include <linux/kthread.h>
-#endif*/
+#endif
+#include <ubi_uboot.h>
 #include "ubi.h"
-#include"scan2.h"
-#include<ubifs_pmon.h>
-/*#if (CONFIG_SYS_MALLOC_LEN < (512 << 10))
+#include <mtdfile.h>
+
+#define CONFIG_SYS_MALLOC_LEN	(1024 * 1024)
+
+#if (CONFIG_SYS_MALLOC_LEN < (512 << 10))
 #error Malloc area too small for UBI, increase CONFIG_SYS_MALLOC_LEN to >= 512k
-#endif*/
-//#define ALIGN(x,a)              __ALIGN_MASK((x),(typeof(x))(a)-1)
-//#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
-
-char * strpbrk(const char * cs,const char * ct)
-{
-        const char *sc1,*sc2;
-
-        for( sc1 = cs; *sc1 != '\0'; ++sc1) {
-                for( sc2 = ct; *sc2 != '\0'; ++sc2) {
-                        if (*sc1 == *sc2)
-                                return (char *) sc1;
-                }
-        }
-        return NULL;
-}
-
-char * strsep(char **s, const char *ct)
-{
-        char *sbegin = *s, *end;
-
-        if (sbegin == NULL)
-                return NULL;
-
-        end = strpbrk(sbegin, ct);
-        if (end)
-                *end++ = '\0';
-        *s = end;
-
-        return sbegin;
-}
+#endif
 
 /* Maximum length of the 'mtd=' parameter */
 #define MTD_PARAM_LEN_MAX 64
+
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+#define ALIGN(x,a)      __ALIGN_MASK((x),(typeof(x))(a)-1)
 
 /**
  * struct mtd_dev_param - MTD device parameter description data structure.
@@ -118,7 +82,7 @@ static struct miscdevice ubi_ctrl_cdev = {
 /* All UBI devices in system */
 struct ubi_device *ubi_devices[UBI_MAX_DEVICES];
 
-//#ifdef UBI_LINUX
+#ifdef UBI_LINUX
 /* Serializes UBI devices creations and removals */
 DEFINE_MUTEX(ubi_devices_mutex);
 
@@ -126,20 +90,20 @@ DEFINE_MUTEX(ubi_devices_mutex);
 static DEFINE_SPINLOCK(ubi_devices_lock);
 
 /* "Show" method for files in '/<sysfs>/class/ubi/' */
-/*static ssize_t ubi_version_show(struct class *class, char *buf)
+static ssize_t ubi_version_show(struct class *class, char *buf)
 {
 	return sprintf(buf, "%d\n", UBI_VERSION);
-}*/
+}
 
 /* UBI version attribute ('/<sysfs>/class/ubi/version') */
-//static struct class_attribute ubi_version =
-//	__ATTR(version, S_IRUGO, ubi_version_show, NULL);
+static struct class_attribute ubi_version =
+	__ATTR(version, S_IRUGO, ubi_version_show, NULL);
 
-//static ssize_t dev_attribute_show(struct device *dev,
-//				  struct device_attribute *attr, char *buf);
+static ssize_t dev_attribute_show(struct device *dev,
+				  struct device_attribute *attr, char *buf);
 
 /* UBI device attributes (correspond to files in '/<sysfs>/class/ubi/ubiX') */
-/*static struct device_attribute dev_eraseblock_size =
+static struct device_attribute dev_eraseblock_size =
 	__ATTR(eraseblock_size, S_IRUGO, dev_attribute_show, NULL);
 static struct device_attribute dev_avail_eraseblocks =
 	__ATTR(avail_eraseblocks, S_IRUGO, dev_attribute_show, NULL);
@@ -161,7 +125,7 @@ static struct device_attribute dev_bgt_enabled =
 	__ATTR(bgt_enabled, S_IRUGO, dev_attribute_show, NULL);
 static struct device_attribute dev_mtd_num =
 	__ATTR(mtd_num, S_IRUGO, dev_attribute_show, NULL);
-//#endif*/
+#endif
 
 /**
  * ubi_get_device - get UBI device.
@@ -175,17 +139,18 @@ static struct device_attribute dev_mtd_num =
 struct ubi_device *ubi_get_device(int ubi_num)
 {
 	struct ubi_device *ubi;
-//	printf("Entering ubi_get_device!!\n");
+
 	spin_lock(&ubi_devices_lock);
 	ubi = ubi_devices[ubi_num];
+
 	if (ubi) {
-//		printf("Entering ubi_get_device :if\n)");
 		ubi_assert(ubi->ref_count >= 0);
 		ubi->ref_count += 1;
 		get_device(&ubi->dev);
 	}
+	
 	spin_unlock(&ubi_devices_lock);
-//	printf("Exiting ubi_get_device!!\n");
+
 	return ubi;
 }
 
@@ -491,8 +456,6 @@ static void uif_close(struct ubi_device *ubi)
  */
 static int attach_by_scanning(struct ubi_device *ubi)
 {
-//	puts("in attach_by_scanning!!");
-//	printf("mtd=%p,mtd->priv=%p\n",ubi->mtd,ubi->mtd->priv);
 	int err;
 	struct ubi_scan_info *si;
 
@@ -508,20 +471,20 @@ static int attach_by_scanning(struct ubi_device *ubi)
 	err = ubi_read_volume_table(ubi, si);
 	if (err)
 		goto out_si;
-
-	err = ubi_wl_init_scan(ubi, si);
+	
+	err = ubi_eba_init_scan(ubi, si);
 	if (err)
 		goto out_vtbl;
 
-	err = ubi_eba_init_scan(ubi, si);
+	err = ubi_wl_init_scan(ubi, si);
 	if (err)
-		goto out_wl;
+		goto out_eba;
 
 	ubi_scan_destroy_si(si);
 	return 0;
 
-out_wl:
-	ubi_wl_close(ubi);
+out_eba:
+	ubi_eba_close(ubi);
 out_vtbl:
 	vfree(ubi->vtbl);
 out_si:
@@ -546,7 +509,6 @@ out_si:
  */
 static int io_init(struct ubi_device *ubi)
 {
-	
 	if (ubi->mtd->numeraseregions != 0) {
 		/*
 		 * Some flashes have several erase regions. Different regions
@@ -563,20 +525,22 @@ static int io_init(struct ubi_device *ubi)
 
 	if (ubi->vid_hdr_offset < 0)
 		return -EINVAL;
+
 	/*
 	 * Note, in this implementation we support MTD devices with 0x7FFFFFFF
 	 * physical eraseblocks maximum.
 	 */
 
-	ubi->peb_size  = ubi->mtd->erasesize;
-//	printf("ubi->mtd->erasesize=%d\n",ubi->mtd->erasesize);
+	ubi->peb_size   = ubi->mtd->erasesize;
 	ubi->peb_count  = mtd_div_by_eb(ubi->mtd->size, ubi->mtd);
 	ubi->flash_size = ubi->mtd->size;
 
-	if (ubi->mtd->block_isbad && ubi->mtd->block_markbad)
+	if (mtd_can_have_bb(ubi->mtd))
 		ubi->bad_allowed = 1;
+
 	ubi->min_io_size = ubi->mtd->writesize;
 	ubi->hdrs_min_io_size = ubi->mtd->writesize >> ubi->mtd->subpage_sft;
+
 	/*
 	 * Make sure minimal I/O unit is power of 2. Note, there is no
 	 * fundamental reason for this assumption. It is just an optimization
@@ -587,6 +551,7 @@ static int io_init(struct ubi_device *ubi)
 			ubi->min_io_size);
 		return -EINVAL;
 	}
+
 	ubi_assert(ubi->hdrs_min_io_size > 0);
 	ubi_assert(ubi->hdrs_min_io_size <= ubi->min_io_size);
 	ubi_assert(ubi->min_io_size % ubi->hdrs_min_io_size == 0);
@@ -656,7 +621,7 @@ static int io_init(struct ubi_device *ubi)
 		ubi->ro_mode = 1;
 	}
 
-/*	ubi_msg("physical eraseblock size:   %d bytes (%d KiB)",
+	ubi_msg("physical eraseblock size:   %d bytes (%d KiB)",
 		ubi->peb_size, ubi->peb_size >> 10);
 	ubi_msg("logical eraseblock size:    %d bytes", ubi->leb_size);
 	ubi_msg("smallest flash I/O unit:    %d", ubi->min_io_size);
@@ -666,7 +631,7 @@ static int io_init(struct ubi_device *ubi)
 	ubi_msg("VID header offset:          %d (aligned %d)",
 		ubi->vid_hdr_offset, ubi->vid_hdr_aloffset);
 	ubi_msg("data offset:                %d", ubi->leb_start);
-*/
+
 	/*
 	 * Note, ideally, we have to initialize ubi->bad_peb_count here. But
 	 * unfortunately, MTD does not provide this information. We should loop
@@ -747,12 +712,9 @@ static int autoresize(struct ubi_device *ubi, int vol_id)
  */
 int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
 {
-//	puts("in ubi_attach_mtd_dev\n");
-	
-//	printf("mtd=%p,mtd->priv=%p\n",mtd,mtd->priv);
 	struct ubi_device *ubi;
 	int i, err;
-//	printf("mtd->erasesize=%d",mtd->erasesize);
+
 	/*
 	 * Check if we already have the same MTD device attached.
 	 *
@@ -776,6 +738,7 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
 	 * results in inability to unload the module. And in general it makes
 	 * no sense to attach emulated MTD devices, so we prohibit this.
 	 */
+
 	if (mtd->type == MTD_UBIVOLUME) {
 		ubi_err("refuse attaching mtd%d - it is already emulated on "
 			"top of UBI", mtd->index);
@@ -816,7 +779,7 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
 	mutex_init(&ubi->volumes_mutex);
 	spin_lock_init(&ubi->volumes_lock);
 
-	//ubi_msg("attaching mtd%d to ubi%d", mtd->index, ubi_num);
+	ubi_msg("attaching mtd%d to ubi%d", mtd->index, ubi_num);
 
 	err = io_init(ubi);
 	if (err)
@@ -837,6 +800,7 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
 	if (!ubi->dbg_peb_buf)
 		goto out_free;
 #endif
+
 	err = attach_by_scanning(ubi);
 	if (err) {
 		dbg_err("failed to attach by scanning, error %d", err);
@@ -861,7 +825,7 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
 		goto out_uif;
 	}
 
-	/*ubi_msg("attached mtd%d to ubi%d", mtd->index, ubi_num);
+	ubi_msg("attached mtd%d to ubi%d", mtd->index, ubi_num);
 	ubi_msg("MTD device name:            \"%s\"", mtd->name);
 	ubi_msg("MTD device size:            %llu MiB", ubi->flash_size >> 20);
 	ubi_msg("number of good PEBs:        %d", ubi->good_peb_count);
@@ -877,7 +841,7 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
 		ubi->beb_rsvd_pebs);
 	ubi_msg("max/mean erase counter: %d/%d", ubi->max_ec, ubi->mean_ec);
 
-*/	/* Enable the background thread */
+	/* Enable the background thread */
 	if (!DBG_DISABLE_BGT) {
 		ubi->thread_enabled = 1;
 		wake_up_process(ubi->bgt_thread);
@@ -935,14 +899,14 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
 			return -EBUSY;
 		}
 		/* This may only happen if there is a bug */
-//		ubi_err("%s reference count %d, destroy anyway",
-//			ubi->ubi_name, ubi->ref_count);
+		ubi_err("%s reference count %d, destroy anyway",
+			ubi->ubi_name, ubi->ref_count);
 	}
 	ubi_devices[ubi_num] = NULL;
 	spin_unlock(&ubi_devices_lock);
 
 	ubi_assert(ubi_num == ubi->ubi_num);
-//	dbg_msg("detaching mtd%d from ubi%d", ubi->mtd->index, ubi_num);
+	dbg_msg("detaching mtd%d from ubi%d", ubi->mtd->index, ubi_num);
 
 	/*
 	 * Before freeing anything, we have to stop the background thread to
@@ -961,7 +925,7 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
 #ifdef CONFIG_MTD_UBI_DEBUG
 	vfree(ubi->dbg_peb_buf);
 #endif
-//	ubi_msg("mtd%d is detached from ubi%d", ubi->mtd->index, ubi->ubi_num);
+	ubi_msg("mtd%d is detached from ubi%d", ubi->mtd->index, ubi->ubi_num);
 	kfree(ubi);
 	return 0;
 }
@@ -987,9 +951,9 @@ static struct mtd_info * __init open_mtd_device(const char *mtd_dev)
 		 * This does not look like an ASCII integer, probably this is
 		 * MTD device name.
 		 */
-		mtd = get_mtd_device_nm(mtd_dev);
+		mtd = get_mtd_device_nm_bystr(mtd_dev);
 	} else
-		mtd = get_mtd_device(NULL, mtd_num);
+		mtd = get_mtd_device(NULL, mtd_num);	//scl 此函数未使用，暂时未改
 
 	return mtd;
 }

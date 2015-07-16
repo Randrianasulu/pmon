@@ -30,6 +30,9 @@
 
 #include "ubifs.h"
 
+#define ALIGN(x,a)      __ALIGN_MASK((x),(typeof(x))(a)-1)
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+
 /**
  * get_heap_comp_val - get the LEB properties value for heap comparisons.
  * @lprops: LEB properties

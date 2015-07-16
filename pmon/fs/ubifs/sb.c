@@ -28,6 +28,9 @@
 
 #include "ubifs.h"
 
+#define ALIGN(x,a)      __ALIGN_MASK((x),(typeof(x))(a)-1)
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+
 /*
  * Default journal size in logical eraseblocks as a percent of total
  * flash size.
@@ -90,7 +93,6 @@ static int validate_sb(struct ubifs_info *c, struct ubifs_sb_node *sup)
 			  le32_to_cpu(sup->min_io_size), c->min_io_size);
 		goto failed;
 	}
-
 	if (le32_to_cpu(sup->leb_size) != c->leb_size) {
 		ubifs_err("LEB size mismatch: %d in superblock, %d real",
 			  le32_to_cpu(sup->leb_size), c->leb_size);
@@ -209,6 +211,8 @@ struct ubifs_sb_node *ubifs_read_sb_node(struct ubifs_info *c)
 		kfree(sup);
 		return ERR_PTR(err);
 	}
+	sup->min_io_size = 2048;	//scl
+	sup->leb_size = 126976;		//scl
 
 	return sup;
 }

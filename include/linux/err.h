@@ -25,6 +25,8 @@
 
 #define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
 
+//scl changed
+#if 0
 static inline void *ERR_PTR(long error)
 {
 	return (void *) error;
@@ -39,6 +41,7 @@ static inline long IS_ERR(const void *ptr)
 {
 	return IS_ERR_VALUE((unsigned long)ptr);
 }
+#endif
 
 #endif
 

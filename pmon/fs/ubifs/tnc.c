@@ -31,6 +31,10 @@
  */
 
 #include "ubifs.h"
+#include <linux/bitops.h>
+
+#define ALIGN(x,a)      __ALIGN_MASK((x),(typeof(x))(a)-1)
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 
 /*
  * Returned codes of 'matches_name()' and 'fallible_matches_name()' functions.
@@ -662,6 +666,7 @@ static int tnc_prev(struct ubifs_info *c, struct ubifs_znode **zn, int *n)
 		zp = znode->parent;
 		if (!zp)
 			return -ENOENT;
+
 		nn = znode->iip - 1;
 		znode = zp;
 		if (nn >= 0) {
@@ -1211,7 +1216,9 @@ int ubifs_lookup_level0(struct ubifs_info *c, const union ubifs_key *key,
 
 	*zn = znode;
 	if (exact || !is_hash_key(c, key) || *n != -1) {
-		dbg_tnc("found %d, lvl %d, n %d", exact, znode->level, *n);
+		//dbg_tnc("found %d, lvl %d, n %d", exact, znode->level, *n);
+		printf("found %d, lvl %d, n %d\n", exact, znode->level, *n);
+		printf("exact = %d\n", exact);
 		return exact;
 	}
 
@@ -1260,7 +1267,8 @@ int ubifs_lookup_level0(struct ubifs_info *c, const union ubifs_key *key,
 	 */
 	err = tnc_prev(c, &znode, n);
 	if (err == -ENOENT) {
-		dbg_tnc("found 0, lvl %d, n -1", znode->level);
+		//dbg_tnc("found 0, lvl %d, n -1", znode->level);
+		printf("found 0, lvl %d, n -1\n", znode->level);
 		*n = -1;
 		return 0;
 	}
@@ -1467,6 +1475,7 @@ again:
 		safely = 1;
 		goto again;
 	}
+	
 	return 0;
 
 out:

@@ -252,7 +252,8 @@ static inline uint32_t mtd_mod_by_eb(uint64_t sz, struct mtd_info *mtd)
 //extern int del_mtd_device (struct mtd_info *mtd);
 
 extern struct mtd_info *get_mtd_device(struct mtd_info *mtd, int num);
-extern struct mtd_info *get_mtd_device_nm(const char *name);
+//extern struct mtd_info *get_mtd_device_nm(const char *name);	//scl
+extern struct mtdfile *get_mtd_device_nm(const u8 );
 
 extern void put_mtd_device(struct mtd_info *mtd);
 extern void mtd_get_len_incl_bad(struct mtd_info *mtd, uint64_t offset,

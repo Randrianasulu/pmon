@@ -44,8 +44,12 @@
  */
 
 #include "ubifs.h"
-#include "crca.h"
+#include "crc16.h"
 #include <linux/math64.h>
+#include <bitops.h>
+
+#define ALIGN(x,a)      __ALIGN_MASK((x),(typeof(x))(a)-1)
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 
 /**
  * do_calc_lpt_geom - calculate sizes for the LPT area.
@@ -504,9 +508,11 @@ static int unpack_ltab(const struct ubifs_info *c, void *buf)
 	uint8_t *addr = buf + UBIFS_LPT_CRC_BYTES;
 	int i, pos = 0, err;
 
+#if 0	//scl
 	err = check_lpt_type(&addr, &pos, UBIFS_LPT_LTAB);
 	if (err)
 		return err;
+#endif
 	for (i = 0; i < c->lpt_lebs; i++) {
 		int free = ubifs_unpack_bits(&addr, &pos, c->lpt_spc_bits);
 		int dirty = ubifs_unpack_bits(&addr, &pos, c->lpt_spc_bits);
@@ -520,7 +526,7 @@ static int unpack_ltab(const struct ubifs_info *c, void *buf)
 		c->ltab[i].tgc = 0;
 		c->ltab[i].cmt = 0;
 	}
-	err = check_lpt_crc(buf, c->ltab_sz);
+//	err = check_lpt_crc(buf, c->ltab_sz);	//scl
 	return err;
 }
 
@@ -1053,9 +1059,11 @@ static int lpt_init_rd(struct ubifs_info *c)
 	c->dirty_idx.cnt = 0;
 	c->dirty_idx.max_cnt = LPT_HEAP_SZ;
 
+#if 0	//scl
 	err = read_ltab(c);
 	if (err)
 		return err;
+#endif
 
 	dbg_lp("space_bits %d", c->space_bits);
 	dbg_lp("lpt_lnum_bits %d", c->lpt_lnum_bits);

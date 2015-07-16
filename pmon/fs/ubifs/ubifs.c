@@ -22,31 +22,10 @@
  * Authors: Artem Bityutskiy (Битюцкий Артём)
  *          Adrian Hunter
  */
+
 #include "ubifs.h"
-#include <linux/mtd/zlib.h>
-#include <pmon.h>
-#include <file.h>
-#include <diskfs.h>
-#include<mtdfile.h>
-#include<linux/mtd/nand.h>
-#include<sys/stat.h>
-#include<sys/fcntl.h>
-extern int errno;
-extern LIST_HEAD(mtdfiles, mtdfile) mtdfiles;
-static struct inode *inode;
-static struct ubifs_info *c ;
-static int FD;
-static char *volname,*filename;
-extern int   devio_open (int, const char *, int, int);
-extern int   devio_close (int);
-extern int   devio_read (int, void *, size_t);
-extern int   devio_write (int, const void *, size_t);
-extern off_t devio_lseek (int, off_t, int);
-int   ubifs_open (int, const char *, int, int);
-int   ubifs_close (int);
-int   ubifs_read (int, void *, size_t);
-int   ubifs_write (int, const void *, size_t);
-off_t ubifs_lseek (int, off_t, int);
+#include <u-boot/zlib.h>
+//#include "../../lib/lzo/lzodefs.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -57,11 +36,217 @@ DECLARE_GLOBAL_DATA_PTR;
  * incompatible with the lzo decompressor.
  */
 static int gzip_decompress(const unsigned char *in, size_t in_len,
-			   unsigned char *out, size_t *out_len)
+		unsigned char *out, size_t *out_len)
 {
-	unsigned long len = in_len;
-	return zunzip(out, *out_len, (unsigned char *)in, &len, 0, 0);
+	return zunzip(out, *out_len, (unsigned char *)in,
+			(unsigned long *)out_len, 0, 0);
 }
+
+#if 0
+int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+		unsigned char *out, size_t *out_len)
+{
+	const unsigned char * const ip_end = in + in_len;
+	unsigned char * const op_end = out + *out_len;
+	const unsigned char *ip = in, *m_pos;
+	unsigned char *op = out;
+	size_t t;
+
+	*out_len = 0;
+
+	if (*ip > 17) {
+		t = *ip++ - 17; 
+		if (t < 4)
+			goto match_next;
+		if (HAVE_OP(t, op_end, op))
+			goto output_overrun;
+		int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+				unsigned char *out, size_t *out_len)
+		{
+			const unsigned char * const ip_end = in + in_len;
+			unsigned char * const op_end = out + *out_len;
+			const unsigned char *ip = in, *m_pos;
+			unsigned char *op = out;
+			size_t t;
+
+			*out_len = 0;
+
+			if (*ip > 17) {
+				t = *ip++ - 17; 
+				if (t < 4)
+					goto match_next;
+				if (HAVE_OP(t, op_end, op))
+					goto output_overrun;
+				if (t >= 4) {
+					do {
+						COPY4(op, ip);
+						op += 4;
+						ip += 4;
+						t -= 4;
+					} while (t >= 4);
+					if (t > 0) {
+						do {
+							*op++ = *ip++;
+						} while (--t > 0);
+					}
+				} else {
+					do {
+						*op++ = *ip++;
+					} while (--t > 0);
+				}
+			}
+first_literal_run:
+			t = *ip++;
+			if (t >= 16)
+				goto match;
+			m_pos = op - (1 + M2_MAX_OFFSET);
+			m_pos -= t >> 2;
+			m_pos -= *ip++ << 2;
+
+			if (HAVE_LB(m_pos, out, op))
+				goto lookbehind_overrun;
+
+			if (HAVE_OP(3, op_end, op))
+				goto output_overrun;
+			*op++ = *m_pos++;
+			*op++ = *m_pos++;
+			*op++ = *m_pos;
+
+			goto match_done;
+
+			do {
+match:
+				if (t >= 64) {
+					m_pos = op - 1;
+					m_pos -= (t >> 2) & 7;
+					m_pos -= *ip++ << 3;
+					t = (t >> 5) - 1;
+					if (HAVE_LB(m_pos, out, op))
+						goto lookbehind_overrun;
+					if (HAVE_OP(t + 3 - 1, op_end, op))
+						goto output_overrun;
+					goto copy_match;
+				} else if (t >= 32) {
+					t &= 31;
+					if (t == 0) {
+						if (HAVE_IP(1, ip_end, ip))
+							goto input_overrun;
+						while (*ip == 0) {
+							t += 255;
+							ip++;
+							if (HAVE_IP(1, ip_end, ip))
+								goto input_overrun;
+						}
+						t += 31 + *ip++;
+					}
+					m_pos = op - 1;
+					m_pos -= get_unaligned_le16(ip) >> 2;
+					ip += 2;
+				} else if (t >= 16) {
+					m_pos = op;
+					m_pos -= (t & 8) << 11;
+
+					t &= 7;
+					if (t == 0) {
+						if (HAVE_IP(1, ip_end, ip))
+							goto input_overrun;
+						while (*ip == 0) {
+							t += 255;
+							ip++;
+							if (HAVE_IP(1, ip_end, ip))
+								goto input_overrun;
+						}
+						t += 7 + *ip++;
+					}
+					m_pos -= get_unaligned_le16(ip) >> 2;
+					ip += 2;
+					if (m_pos == op)
+						goto eof_found;
+					m_pos -= 0x4000;
+				} else {
+					m_pos = op - 1;
+					m_pos -= t >> 2;
+					m_pos -= *ip++ << 2;
+
+					if (HAVE_LB(m_pos, out, op))
+						goto lookbehind_overrun;
+					if (HAVE_OP(2, op_end, op))
+						goto output_overrun;
+
+					*op++ = *m_pos++;
+					*op++ = *m_pos;
+				}
+
+				if (HAVE_LB(m_pos, out, op))
+					goto lookbehind_overrun;
+				if (HAVE_OP(t + 3 - 1, op_end, op))
+					goto output_overrun;
+
+				if (t >= 2 * 4 - (3 - 1) && (op - m_pos) >= 4) {
+					COPY4(op, m_pos);
+					op += 4;
+					m_pos += 4;
+					t -= 4 - (3 - 1);
+					do {
+						COPY4(op, m_pos);
+						op += 4;
+						m_pos += 4;
+						t -= 4;
+					} while (t >= 4);
+					if (t > 0)
+						do {
+							*op++ = *m_pos++;
+						} while (--t > 0);
+				} else {
+copy_match:
+					*op++ = *m_pos++;
+					*op++ = *m_pos++;
+					do {
+						*op++ = *m_pos++;
+					} while (--t > 0);
+				}
+match_done:
+				t = ip[-2] & 3;
+				if (t == 0)
+					break;
+match_next:
+				if (HAVE_OP(t, op_end, op))
+					goto output_overrun;
+				if (HAVE_IP(t + 1, ip_end, ip))
+					goto input_overrun;
+
+				*op++ = *ip++;
+				if (t > 1) {
+					*op++ = *ip++;
+					if (t > 2)
+						*op++ = *ip++;
+				}
+
+				t = *ip++;
+			} while (ip < ip_end);
+		}
+		*out_len = op - out;
+		return LZO_E_EOF_NOT_FOUND;
+
+eof_found:
+		*out_len = op - out;
+		return (ip == ip_end ? LZO_E_OK :
+				(ip < ip_end ? LZO_E_INPUT_NOT_CONSUMED : LZO_E_INPUT_OVERRUN));
+input_overrun:
+		*out_len = op - out;
+		return LZO_E_INPUT_OVERRUN;
+
+output_overrun:
+		*out_len = op - out;
+		return LZO_E_OUTPUT_OVERRUN;
+lookbehind_overrun:
+		*out_len = op - out;
+		return LZO_E_LOOKBEHIND_OVERRUN;
+	}
+#endif
+
+
+
 
 /* Fake description object for the "none" compressor */
 static struct ubifs_compressor none_compr = {
@@ -70,14 +255,14 @@ static struct ubifs_compressor none_compr = {
 	.capi_name = "",
 	.decompress = NULL,
 };
-
+#if 0
 static struct ubifs_compressor lzo_compr = {
 	.compr_type = UBIFS_COMPR_LZO,
 	.name = "LZO",
 	.capi_name = "lzo",
 	.decompress = lzo1x_decompress_safe,
 };
-
+#endif
 static struct ubifs_compressor zlib_compr = {
 	.compr_type = UBIFS_COMPR_ZLIB,
 	.name = "zlib",
@@ -105,24 +290,28 @@ int ubifs_decompress(const void *in_buf, int in_len, void *out_buf,
 {
 	int err;
 	struct ubifs_compressor *compr;
+
 	if (unlikely(compr_type < 0 || compr_type >= UBIFS_COMPR_TYPES_CNT)) {
-		printf("invalid compression type %d", compr_type);
+		ubifs_err("invalid compression type %d", compr_type);
 		return -EINVAL;
 	}
+
 	compr = ubifs_compressors[compr_type];
 
 	if (unlikely(!compr->capi_name)) {
-		printf("%s compression is not compiled in", compr->name);
+		ubifs_err("%s compression is not compiled in", compr->name);
 		return -EINVAL;
 	}
+
 	if (compr_type == UBIFS_COMPR_NONE) {
 		memcpy(out_buf, in_buf, in_len);
 		*out_len = in_len;
 		return 0;
 	}
+
 	err = compr->decompress(in_buf, in_len, out_buf, (size_t *)out_len);
 	if (err)
-		printf("cannot decompress %d bytes, compressor %s, "
+		ubifs_err("cannot decompress %d bytes, compressor %s, "
 			  "error %d", in_len, compr->name, err);
 
 	return err;
@@ -157,11 +346,11 @@ static int __init compr_init(struct ubifs_compressor *compr)
 int __init ubifs_compressors_init(void)
 {
 	int err;
-
+#if 0
 	err = compr_init(&lzo_compr);
 	if (err)
 		return err;
-
+#endif
 	err = compr_init(&zlib_compr);
 	if (err)
 		return err;
@@ -296,7 +485,7 @@ out:
 		return err;
 	}
 
-	kfree(file->private_data);
+//	kfree(file->private_data);
 	file->private_data = NULL;
 	file->f_pos = 2;
 	return 0;
@@ -313,6 +502,7 @@ static int ubifs_finddir(struct super_block *sb, char *dirname,
 	struct file *file;
 	struct dentry *dentry;
 	struct inode *dir;
+	int ret = 0;
 
 	file = kzalloc(sizeof(struct file), 0);
 	dentry = kzalloc(sizeof(struct dentry), 0);
@@ -354,7 +544,8 @@ static int ubifs_finddir(struct super_block *sb, char *dirname,
 		if ((strncmp(dirname, (char *)dent->name, nm.len) == 0) &&
 		    (strlen(dirname) == nm.len)) {
 			*inum = le64_to_cpu(dent->inum);
-			return 1;
+			ret = 1;
+			goto out_free;
 		}
 
 		/* Switch to the next entry */
@@ -373,11 +564,12 @@ static int ubifs_finddir(struct super_block *sb, char *dirname,
 	}
 
 out:
-	if (err != -ENOENT) {
+	if (err != -ENOENT)
 		ubifs_err("cannot find next direntry, error %d", err);
-		return err;
-	}
 
+out_free:
+	if (file->private_data)
+		kfree(file->private_data);
 	if (file)
 		free(file);
 	if (dentry)
@@ -385,11 +577,7 @@ out:
 	if (dir)
 		free(dir);
 
-	if (file->private_data)
-		kfree(file->private_data);
-	file->private_data = NULL;
-	file->f_pos = 2;
-	return 0;
+	return ret;
 }
 
 static unsigned long ubifs_findfile(struct super_block *sb, char *filename)
@@ -586,7 +774,7 @@ dump:
 }
 
 static int do_readpage(struct ubifs_info *c, struct inode *inode,
-		       struct page *page)
+		       struct page *page, int last_block_size)
 {
 	void *addr;
 	int err = 0, i;
@@ -620,6 +808,48 @@ static int do_readpage(struct ubifs_info *c, struct inode *inode,
 			err = -ENOENT;
 			memset(addr, 0, UBIFS_BLOCK_SIZE);
 		} else {
+			/*
+			 * Reading last block? Make sure to not write beyond
+			 * the requested size in the destination buffer.
+			 */
+			if (((block + 1) == beyond) || last_block_size) {
+				void *buff;
+				int dlen;
+
+				/*
+				 * We need to buffer the data locally for the
+				 * last block. This is to not pad the
+				 * destination area to a multiple of
+				 * UBIFS_BLOCK_SIZE.
+				 */
+				buff = malloc(UBIFS_BLOCK_SIZE);
+				if (!buff) {
+					printf("%s: Error, malloc fails!\n",
+					       __func__);
+					err = -ENOMEM;
+					break;
+				}
+
+				/* Read block-size into temp buffer */
+				ret = read_block(inode, buff, block, dn);
+				if (ret) {
+					err = ret;
+					if (err != -ENOENT) {
+						free(buff);
+						break;
+					}
+				}
+
+				if (last_block_size)
+					dlen = last_block_size;
+				else
+					dlen = le32_to_cpu(dn->size);
+
+				/* Now copy required size back to dest */
+				memcpy(addr, buff, dlen);
+
+				free(buff);
+			} else {
 				ret = read_block(inode, addr, block, dn);
 				if (ret) {
 					err = ret;
@@ -627,6 +857,7 @@ static int do_readpage(struct ubifs_info *c, struct inode *inode,
 						break;
 				}
 			}
+		}
 		if (++i >= UBIFS_BLOCKS_PER_PAGE)
 			break;
 		block += 1;
@@ -652,573 +883,85 @@ error:
 	kfree(dn);
 	return err;
 }
-int ubifs_load(char *filename, u32 addr,u32 size)
+
+//scl added
+int setenv_hex(const char *varname, ulong value)
 {
+	char str[17];
+
+	sprintf(str, "%lx", value);
+	return setenv(varname, str);
+}
+
+int ubifs_load(char *filename, u32 addr, u32 size)
+{
+	struct ubifs_info *c = ubifs_sb->s_fs_info;
+	unsigned long inum;
+	struct inode *inode;
 	struct page page;
 	int err = 0;
 	int i;
-	char *tmpbuf=malloc(PAGE_SIZE);
-	if(!tmpbuf)
-	{
-		puts("there is no enough memory!!");
-		return -1;
+	int count;
+	int last_block_size = 0;
+
+	c->ubi = ubi_open_volume(c->vi.ubi_num, c->vi.vol_id, UBI_READONLY);
+	/* ubifs_findfile will resolve symlinks, so we know that we get
+	 * the real file here */
+	inum = ubifs_findfile(ubifs_sb, filename);
+	if (!inum) {
+		err = -1;
+		goto out;
 	}
-	int startaddr =_file[FD].posn;
-	int endaddr = startaddr+size;
-	if(endaddr > inode->i_size)
-	{
-		puts("read beyond the file's size!!");
-		return -1;
+
+	/*
+	 * Read file inode
+	 */
+	inode = ubifs_iget(ubifs_sb, inum);
+	if (IS_ERR(inode)) {
+		printf("%s: Error reading inode %ld!\n", __func__, inum);
+		err = PTR_ERR(inode);
+		goto out;
 	}
-	int inds=startaddr/PAGE_SIZE;
-	int offs=startaddr%PAGE_SIZE;
-	int inde=endaddr/PAGE_SIZE;
-	int offe=endaddr%PAGE_SIZE;
-	page.addr = (void *)tmpbuf;
-	page.index = inds;
+
+	/*
+	 * If no size was specified or if size bigger than filesize
+	 * set size to filesize
+	 */
+	if ((size == 0) || (size > inode->i_size))
+		size = inode->i_size;
+
+	count = (size + UBIFS_BLOCK_SIZE - 1) >> UBIFS_BLOCK_SHIFT;
+	printf("Loading file '%s' to addr 0x%08x with size %d (0x%08x)...\n",
+	       filename, addr, size, size);
+
+	page.addr = (void *)addr;
+	page.index = 0;
 	page.inode = inode;
-	if(inds==inde)
-        {
-			err = do_readpage(c, inode, &page);
-               	 	if (err)
-			 {
-				puts("read error");
-                        	return -1;
+	for (i = 0; i < count; i++) {
+		/*
+		 * Make sure to not read beyond the requested size
+		 */
+		if (((i + 1) == count) && (size < inode->i_size))
+			last_block_size = size - (i * PAGE_SIZE);
 
-                        }
-			memcpy(addr,tmpbuf+offs,size);
-			return 0;
-        }
-
-	for (i = inds; i <= inde; i++) {
-		err = do_readpage(c, inode, &page);
+		err = do_readpage(c, inode, &page, last_block_size);
 		if (err)
 			break;
-		/*the first requested block*/
-		if(i==inds)
-		{
-		 	memcpy(addr,tmpbuf+offs,PAGE_SIZE-offs);	
-			addr+=PAGE_SIZE-offs;
-		}
-		/*the last requested block*/
-		else if(i==inde)
-		{
-			memcpy(addr,tmpbuf,offe+1);
-			addr+=(offe+1);
-		}
-		else
-		{
-			memcpy(addr,tmpbuf,PAGE_SIZE);
-			addr+=PAGE_SIZE;
-		}
+
+		page.addr += PAGE_SIZE;
 		page.index++;
-		
 	}
 
 	if (err)
-	{
 		printf("Error reading file '%s'\n", filename);
-		return -1;
-	}
-	return 0;
-
-}
-
-
-struct ubi_device *ubi;
-static void display_ubi_info(struct ubi_device *ubi)
-{
-        ubi_msg("MTD device name:            \"%s\"", ubi->mtd->name);
-        ubi_msg("MTD device size:            %llu MiB", ubi->flash_size >> 20);
-        ubi_msg("physical eraseblock size:   %d bytes (%d KiB)",
-                        ubi->peb_size, ubi->peb_size >> 10);
-        ubi_msg("logical eraseblock size:    %d bytes", ubi->leb_size);
-        ubi_msg("number of good PEBs:        %d", ubi->good_peb_count);
-        ubi_msg("number of bad PEBs:         %d", ubi->bad_peb_count);
-        ubi_msg("smallest flash I/O unit:    %d", ubi->min_io_size);
-        ubi_msg("VID header offset:          %d (aligned %d)",
-                        ubi->vid_hdr_offset, ubi->vid_hdr_aloffset);
-        ubi_msg("wear-leveling threshold:    %d", CONFIG_MTD_UBI_WL_THRESHOLD);
-        ubi_msg("number of internal volumes: %d", UBI_INT_VOL_COUNT);
-        ubi_msg("number of user volumes:     %d",
-                        ubi->vol_count - UBI_INT_VOL_COUNT);
-        ubi_msg("available PEBs:             %d", ubi->avail_pebs);
-        ubi_msg("total number of reserved PEBs: %d", ubi->rsvd_pebs);
-        ubi_msg("number of PEBs reserved for bad PEB handling: %d",
-                        ubi->beb_rsvd_pebs);
-        ubi_msg("max/mean erase counter: %d/%d", ubi->max_ec, ubi->mean_ec);
-}
-static void ubi_dump_vol_info( struct ubi_volume *vol)
-{
-        ubi_msg("volume information dump:");
-        ubi_msg("vol_id          %d", vol->vol_id);
-        ubi_msg("reserved_pebs   %d", vol->reserved_pebs);
-        ubi_msg("alignment       %d", vol->alignment);
-        ubi_msg("data_pad        %d", vol->data_pad);
-        ubi_msg("vol_type        %d", vol->vol_type);
-        ubi_msg("name_len        %d", vol->name_len);
-        ubi_msg("usable_leb_size %d", vol->usable_leb_size);
-        ubi_msg("used_ebs        %d", vol->used_ebs);
-        ubi_msg("used_bytes      %lld", vol->used_bytes);
-        ubi_msg("last_eb_bytes   %d", vol->last_eb_bytes);
-        ubi_msg("corrupted       %d", vol->corrupted);
-        ubi_msg("upd_marker      %d", vol->upd_marker);
-
-        if (vol->name_len <= UBI_VOL_NAME_MAX &&
-                strnlen(vol->name, vol->name_len + 1) == vol->name_len) {
-                ubi_msg("name            %s", vol->name);
-        } else {
-                ubi_msg("the 1st 5 characters of the name: %c%c%c%c%c",
-                                vol->name[0], vol->name[1], vol->name[2],
-                                vol->name[3], vol->name[4]);
-        }
-        printf("\n");
-}
-static void display_volume_info(struct ubi_device *ubi)
-{
-        int i;
-
-        for (i = 0; i < (ubi->vtbl_slots + 1); i++) {
-                if (!ubi->volumes[i])
-                        continue;       /* Empty record */
-                ubi_dump_vol_info(ubi->volumes[i]);
-        }
-}
-static int verify_mkvol_req( struct ubi_device *ubi,
-                             struct ubi_mkvol_req *req)
-{
-        int n, err = EINVAL;
-
-        if (req->bytes < 0 || req->alignment < 0 || req->vol_type < 0 ||
-            req->name_len < 0)
-                goto bad;
-
-        if ((req->vol_id < 0 || req->vol_id >= ubi->vtbl_slots) &&
-            req->vol_id != UBI_VOL_NUM_AUTO)
-                goto bad;
-
-        if (req->alignment == 0)
-                goto bad;
-
-        if (req->bytes == 0) {
-                printf("No space left in UBI device!\n");
-                err = ENOMEM;
-                goto bad;
-        }
-
-        if (req->vol_type != UBI_DYNAMIC_VOLUME &&
-            req->vol_type != UBI_STATIC_VOLUME)
-                goto bad;
-
-        if (req->alignment > ubi->leb_size)
-                goto bad;
-
-        n = req->alignment % ubi->min_io_size;
-        if (req->alignment != 1 && n)
-                goto bad;
-
-        if (req->name_len > UBI_VOL_NAME_MAX) {
-                printf("Name too long!\n");
-                err = ENAMETOOLONG;
-                goto bad;
-        }
-
-        return 0;
-bad:
-        return err;
-}
-static struct ubi_volume *ubi_find_volume(char *volume)
-{
-        struct ubi_volume *vol = NULL;
-        int i;
-
-        for (i = 0; i < ubi->vtbl_slots; i++) {
-                vol = ubi->volumes[i];
-                if (vol && !strcmp(vol->name, volume))
-                        return vol;
-        }
-
-        printf("Volume %s not found!\n", volume);
-        return NULL;
-}
-
-static int ubi_remove_vol(char *volume)
-{
-        int err, reserved_pebs, i;
-        struct ubi_volume *vol;
-
-        vol = ubi_find_volume(volume);
-        if (vol == NULL)
-                return ENODEV;
-
-        printf("Remove UBI volume %s (id %d)\n", vol->name, vol->vol_id);
-
-        if (ubi->ro_mode) {
-                printf("It's read-only mode\n");
-                err = EROFS;
-                goto out_err;
-        }
-
-        err = ubi_change_vtbl_record(ubi, vol->vol_id, NULL);
-        if (err) {
-                printf("Error changing Vol tabel record err=%x\n", err);
-                goto out_err;
-        }
-        reserved_pebs = vol->reserved_pebs;
-        for (i = 0; i < vol->reserved_pebs; i++) {
-                err = ubi_eba_unmap_leb(ubi, vol, i);
-                if (err)
-                        goto out_err;
-        }
-
-        kfree(vol->eba_tbl);
-        ubi->volumes[vol->vol_id]->eba_tbl = NULL;
-        ubi->volumes[vol->vol_id] = NULL;
-
-        ubi->rsvd_pebs -= reserved_pebs;
-        ubi->avail_pebs += reserved_pebs;
-        i = ubi->beb_rsvd_level - ubi->beb_rsvd_pebs;
-        if (i > 0) {
-                i = ubi->avail_pebs >= i ? i : ubi->avail_pebs;
-                ubi->avail_pebs -= i;
-                ubi->rsvd_pebs += i;
-                ubi->beb_rsvd_pebs += i;
-                if (i > 0)
-                        ubi_msg("reserve more %d PEBs", i);
-        }
-        ubi->vol_count -= 1;
-
-        return 0;
-out_err:
-        ubi_err("cannot remove volume %s, error %d", volume, err);
-        if (err < 0)
-                err = -err;
-        return err;
-}
-
-static int ubi_volume_write(char *volume, void *buf, size_t size)
-{
-        int err = 1;
-        int rsvd_bytes = 0;
-        struct ubi_volume *vol;
-
-        vol = ubi_find_volume(volume);
-        if (vol == NULL)
-                return ENODEV;
-
-        rsvd_bytes = vol->reserved_pebs * (ubi->leb_size - vol->data_pad);
-        if (size < 0 || size > rsvd_bytes) {
-                printf("size > volume size! Aborting!\n");
-                return EINVAL;
-        }
-
-        err = ubi_start_update(ubi, vol, size);
-        if (err < 0) {
-                printf("Cannot start volume update\n");
-                return -err;
-        }
-
-        err = ubi_more_update_data(ubi, vol, buf, size);
-        if (err < 0) {
-                printf("Couldnt or partially wrote data\n");
-                return -err;
-                                                            
-        }
-
-        if (err) {
-                size = err;
-
-                err = ubi_check_volume(ubi, vol->vol_id);
-                if (err < 0)
-                        return -err;
-
-                if (err) {
-                        ubi_warn("volume %d on UBI device %d is corrupted",
-                                        vol->vol_id, ubi->ubi_num);
-                        vol->corrupted = 1;
-                }
-
-                vol->checked = 1;
-                ubi_gluebi_updated(vol);
-        }
-
-        printf("%d bytes written to volume %s\n", size, volume);
-
-        return 0;
-}
-
-static int ubi_volume_read(char *volume, char *buf, size_t size)
-{
-        int err, lnum, off, len, tbuf_size;
-        size_t count_save = size;
-        void *tbuf;
-        unsigned long long tmp;
-        struct ubi_volume *vol;
-        loff_t offp = 0;
-
-        vol = ubi_find_volume(volume);
-        if (vol == NULL)
-                return ENODEV;
-
-        printf("Read %d bytes from volume %s to %p\n", size, volume, buf);
-
-        if (vol->updating) {
-                printf("updating");
-                return EBUSY;
-        }
-        if (vol->upd_marker) {
-                printf("damaged volume, update marker is set");
-                return EBADF;
-        }
-        if (offp == vol->used_bytes)
-                return 0;
-
-        if (size == 0) {
-                printf("No size specified -> Using max size (%lld)\n", vol->used_bytes);
-                size = vol->used_bytes;
-        }
-
-        if (vol->corrupted)
-                printf("read from corrupted volume %d", vol->vol_id);
-        if (offp + size > vol->used_bytes)
-                count_save = size = vol->used_bytes - offp;
-
-        tbuf_size = vol->usable_leb_size;
-        if (size < tbuf_size)
-                tbuf_size = ALIGN(size, ubi->min_io_size);
-        tbuf = malloc(tbuf_size);
-        if (!tbuf) {
-                printf("NO MEM\n");
-                return ENOMEM;
-        }
-        len = size > tbuf_size ? tbuf_size : size;
-
-        tmp = offp;
-        off = do_div(tmp, vol->usable_leb_size);
-        lnum = tmp;
-        do {
-                if (off + len >= vol->usable_leb_size)
-                        len = vol->usable_leb_size - off;
-                                                                                     
-                err = ubi_eba_read_leb(ubi, vol, lnum, tbuf, off, len, 0);
-                if (err) {
-                        printf("read err %x\n", err);
-                        err = -err;
-                        break;
-                }
-                off += len;
-                if (off == vol->usable_leb_size) {
-                        lnum += 1;
-                        off -= vol->usable_leb_size;
-                }
-
-                size -= len;
-                offp += len;
-
-                memcpy(buf, tbuf, len);
-
-                buf += len;
-                len = size > tbuf_size ? tbuf_size : size;
-        } while (size);
-
-        free(tbuf);
-        return err;
-}
-static int ubi_create_vol(char *volume, int size, int dynamic)
-{
-        struct ubi_mkvol_req req;
-        int err;
-
-        if (dynamic)
-                req.vol_type = UBI_DYNAMIC_VOLUME;
-        else
-                req.vol_type = UBI_STATIC_VOLUME;
-
-        req.vol_id = UBI_VOL_NUM_AUTO;
-        req.alignment = 1;
-        req.bytes = size;
-
-        strcpy(req.name, volume);
-        req.name_len = strlen(volume);
-        req.name[req.name_len] = '\0';
-        req.padding1 = 0;
-        /* It's duplicated at drivers/mtd/ubi/cdev.c */
-        err = verify_mkvol_req(ubi, &req);
-        if (err) {
-                printf("verify_mkvol_req failed %d\n", err);
-                return err;
-        }
-        printf("Creating %s volume %s of size %d\n",
-                dynamic ? "dynamic" : "static", volume, size);
-        /* Call real ubi create volume */
-        return ubi_create_volume(ubi, &req);
-}
-
-
-
-/*the only supported path is: /dev/ubifs@mtdx/volname/filename
-*@mtdx:the MTD device number:x 
-*@volname:the volume name:volname
-*@filename:file name
-*/                                                                                   
-
-ubifs_open(int fd, const char *path, int flags, int mode)
-{
-	struct mtd_info *mt;
-	const char *opath;
-	int ubinum;
-	int err = 0;
-	int mtdx;
-        unsigned long inum;
-	char *poffset,*poffset2;
-	FD=fd;
-	/*  Try to get to the physical device */
-	opath = path;
-	if (strncmp(opath, "/dev/", 5) == 0)
-		opath += 5;
-	else
-		return -1;
-	if (strncmp(opath, "ubifs@mtd", 9) == 0)
-		opath += 9;
-	else
-		return -1;
-	if(isdigit(opath[0]))
-	{
-		if((poffset=strchr(opath,'/')))
-			 *poffset++=0;
-         	mtdx=strtoul(opath,0,0);
-	}
-	else
-		return -1;
-	if((poffset2=strchr(poffset,'/')))
-	{
-		*poffset2++=0;
-		volname=poffset;
-	}
-	else
-		return -1;
-	filename=poffset2;
-	mtdfile *p;
-        LIST_FOREACH(p, &mtdfiles, i_next)
-        {
-		if(p->index==mtdx)
-			break;
-	}	
-	if(!p)
-	{
-		puts("there is no MTD device numberd %d!!\n",mtdx);
-		return -1;
-	}
-	mt=p->mtd;
-	if((ubinum=ubi_attach_mtd_dev(mt, 0, 0))<0)
-	{
-		puts("ubi_attach_mtd_dev error!!");
-		return -1;
-	}
-	if(ubifs_init())
-	{
-                puts("ubifs initialized failed!!");
-        	return -1;
-	}
-	if(ubifs_mount(volname))
-	{
-                puts("ubifs mounted failed!!");
-		return -1;
-	}
-        c = ubifs_sb->s_fs_info;
-        c->ubi = ubi_open_volume(c->vi.ubi_num, c->vi.vol_id, UBI_READONLY);
-        /* ubifs_findfile will resolve symlinks, so we know that we get
-         * the real file here */
-        //printf("c->vi.ubi_num=%d,c->vi.vol_id=%d,c->vi.vol_size=%d,c->vi.vol_name=%s\n",c->vi.ubi_num,c->vi.vol_id,c->vi.size,c->vi.name);
-	if(!*filename||filename[strlen(filename)-1]=='/')
-	{
-	 ubifs_ls(filename);
-	 ubi_detach_mtd_dev(0, 1); 
-	 ubifs_sb = NULL;
-	return -1;
+	else {
+		setenv_hex("filesize", size);
+		printf("Done\n");
 	}
 
-        inum = ubifs_findfile(ubifs_sb, filename);
-        if (!inum) {
-		puts("inum not found");
-		return -1;
-        }
-        /*
-         * Read file inode
-         */
-        inode = ubifs_iget(ubifs_sb, inum);
-        if (IS_ERR(inode)) {
-                printf("%s: Error reading inode %ld!\n", __func__, inum);
-		return -1;
-        }
-	return (fd);
-}
-
-
-int ubifs_read(int fd, void *addr, size_t size)
-{
-	void *buf=addr;
-	int rev=ubifs_load(fd,buf,size);
-	if(rev==-1)
-	{
-		puts("ubifs_load error!!");
-		return -1;
-	}
-	_file[FD].posn+=size;
-	return size;
-}
-off_t
-ubifs_lseek(int fd, off_t offset, int whence)
-{
-	switch (whence) {
-                case SEEK_SET:
-                        _file[fd].posn = offset;
-                        break;
-                case SEEK_CUR:
-                        _file[fd].posn += offset;
-                        break;
-                case SEEK_END:
-                        _file[fd].posn = inode->i_size+offset;
-                        break;
-                default:
-                        errno = EINVAL;
-                        return (-1);
-        }
-        return (_file[fd].posn);
-}
-int
-ubifs_write(int fd, const void *start, size_t size)
-{
-        return 0;
-}
-int
-ubifs_close(int fd)
-{
-	ubi_detach_mtd_dev(0, 1); 
-	ubifs_sb = NULL;
 	ubifs_iput(inode);
-        return (0);
+
+out:
+	ubi_close_volume(c->ubi);
+	return err;
 }
-
-
-/*
- *  File system registration info.
- */
-static FileSystem ubifs = {
-        "ubifs", FS_FILE,
-        ubifs_open,
-        ubifs_read,
-        ubifs_write,
-        ubifs_lseek,
-        ubifs_close,
-        NULL
-};
-
-static void init_fs(void) __attribute__ ((constructor));
-
-static void
-init_fs()
-{
-        filefs_init(&ubifs);
-}
-

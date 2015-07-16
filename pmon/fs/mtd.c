@@ -91,7 +91,8 @@ static creat_part_trans_table(mtdfile *p)
         if(good==end)break;
         table[tmp]=good++;
     }
-    p->part_size = tmp*mtd->erasesize; 
+    p->part_size = (tmp+1)*mtd->erasesize; 
+    //p->part_size = tmp*mtd->erasesize;	
     p->trans_table = table;
 }
 
@@ -702,7 +703,7 @@ const Optdesc         mtd_opts[] = {
 static const Cmd Cmds[] =
 {
 	{"MyCmds"},
-	{"mtdparts","0",0,"NANDFlash OPS:mtdparts ",my_mtdparts,0,99,CMD_REPEAT},
+//	{"mtdparts","0",0,"NANDFlash OPS:mtdparts ",my_mtdparts,0,99,CMD_REPEAT},
 	{"mtd_erase","[option] mtd_dev",mtd_opts,0,cmd_flash_erase,0,99,CMD_REPEAT},
 	{0, 0}
 };

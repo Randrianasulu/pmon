@@ -20,36 +20,27 @@
  * Version 2.  See the file COPYING for more details.
  */
 
-/*#ifdef UBI_LINUX
+#ifdef UBI_LINUX
 #include <linux/crc32.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/compiler.h>
-#endif*/
-#include <sys/types.h>
+#endif
+#include <linux/types.h>
 
 #include <asm/byteorder.h>
-typedef unsigned char       u8;
 
-/*#ifdef UBI_LINUX
+#ifdef UBI_LINUX
 #include <linux/slab.h>
 #include <linux/init.h>
 #include <asm/atomic.h>
-#endif*/
+#endif
 #include "crc32defs.h"
 #define CRC_LE_BITS 8
 
-# define __force
-#ifndef __constant_cpu_to_le32
-#define __constant_cpu_to_le32(x) ((__force __le32)(__u32)(x))
-#endif
-#ifndef __constant_le32_to_cpu
-#define __constant_le32_to_cpu(x) ((__force __u32)(__le32)(x))
-#endif
-
 #if CRC_LE_BITS == 8
-#define tole(x) __constant_cpu_to_le32(x)
-#define tobe(x) __constant_cpu_to_be32(x)
+#define tole(x) cpu_to_le32(x)
+#define tobe(x) cpu_to_be32(x)
 #else
 #define tole(x) (x)
 #define tobe(x) (x)
@@ -111,7 +102,7 @@ u32 crc32_le(u32 crc, unsigned char const *p, size_t len)
 	if((len >= 4)){
 		/* load data 32 bits wide, xor data 32 bits wide. */
 		size_t save_len = len & 3;
-	        len = len >> 2;
+		len = len >> 2;
 		--b; /* use pre increment below(*++b) for speed */
 		do {
 			crc ^= *++b;
@@ -209,7 +200,7 @@ u32 __attribute_pure__ crc32_be(u32 crc, unsigned char const *p, size_t len)
 	if(likely(len >= 4)){
 		/* load data 32 bits wide, xor data 32 bits wide. */
 		size_t save_len = len & 3;
-	        len = len >> 2;
+		len = len >> 2;
 		--b; /* use pre increment below(*++b) for speed */
 		do {
 			crc ^= *++b;

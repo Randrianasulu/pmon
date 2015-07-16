@@ -1098,7 +1098,7 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
  * Get hold of the chip and call nand_do_read
  */
 static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
-		     size_t *retlen, uint8_t *buf)
+		     size_t *retlen, uint8_t *buf, char * name)
 {
 	struct nand_chip *chip = mtd->priv;
 	int ret;

@@ -1,31 +1,20 @@
 /*
  * Copyright (c) International Business Machines Corp., 2006
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
- * the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Author: Artem Bityutskiy (Битюцкий Артём)
  */
 
 /* This file mostly implements UBI kernel API functions */
 
-/*#ifdef UBI_LINUX
+#ifdef UBI_LINUX
 #include <linux/module.h>
 #include <linux/err.h>
 #include <asm/div64.h>
-#endif*/
+#endif
 
+#include <ubi_uboot.h>
 #include "ubi.h"
 
 /**
@@ -108,8 +97,8 @@ struct ubi_volume_desc *ubi_open_volume(int ubi_num, int vol_id, int mode)
 	struct ubi_volume_desc *desc;
 	struct ubi_device *ubi;
 	struct ubi_volume *vol;
-//	printf("in ubi_open_volume!!ubi_num:%d,vol_id:%d\n",ubi_num,vol_id);
-	dbg_msg("open device %d volume %d, mode %d", ubi_num, vol_id, mode);
+
+	//dbg_msg("open device %d volume %d, mode %d", ubi_num, vol_id, mode);
 
 	if (ubi_num < 0 || ubi_num >= UBI_MAX_DEVICES)
 		return ERR_PTR(-EINVAL);
@@ -129,7 +118,6 @@ struct ubi_volume_desc *ubi_open_volume(int ubi_num, int vol_id, int mode)
 		err = -EINVAL;
 		goto out_put_ubi;
 	}
-	
 
 	desc = kmalloc(sizeof(struct ubi_volume_desc), GFP_KERNEL);
 	if (!desc) {
@@ -212,13 +200,18 @@ EXPORT_SYMBOL_GPL(ubi_open_volume);
  *
  * This function is similar to 'ubi_open_volume()', but opens a volume by name.
  */
+/*
+ *	ubi_num : 0
+ *	name : rootfs
+ *	mode : UBI_READONLY
+ * */
 struct ubi_volume_desc *ubi_open_volume_nm(int ubi_num, const char *name,
 					   int mode)
 {
 	int i, vol_id = -1, len;
 	struct ubi_device *ubi;
 	struct ubi_volume_desc *ret;
-//	puts("in ubi_open_volume_nm!!");
+
 	dbg_msg("open volume %s, mode %d", name, mode);
 
 	if (!name)
@@ -349,7 +342,7 @@ int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,
 		return 0;
 
 	err = ubi_eba_read_leb(ubi, vol, lnum, buf, offset, len, check);
-	if (err && err == -EBADMSG && vol->vol_type == UBI_STATIC_VOLUME) {
+	if (err && mtd_is_eccerr(err) && vol->vol_type == UBI_STATIC_VOLUME) {
 		ubi_warn("mark volume %d as corrupted", vol_id);
 		vol->corrupted = 1;
 	}

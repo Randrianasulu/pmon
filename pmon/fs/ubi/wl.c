@@ -1,19 +1,7 @@
 /*
  * Copyright (c) International Business Machines Corp., 2006
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
- * the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Authors: Artem Bityutskiy (Битюцкий Артём), Thomas Gleixner
  */
@@ -73,13 +61,14 @@
  * FIXME: looks too complex, should be simplified (later).
  */
 
-/*#ifdef UBI_LINUX
+#ifdef UBI_LINUX
 #include <linux/slab.h>
 #include <linux/crc32.h>
 #include <linux/freezer.h>
 #include <linux/kthread.h>
-#endif*/
+#endif
 
+#include <ubi_uboot.h>
 #include "ubi.h"
 
 /* Number of physical eraseblocks reserved for wear-leveling purposes */
@@ -279,9 +268,9 @@ static int do_work(struct ubi_device *ubi)
 	 * after this call as it will have been freed or reused by that
 	 * time by the worker function.
 	 */
-	err = wrk->func(ubi, wrk, 0);
+	err = wrk->func(ubi, wrk, 0);	
 	if (err)
-		ubi_err("work failed with error code %d", err);
+		ubi_err("work failed with error code %d", err);	
 	up_read(&ubi->work_sem);
 
 	return err;
@@ -1049,6 +1038,10 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
 		return 0;
 	}
 
+	if(pnum == 167 || pnum == 295 || pnum == 372 || pnum == 373 || pnum == 531 || pnum == 590 
+				   || pnum == 838)	//scl added for bad PEBs
+		return 0;
+
 	dbg_wl("erase PEB %d EC %d", pnum, e->ec);
 
 	err = sync_erase(ubi, e, wl_wrk->torture);
@@ -1072,7 +1065,7 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
 		return err;
 	}
 
-	ubi_err("failed to erase PEB %d, error %d", pnum, err);
+	ubi_err("failed to erase PEB %d, error %d", pnum, err);	
 	kfree(wl_wrk);
 	kmem_cache_free(ubi_wl_entry_slab, e);
 
@@ -1393,7 +1386,7 @@ int ubi_thread(void *u)
 
 		err = do_work(ubi);
 		if (err) {
-			ubi_err("%s: work failed with error code %d",
+			ubi_err("%s: work failed with error code %d",	\
 				ubi->bgt_name, err);
 			if (failures++ > WL_MAX_FAILURES) {
 				/*
@@ -1537,6 +1530,7 @@ int ubi_wl_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si)
 	if (ubi->avail_pebs < WL_RESERVED_PEBS) {
 		ubi_err("no enough physical eraseblocks (%d, need %d)",
 			ubi->avail_pebs, WL_RESERVED_PEBS);
+		err = -ENOSPC;
 		goto out_free;
 	}
 	ubi->avail_pebs -= WL_RESERVED_PEBS;
