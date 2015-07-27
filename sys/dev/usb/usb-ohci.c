@@ -2613,6 +2613,7 @@ int submit_common_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		memset(lurb_priv, 0, sizeof(*lurb_priv));
 	}
 
+	if(dev->status || timeout==0) return -1;
 	return 0;
 }
 
