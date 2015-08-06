@@ -882,7 +882,7 @@ static int usb_inquiry(ccb *srb,struct us_data *ss)
 			break;
 	} while(retry--);
 
-	if(!retry) {
+	if(retry<=0) {
 		printf("error in inquiry\n");
 		return -1;
 	}
