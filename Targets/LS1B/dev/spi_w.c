@@ -7,6 +7,9 @@
 #include <pmon.h>
 #include <include/types.h>
 #include <pflash.h>
+#include<linux/mtd/mtd.h>
+#include <linux/spi.h>
+//#include "m25p80.h"
 
 #define SPI_BASE  0x1fe80000
 #define PMON_ADDR 0xa1000000
@@ -16,6 +19,7 @@
 #define SPSR      0x1
 #define TXFIFO    0x2
 #define RXFIFO    0x2
+#define FIFO      0x2
 #define SPER      0x3
 #define PARAM     0x4
 #define SOFTCS    0x5
@@ -399,6 +403,152 @@ int fl_erase_device(void *fl_base, int size, int verbose)
 	spi_initr();
 return 0;
 }
+//---------------------------------------
+#define prefetch(x) (x)
+
+static struct ls1x_spi {
+	void	*base;
+}  ls1x_spi0 = { KSEG1(SPI_BASE)} ;
+
+static  struct spi_master ls1x_spi_master
+= {
+};
+
+
+struct spi_device spi_nand = 
+{
+.dev = &ls1x_spi0,
+.master = &ls1x_spi_master,
+.chip_select = 0,
+}; 
+
+
+
+
+static char ls1x_spi_write_reg(struct ls1x_spi *spi, 
+				unsigned char reg, unsigned char data)
+{
+	(*(volatile unsigned char *)(spi->base +reg)) = data;
+}
+
+static char ls1x_spi_read_reg(struct ls1x_spi *spi, 
+				unsigned char reg)
+{
+	return(*(volatile unsigned char *)(spi->base + reg));
+}
+
+
+static int 
+ls1x_spi_write_read_8bit(struct spi_device *spi,
+  const u8 **tx_buf, u8 **rx_buf, unsigned int num)
+{
+	struct ls1x_spi *ls1x_spi = spi->dev;
+	unsigned char value;
+	int i;
+	
+	if (tx_buf && *tx_buf){
+		ls1x_spi_write_reg(ls1x_spi, FIFO, *((*tx_buf)++));
+ 		while((ls1x_spi_read_reg(ls1x_spi, SPSR) & 0x1) == 1);
+	}else{
+		ls1x_spi_write_reg(ls1x_spi, FIFO, 0);
+ 		while((ls1x_spi_read_reg(ls1x_spi, SPSR) & 0x1) == 1);
+	}
+
+	if (rx_buf && *rx_buf) {
+		*(*rx_buf)++ = ls1x_spi_read_reg(ls1x_spi, FIFO);
+	}else{
+		  ls1x_spi_read_reg(ls1x_spi, FIFO);
+	}
+
+	return 1;
+}
+
+
+static unsigned int
+ls1x_spi_write_read(struct spi_device *spi, struct spi_transfer *xfer)
+{
+	struct ls1x_spi *ls1x_spi;
+	unsigned int count;
+	int word_len;
+	const u8 *tx = xfer->tx_buf;
+	u8 *rx = xfer->rx_buf;
+
+	ls1x_spi = spi->dev;
+	count = xfer->len;
+
+	do {
+		if (ls1x_spi_write_read_8bit(spi, &tx, &rx, count) < 0)
+			goto out;
+		count--;
+	} while (count);
+
+out:
+	return xfer->len - count;
+	//return count;
+
+}
+
+
+int spi_sync(struct spi_device *spi, struct spi_message *m)
+{
+
+	struct ls1x_spi *ls1x_spi = &ls1x_spi0;
+	struct spi_transfer *t = NULL;
+	unsigned long flags;
+	int cs;
+	int param;
+	
+	m->actual_length = 0;
+	m->status		 = 0;
+
+	if (list_empty(&m->transfers) /*|| !m->complete*/)
+		return -EINVAL;
+
+
+	list_for_each_entry(t, &m->transfers, transfer_list) {
+		
+		if (t->tx_buf == NULL && t->rx_buf == NULL && t->len) {
+			printf("message rejected : "
+				"invalid transfer data buffers\n");
+			goto msg_rejected;
+		}
+
+	/*other things not check*/
+
+	}
+
+	param = ls1x_spi_read_reg(ls1x_spi, PARAM);	
+	ls1x_spi_write_reg(ls1x_spi, PARAM, param&~1);
+	cs = ls1x_spi_read_reg(ls1x_spi, SOFTCS) & ~(0x11<<spi->chip_select);
+	ls1x_spi_write_reg(ls1x_spi, SOFTCS, (0x1 << spi->chip_select)|cs);
+
+	list_for_each_entry(t, &m->transfers, transfer_list) {
+
+		if (t->len)
+			m->actual_length +=
+				ls1x_spi_write_read(spi, t);
+	}
+
+	ls1x_spi_write_reg(ls1x_spi, SOFTCS, (0x11<<spi->chip_select)|cs);
+	ls1x_spi_write_reg(ls1x_spi, PARAM, param);
+
+	return 0;
+msg_rejected:
+
+	m->status = -EINVAL;
+ 	if (m->complete)
+		m->complete(m->context);
+	return -EINVAL;
+}
+
+
+#if NM25P80
+int ls1b_m25p_probe()
+{
+    spi_initw();
+    m25p_probe(&spi_nand, "m25p64");
+}
+#endif
 
 static const Cmd Cmds[] =
 {
