@@ -31,7 +31,7 @@
 
 extern void delay1(int);
 extern void (*__cprint)(int y, int x,int width,char color, const char *text);
-static int pause()
+static int lpause()
 {
 char cmd[20];
 struct termio tbuf;
@@ -140,7 +140,7 @@ else if(!strcmp(av[1],"cpu")) cpuinfo();
 else if(!strcmp(av[1],"mem")) meminfo();
 else if(!strcmp(av[1],"uart")) uartinfo();
 else if(!strcmp(av[1],"net")) netinfo();
-			pause();
+			lpause();
 }
 
 static struct setupMenu testmenu={

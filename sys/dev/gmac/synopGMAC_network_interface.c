@@ -1318,7 +1318,11 @@ unsigned long synopGMAC_linux_open(struct synopGMACNetworkAdapter *tp)
 #ifdef ENH_DESC_8W
 	synopGMAC_dma_bus_mode_init(gmacdev, DmaBurstLength32 | DmaDescriptorSkip2 | DmaDescriptor8Words ); //pbl32 incr with rxthreshold 128 and Desc is 8 Words
 #else
+#ifdef LS1CSOC
+	synopGMAC_dma_bus_mode_init(gmacdev, DmaBurstLength4 | DmaDescriptorSkip2 ); 
+#else
 	synopGMAC_dma_bus_mode_init(gmacdev, DmaBurstLength4 | DmaDescriptorSkip1 );                      //pbl4 incr with rxthreshold 128 
+#endif
 #endif
 	
 	synopGMAC_dma_control_init(gmacdev,DmaStoreAndForward |DmaTxSecondFrame|DmaRxThreshCtrl128 );	
