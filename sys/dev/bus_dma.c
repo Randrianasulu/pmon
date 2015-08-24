@@ -445,6 +445,7 @@ _dmamem_free(t, segs, nsegs)
 	int curseg;
 
 	for (curseg = 0; curseg < nsegs; curseg++) {
+		addr = segs[curseg].ds_addr;
 		free((void *)addr, M_DMAMAP);
 	}
 }
