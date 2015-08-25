@@ -35,7 +35,7 @@ void enable_cache()
 }
 
 #ifndef NOCACHE2
-void flush_cache2()
+inline __attribute__((always_inline)) void flush_cache2()
 {
 asm volatile(\
 ".set mips3;\\n" \\
@@ -53,7 +53,7 @@ asm volatile(\
 );
 }
 #else
-void flush_cache()
+inline __attribute__((always_inline)) void flush_cache()
 {
 
 #ifndef WAYBIT
@@ -110,7 +110,7 @@ void initmips(unsigned int msize,int dmsize,int dctrl)
 }
 
 
-void realinitmips(unsigned int msize)
+inline __attribute__((always_inline)) void realinitmips(unsigned int msize)
 {
 	     asm ("li  \$29,$mystart-0x4000;\\n" \\
 "		       li \$2,$myinitmips;\\n" \\

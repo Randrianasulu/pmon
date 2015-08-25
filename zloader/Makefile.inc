@@ -1,5 +1,5 @@
 ifndef PMONCC
-CC=$(CROSS_COMPILE)gcc 
+CC=$(CROSS_COMPILE)gcc -mabi=32
 CROSS_COMPILE ?= mips-elf-
 else
 CC=${PMONCC}
@@ -46,6 +46,10 @@ gencode=./genrom
 ROMSTARTADDR=0xffffffffff200200
 endif
 
+ifeq ("${tgt}","rom1")
+gencode=./genrom
+endif
+
 
 ifdef obj
 export CC += -g3
@@ -67,7 +71,7 @@ all: ${tgt}
 sim: clean pmon.bin.c
 	gcc -o zloader  -DSIM zloader.c
 ejtag_rom ejtag_rom1 ejtag_ram rom: clean ${START} zloader.o 
-	gcc  -DSTARTADDR=${GZROMSTARTADDR} -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ld.script
+	gcc  -DSTARTADDR=${GZROMSTARTADDR} -D_ROM1 -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ld.script
 	${LD} -T ld.script -e start -g -o gzrom ${START} zloader.o 
 	${CROSS_COMPILE}objcopy -O binary gzrom gzrom.bin
 
@@ -82,12 +86,39 @@ ${START}:
 	cp ../Targets/${TARGET}/compile/${TARGETEL}/${START} .
 
 startram.o:
-	gcc  -DSTARTADDR=${ROMSTARTADDR} -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ../Targets/${TARGET}/conf/ld.script
+	gcc  -DSTARTADDR=${RAMSTARTADDR} -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ld.script
 	make -C ../Targets/${TARGET}/compile/${TARGETEL}/ DEBUG='-g -DMYDBG="printf(\"debug:%s,%d\\n\",__FILE__,__LINE__);"'
 	$(CC) -D_LOCORE -G 0  -nostdinc   -DMIPS  -DCONS_BAUD="B115200"  -DCONFIG_CACHE_64K_4WAY  -D_KERNEL -D__OpenBSD__ -DPMON -D__PMON__ -mno-abicalls -c startram.S ${ZLOADER_OPTIONS} -D MEMSIZE=${MEMSIZE}
 # $(CC) -D_LOCORE -G 0  -nostdinc   -DMIPS  -DCONS_BAUD="B115200"  -DCONFIG_CACHE_64K_4WAY  -D_KERNEL -D__OpenBSD__ -DPMON -D__PMON__ -EL -mno-abicalls -mcpu=r4000 -c startram.S -D MEMSIZE=${MEMSIZE}
 zloader.o: zloader.c inflate.c  malloc.c  memop.c  pmon.bin.c initmips.c
 	$(CC) -O2 ${DEBUG} -c zloader.c ${ZLOADER_OPTIONS} -DMEMSIZE=${MEMSIZE}
+
+rom1: clean ${START} zloader1.o 
+	gcc  -DSTARTADDR=0xffffffff9fc00000 -D_ROM1 -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ld.script
+	${LD} -T ld.script -e start -o gzrom ${START} zloader.o 
+	${CROSS_COMPILE}objcopy -O binary gzrom gzrom.bin
+
+kernel: kernel.c
+	make -C ../Targets/${TARGET}/compile/${TARGETEL}/ ${START}
+	cp ../Targets/${TARGET}/compile/${TARGETEL}/${START} .
+	LC_ALL=C readelf -e /work/tmp/ls1b/linux-2.6.32/vmlinux|grep Entry|awk '{print "#define ENTRY " $$4;}' > kernel.h
+	make -C  ../Targets/${TARGET}/compile/${TARGETEL}/ `pwd`/kernel.o
+	gcc  -DSTARTADDR=${GZROMSTARTADDR} -D_NOALIGN -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ld.script
+	${LD} -T ld.script -e start -g -o gzrom ${START} kernel.o
+	${CROSS_COMPILE}objcopy -O binary gzrom gzrom.bin
+	
+
+zloader1.o: zloader.c inflate.c  malloc.c  memop.c  pmon.bin.c initmips.c program.o xmodem.o
+	sed -i 's/initmips/initmips1/' initmips.c
+	sed -i 's/flush_cache2();//;s/flush_cache();//' initmips.c
+	$(CC) -g -c -o zloader.tmp.o zloader.c ${ZLOADER_OPTIONS} -DMEMSIZE=${MEMSIZE}
+	${LD}  -r -o zloader.o zloader.tmp.o program.o xmodem.o
+
+program.o: program.S
+	make -C  ../Targets/${TARGET}/compile/${TARGETEL}/ `pwd`/$@
+
+xmodem.o: xmodem.c
+	make -C  ../Targets/${TARGET}/compile/${TARGETEL}/ `pwd`/$@
 
 zlib_loader.o: zlib_loader.c  ./zlib_gzip zlib_pmon.bin.c initmips.c
 	cd zlib_inflate;$(CC) -I ../../include -c *.c

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 open FS,"<$ARGV[0]";
 open FD,">$ARGV[1]";
-print FD "static char $ARGV[2]\[]={\n";
+print FD "const static char $ARGV[2]\[]={\n";
 my ($x,$i,$d);
 $i=0;
 while(!eof(FS))
