@@ -401,6 +401,28 @@ locate:
 	li  t3, 0x40
 	sw  t3, 0x4(t1)
 
+//---------------------------------------------------
+
+######################## uart2/3 config mux gpio##########################
+	/*gpio 31,32 for uart11*/
+
+#if COM_BASE == COM11_BASE_ADDR
+	li	t1, 0xbfe4c904
+	li	t2, 0x0
+	sw	t2, (t1)
+
+	li	t1, 0xbfd01200	/*the fourth */
+	li	t2, 0x80000000
+	sw	t2, (t1)
+	li	t1, 0xbfd01204
+	li	t2, 0x1
+	sw	t2, (t1)			
+
+	li	t1, 0xbfd00420
+	li	t2, 0x0
+	sw	t2, (t1)		/*open i2c1*/
+#endif
+//---------------------------------------------------
 
 	bal	initserial
 	nop
