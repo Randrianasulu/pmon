@@ -30,6 +30,7 @@ file	sys/dev/gmac/if_gmac.c gmac
 
 file	Targets/LS1C/dev/can.c
 file    Targets/LS1C/dev/spi_w.c
+file	sys/dev/nand/m25p80.c m25p80 & nand needs-flag
 file    sys/dev/nand/loongson-soc-nand.c  nand
 #file    sys/dev/nand/ls1g-nand.c  nand
 file	Targets/LS1C/dev/nand_ops.c nand
