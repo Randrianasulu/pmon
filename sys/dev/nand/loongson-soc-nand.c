@@ -5,6 +5,8 @@
 #include<linux/mtd/nand.h>
 #include<linux/mtd/partitions.h>
 #include<sys/malloc.h>
+#include <linux/mtd/nand_bch.h>
+#include <nand_bch.h>
 
 #ifndef __iomem
 #define __iomem
@@ -368,14 +370,45 @@ static void ls1g_nand_init_mtd(struct mtd_info *mtd,struct ls1g_nand_info *info)
 	this->write_buf		= ls1g_nand_write_buf;
 	this->verify_buf	= ls1g_nand_verify_buf;
 
-        this->ecc.mode		= NAND_ECC_NONE;
+
+#if NNAND_BCH
+#define BCH_BUG(a...) printf(a);while(1);
+	{
+		int bch = 4;
+		int writesize = 2048;
+		int oobsize = 64;
+		unsigned int eccsteps, eccbytes;
+		if (!mtd_nand_has_bch()) {
+			BCH_BUG("BCH ECC support is disabled\n");
+		}
+		/* use 512-byte ecc blocks */
+		eccsteps = writesize/512;
+		eccbytes = (bch*13+7)/8;
+		/* do not bother supporting small page devices */
+		if ((oobsize < 64) || !eccsteps) {
+			BCH_BUG("bch not available on small page devices\n");
+		}
+		if ((eccbytes*eccsteps+2) > oobsize) {
+			BCH_BUG("invalid bch value \n", bch);
+		}
+		this->ecc.mode = NAND_ECC_SOFT_BCH;
+		this->ecc.size = 512;
+		this->ecc.strength = bch;
+		this->ecc.bytes = eccbytes;
+		printk("using %u-bit/%u bytes BCH ECC\n", bch, this->ecc.size);
+	}
+#else
+	this->ecc.mode		= NAND_ECC_NONE;
+	//this->ecc.mode		= NAND_ECC_SOFT;
+	this->ecc.size		= 2048;
+	this->ecc.bytes		= 24;
+	this->ecc.layout = &hw_largepage_ecclayout;
+#endif
 	this->ecc.hwctl		= ls1g_nand_ecc_hwctl;
 	this->ecc.calculate	= ls1g_nand_ecc_calculate;
 	this->ecc.correct	= ls1g_nand_ecc_correct;
-	this->ecc.size		= 2048;
-        this->ecc.bytes         = 24;
 
-	this->ecc.layout = &hw_largepage_ecclayout;
+
 //        mtd->owner = THIS_MODULE;
 }
 #define write_z_cmd  do{                                    \
