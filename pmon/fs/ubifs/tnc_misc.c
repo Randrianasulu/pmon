@@ -274,14 +274,15 @@ static int read_znode(struct ubifs_info *c, int lnum, int offs, int len,
 		zbr->znode = NULL;
 
 		/* Validate branch */
+
 		if (zbr->lnum < c->main_first ||
 		    zbr->lnum >= c->leb_cnt || zbr->offs < 0 ||
 		    zbr->offs + zbr->len > c->leb_size || zbr->offs & 7) {
-		//	dbg_err("bad branch %d", i);
+			dbg_err("bad branch %d", i);
 			err = 2;
-			printf("bad branch %d, err %d\n", i, err);
-		//	goto out_dump;
+			goto out_dump;
 		}
+
 		switch (key_type(c, &zbr->key)) {
 		case UBIFS_INO_KEY:
 		case UBIFS_DATA_KEY:
@@ -292,24 +293,20 @@ static int read_znode(struct ubifs_info *c, int lnum, int offs, int len,
 			dbg_msg("bad key type at slot %d: %s", i,
 				DBGKEY(&zbr->key));
 			err = 3;
-			printf("bad key type at slot %d: %s, err %d\n", i,
-				DBGKEY(&zbr->key), err);
-		//	goto out_dump;
+			goto out_dump;
 		}
 
 		if (znode->level)
 			continue;
 
 		type = key_type(c, &zbr->key);
-
 		if (c->ranges[type].max_len == 0) {
 			if (zbr->len != c->ranges[type].len) {
 				dbg_err("bad target node (type %d) length (%d)",
 					type, zbr->len);
 				dbg_err("have to be %d", c->ranges[type].len);
 				err = 4;
-				dbg_err("have to be %d err %d\n", c->ranges[type].len, err);
-		//		goto out_dump;
+				goto out_dump;
 			}
 		} else if (zbr->len < c->ranges[type].min_len ||
 			   zbr->len > c->ranges[type].max_len) {
@@ -319,12 +316,7 @@ static int read_znode(struct ubifs_info *c, int lnum, int offs, int len,
 				c->ranges[type].min_len,
 				c->ranges[type].max_len);
 			err = 5;
-			printf("bad target node (type %d) length (%d)\n",
-				type, zbr->len);
-			printf("have to be in range of %d-%d , err %d\n",
-				c->ranges[type].min_len,
-				c->ranges[type].max_len, err);
-		//	goto out_dump;
+			goto out_dump;
 		}
 	}
 
@@ -342,16 +334,13 @@ static int read_znode(struct ubifs_info *c, int lnum, int offs, int len,
 		if (cmp > 0) {
 			dbg_err("bad key order (keys %d and %d)", i, i + 1);
 			err = 6;
-			printf("bad key order (keys %d and %d) , err %d\n", i, i + 1, err);
-			//goto out_dump;
+			goto out_dump;
 		} else if (cmp == 0 && !is_hash_key(c, key1)) {
 			/* These can only be keys with colliding hash */
 			dbg_err("keys %d and %d are not hashed but equivalent",
 				i, i + 1);
 			err = 7;
-			printf("keys %d and %d are not hashed but equivalent , err %d\n",
-				i, i + 1, err);
-		//	goto out_dump;
+			goto out_dump;
 		}
 	}
 
@@ -393,7 +382,6 @@ struct ubifs_znode *ubifs_load_znode(struct ubifs_info *c,
 		return ERR_PTR(-ENOMEM);
 
 	err = read_znode(c, zbr->lnum, zbr->offs, zbr->len, znode);
-	printf("read_znode err = %d\n", err);
 	if (err)
 		goto out;
 

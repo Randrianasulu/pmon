@@ -83,7 +83,6 @@ extern int	_toupper __P ((int));
 #endif
 __END_DECLS
 
-//#define	isdigit(c)	(printf("in isdigit()\n"); (_ctype_ + 1)[(unsigned char)(c)] & _N)	//scl used for debug
 #define	isdigit(c)	((_ctype_ + 1)[(unsigned char)(c)] & _N)
 #define	islower(c)	((_ctype_ + 1)[(unsigned char)(c)] & _L)
 #define	isspace(c)	((_ctype_ + 1)[(unsigned char)(c)] & _S)

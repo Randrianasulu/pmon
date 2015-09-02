@@ -27,8 +27,6 @@
 #ifndef __UBIFS_MISC_H__
 #define __UBIFS_MISC_H__
 
-#include <linux/bitops.h>
-
 /**
  * ubifs_zn_dirty - check if znode is dirty.
  * @znode: znode to check

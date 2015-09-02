@@ -389,7 +389,7 @@ int		spawn __P((char *, int(*) __P((int, char *[])), int, char *[]));
 #define decmod(x,mod)	(((x-1) < 0)?mod:x-1)
 unsigned long ulmin __P((unsigned long, unsigned long));
 long lmin(long, long);
-//int min(int, int);	//scl
+int min(int, int);
 #define maincpu (!cpuid)
 extern int cpuid;
 #define I2C_SINGLE 0 

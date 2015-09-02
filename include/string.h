@@ -87,7 +87,6 @@ char	*strbalp __P((const char *));
 char	*strrpset __P((const char *, const char *));
 char	*strrrot __P((char *));
 void	strsort __P((char *));
-//char * strsep(char **, const char *);
 #define strequ(a, b) (strcmp(a,b) ? 1 : 0)
 int	striequ __P((const char *, const char *));
 int	strbequ __P((const char *, const char *));

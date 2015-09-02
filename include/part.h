@@ -36,19 +36,18 @@ typedef struct block_dev_desc {
 #ifdef CONFIG_LBA48
 	unsigned char	lba48;		/* device can use 48bit addr (ATA/ATAPI v7) */
 #endif
-	//unsigned long		lba;		/* number of blocks */
-	unsigned long	lba;		/* number of blocks */
+	lbaint_t		lba;		/* number of blocks */
 	unsigned long	blksz;		/* block size */
 	char		vendor [40+1];	/* IDE model, SCSI Vendor */
 	char		product[20+1];	/* IDE Serial no, SCSI product */
 	char		revision[8+1];	/* firmware revision */
 	unsigned long	(*block_read)(int dev,
 				      unsigned long start,
-				      unsigned long blkcnt,
+				      lbaint_t blkcnt,
 				      void *buffer);
 	unsigned long	(*block_write)(int dev,
 				       unsigned long start,
-				       unsigned long blkcnt,
+				       lbaint_t blkcnt,
 				       const void *buffer);
 	void		*priv;		/* driver private struct pointer */
 }block_dev_desc_t;
@@ -87,11 +86,11 @@ typedef struct block_dev_desc {
 typedef unsigned char uchar;
 
 typedef struct disk_partition {
-	unsigned long	start;		/* # of first block in partition	*/
-	unsigned long	size;		/* number of blocks in partition	*/
-	unsigned long	blksz;		/* block size in bytes			*/
-	unsigned char	name[32];	/* partition name			*/
-	unsigned char	type[32];	/* string type description		*/
+	ulong	start;		/* # of first block in partition	*/
+	ulong	size;		/* number of blocks in partition	*/
+	ulong	blksz;		/* block size in bytes			*/
+	uchar	name[32];	/* partition name			*/
+	uchar	type[32];	/* string type description		*/
 } disk_partition_t;
 
 /* Misc _get_dev functions */

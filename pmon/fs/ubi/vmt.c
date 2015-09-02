@@ -1,7 +1,19 @@
 /*
  * Copyright (c) International Business Machines Corp., 2006
  *
- * SPDX-License-Identifier:	GPL-2.0+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation;  either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * Author: Artem Bityutskiy (Битюцкий Артём)
  */
@@ -11,12 +23,11 @@
  * resizing.
  */
 
-#ifdef UBI_LINUX
+/*#ifdef UBI_LINUX
 #include <linux/err.h>
 #include <asm/div64.h>
-#endif
+#endif*/
 
-#include <ubi_uboot.h>
 #include "ubi.h"
 
 #ifdef CONFIG_MTD_UBI_DEBUG_PARANOID
@@ -287,9 +298,8 @@ int ubi_create_volume(struct ubi_device *ubi, struct ubi_mkvol_req *req)
 		goto out_acc;
 	}
 
-	for (i = 0; i < vol->reserved_pebs; i++){
+	for (i = 0; i < vol->reserved_pebs; i++)
 		vol->eba_tbl[i] = UBI_LEB_UNMAPPED;
-	}
 
 	if (vol->vol_type == UBI_DYNAMIC_VOLUME) {
 		vol->used_ebs = vol->reserved_pebs;
@@ -667,10 +677,12 @@ out_cdev:
  */
 void ubi_free_volume(struct ubi_device *ubi, struct ubi_volume *vol)
 {
+	int err;
+
 	dbg_msg("free volume %d", vol->vol_id);
 
 	ubi->volumes[vol->vol_id] = NULL;
-	ubi_destroy_gluebi(vol);
+	err = ubi_destroy_gluebi(vol);
 	cdev_del(&vol->cdev);
 	volume_sysfs_close(vol);
 }

@@ -1,7 +1,19 @@
 /*
  * Copyright (c) International Business Machines Corp., 2006
  *
- * SPDX-License-Identifier:	GPL-2.0+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * Author: Artem Bityutskiy (Битюцкий Артём)
  */
@@ -29,20 +41,16 @@
  * 64 bits is enough to never overflow.
  */
 
-#ifdef UBI_LINUX
-#include <linux/slab.h>
-#include <linux/crc32.h>
-#include <linux/err.h>
-#endif
+//#ifdef UBI_LINUX
+//#include <linux/slab.h>
+//#include <linux/crc32.h>
+//#include <linux/err.h>
+//#endif
 
-#include <ubi_uboot.h>
 #include "ubi.h"
 
 /* Number of physical eraseblocks reserved for atomic LEB change operation */
 #define EBA_RESERVED_PEBS 1
-
-#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
-#define ALIGN(x,a)      __ALIGN_MASK((x),(typeof(x))(a)-1)
 
 /**
  * next_sqnum - get next sequence number.
@@ -451,7 +459,7 @@ retry:
 		if (err == UBI_IO_BITFLIPS) {
 			scrub = 1;
 			err = 0;
-		} else if (mtd_is_eccerr(err)) {
+		} else if (err == -EBADMSG) {
 			if (vol->vol_type == UBI_DYNAMIC_VOLUME)
 				goto out_unlock;
 			scrub = 1;
@@ -601,10 +609,6 @@ write_error:
  * of failure. In case of error, it is possible that something was still
  * written to the flash media, but may be some garbage.
  */
-/*
- *	ubi_eba_write_leb(ubi, layout_vol, i, ubi->vtbl, 0,	\
- *	                    ubi->vtbl_size, UBI_LONGTERM);
- * */
 int ubi_eba_write_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
 		      const void *buf, int offset, int len, int dtype)
 {
@@ -620,14 +624,12 @@ int ubi_eba_write_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
 
 	pnum = vol->eba_tbl[lnum];
 	if (pnum >= 0) {
-	//	dbg_eba("write %d bytes at offset %d of LEB %d:%d, PEB %d",
-		printf("write %d bytes at offset %d of LEB %d:%d, PEB %d\n",
+		dbg_eba("write %d bytes at offset %d of LEB %d:%d, PEB %d",
 			len, offset, vol_id, lnum, pnum);
 
 		err = ubi_io_write_data(ubi, buf, pnum, offset, len);
 		if (err) {
-			//ubi_warn("failed to write data to PEB %d", pnum);
-			printf("failed to write data to PEB %d\n", pnum);
+			ubi_warn("failed to write data to PEB %d", pnum);
 			if (err == -EIO && ubi->bad_allowed)
 				err = recover_peb(ubi, pnum, vol_id, lnum, buf,
 						  offset, len);
@@ -668,8 +670,7 @@ retry:
 
 	err = ubi_io_write_vid_hdr(ubi, pnum, vid_hdr);
 	if (err) {
-	//	ubi_warn("failed to write VID header to LEB %d:%d, PEB %d",
-		printf("failed to write VID header to LEB %d:%d, PEB %d\n",	
+		ubi_warn("failed to write VID header to LEB %d:%d, PEB %d",
 			 vol_id, lnum, pnum);
 		goto write_error;
 	}
@@ -677,9 +678,8 @@ retry:
 	if (len) {
 		err = ubi_io_write_data(ubi, buf, pnum, offset, len);
 		if (err) {
-		//	ubi_warn("failed to write %d bytes at offset %d of "
-			printf("failed to write %d bytes at offset %d of "
-				 "LEB %d:%d, PEB %d\n", len, offset, vol_id,
+			ubi_warn("failed to write %d bytes at offset %d of "
+				 "LEB %d:%d, PEB %d", len, offset, vol_id,
 				 lnum, pnum);
 			goto write_error;
 		}

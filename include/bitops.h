@@ -345,8 +345,6 @@ static __inline__ void set_bit(int nr, volatile void * addr)
  * If it's called on the same region of memory simultaneously, the effect
  * may be that only one operation succeeds.
  */
-//scl
-#if 0
 static __inline__ void __set_bit(int nr, volatile void * addr)
 {
 	int	mask;
@@ -356,7 +354,7 @@ static __inline__ void __set_bit(int nr, volatile void * addr)
 	mask = 1 << (nr & 0x1f);
 	*a |= mask;
 }
-#endif
+
 /*
  * clear_bit - Clears a bit in memory
  * @nr: Bit to clear
@@ -426,8 +424,6 @@ static __inline__ void __change_bit(int nr, volatile void * addr)
  * This operation is atomic and cannot be reordered.
  * It also implies a memory barrier.
  */
-//scl
-#if 0
 static __inline__ int test_and_set_bit(int nr, volatile void * addr)
 {
 	int	mask, retval;
@@ -443,7 +439,7 @@ static __inline__ int test_and_set_bit(int nr, volatile void * addr)
 
 	return retval;
 }
-#endif
+
 /*
  * __test_and_set_bit - Set a bit and return its old value
  * @nr: Bit to set
@@ -570,13 +566,11 @@ static __inline__ int __test_and_change_bit(int nr, volatile void * addr)
  * @nr: bit number to test
  * @addr: Address to start counting from
  */
-//scl
-#if 0
 static __inline__ int test_bit(int nr, volatile void *addr)
 {
 	return ((1UL << (nr & 31)) & (((const unsigned int *) addr)[nr >> 5])) != 0;
 }
-#endif
+
 #ifndef __MIPSEB__
 
 /* Little endian versions. */

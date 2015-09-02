@@ -306,40 +306,6 @@ struct mtd_info {
 	u_int32_t ecctype;
 	u_int32_t eccsize;
 
-//scl changed start
-	unsigned int bitflip_threshold;
-	/* max number of correctible bit errors per ecc step */
-    unsigned int ecc_strength;
-	int (*_erase) (struct mtd_info *mtd, struct erase_info *instr);
-	int (*_read) (struct mtd_info *mtd, loff_t from, size_t len,
-			size_t *retlen, u_char *buf);
-	int (*_write) (struct mtd_info *mtd, loff_t to, size_t len,
-			size_t *retlen, const u_char *buf);
-	int (*_panic_write) (struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf);
-	int (*_read_oob) (struct mtd_info *mtd, loff_t from,
-			struct mtd_oob_ops *ops);
-	int (*_get_fact_prot_info) (struct mtd_info *mtd, struct otp_info *buf,
-			size_t len);
-	int (*_get_user_prot_info) (struct mtd_info *mtd, struct otp_info *buf,
-			size_t len);
-	int (*_read_fact_prot_reg) (struct mtd_info *mtd, loff_t from,
-			size_t len, size_t *retlen, u_char *buf);
-	int (*_read_user_prot_reg) (struct mtd_info *mtd, loff_t from,
-			size_t len, size_t *retlen, u_char *buf);
-	int (*_write_user_prot_reg) (struct mtd_info *mtd, loff_t to, size_t len,
-			size_t *retlen, u_char *buf);
-	int (*_lock_user_prot_reg) (struct mtd_info *mtd, loff_t from,
-			size_t len);
-	int (*_lock) (struct mtd_info *mtd, loff_t ofs, uint64_t len);
-	int (*_unlock) (struct mtd_info *mtd, loff_t ofs, uint64_t len);
-	int (*_block_isbad) (struct mtd_info *mtd, loff_t ofs);
-	int (*_block_markbad) (struct mtd_info *mtd, loff_t ofs);
-	int (*_write_oob) (struct mtd_info *mtd, loff_t to, 
-			struct mtd_oob_ops *ops);
-	void (*_sync) (struct mtd_info *mtd);
-//scl changed end
-
-
 	// Kernel-only stuff starts here.
 	char *name;
 	int index;
@@ -494,8 +460,7 @@ static inline int call_old_write_oob(struct mtd_info *mtd, loff_t from, struct m
 
 	/* Kernel-side ioctl definitions */
 
-extern int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name);	
-extern int u_boot_add_mtd_device(struct mtd_info *mtd);
+extern int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name);
 extern int del_mtd_device (struct mtd_info *mtd);
 
 extern struct mtd_info *__get_mtd_device(struct mtd_info *mtd, int num);
@@ -523,31 +488,6 @@ struct mtd_notifier {
 	struct mtd_notifier *next;
 };
 
-//scl changed start
-static inline int mtd_is_eccerr(int err) {
-	return err == -EBADMSG;
-}
-
-static inline int mtd_is_bitflip(int err) {
-	return err == -EUCLEAN;
-}
-
-static inline int mtd_can_have_bb(const struct mtd_info *mtd)
-{
-	return !!mtd->_block_isbad;
-}
-
-static inline int mtd_write_oob(struct mtd_info *mtd, loff_t to,
-		struct mtd_oob_ops *ops)
-{
-	ops->retlen = ops->oobretlen = 0;
-	if (!mtd->_write_oob)
-		return -EOPNOTSUPP;
-	if (!(mtd->flags & MTD_WRITEABLE))
-		return -EROFS;
-	return mtd->_write_oob(mtd, to, ops);
-}
-//scl changed end
 
 extern void register_mtd_user (struct mtd_notifier *new);
 extern int unregister_mtd_user (struct mtd_notifier *old);

@@ -30,30 +30,30 @@
  */
 
 typedef struct {
-	unsigned long	size;			/* total bank size in bytes		*/
-	unsigned short	sector_count;		/* number of erase units		*/
-	unsigned long	flash_id;		/* combined device & manufacturer code	*/
-//	unsigned long	start[CONFIG_SYS_MAX_FLASH_SECT];   /* virtual sector start address */	//scl
-//	unsigned char	protect[CONFIG_SYS_MAX_FLASH_SECT]; /* sector protection status	*/	//scl
+	ulong	size;			/* total bank size in bytes		*/
+	ushort	sector_count;		/* number of erase units		*/
+	ulong	flash_id;		/* combined device & manufacturer code	*/
+	ulong	start[CONFIG_SYS_MAX_FLASH_SECT];   /* virtual sector start address */
+	uchar	protect[CONFIG_SYS_MAX_FLASH_SECT]; /* sector protection status	*/
 #ifdef CONFIG_SYS_FLASH_CFI
-	unsigned char	portwidth;		/* the width of the port		*/
-	unsigned char	chipwidth;		/* the width of the chip		*/
-	unsigned short	buffer_size;		/* # of bytes in write buffer		*/
-	unsigned long	erase_blk_tout;		/* maximum block erase timeout		*/
-	unsigned long	write_tout;		/* maximum write timeout		*/
-	unsigned long	buffer_write_tout;	/* maximum buffer write timeout		*/
-	unsigned short	vendor;			/* the primary vendor id		*/
-	unsigned short	cmd_reset;		/* vendor specific reset command	*/
-	unsigned short	interface;		/* used for x8/x16 adjustments		*/
-	unsigned short	legacy_unlock;		/* support Intel legacy (un)locking	*/
-	unsigned short	manufacturer_id;	/* manufacturer id			*/
-	unsigned short	device_id;		/* device id				*/
-	unsigned short	device_id2;		/* extended device id			*/
-	unsigned short	ext_addr;		/* extended query table address		*/
-	unsigned short	cfi_version;		/* cfi version				*/
-	unsigned short	cfi_offset;		/* offset for cfi query			*/
-	unsigned long   addr_unlock1;		/* unlock address 1 for AMD flash roms  */
-	unsigned long   addr_unlock2;		/* unlock address 2 for AMD flash roms  */
+	uchar	portwidth;		/* the width of the port		*/
+	uchar	chipwidth;		/* the width of the chip		*/
+	ushort	buffer_size;		/* # of bytes in write buffer		*/
+	ulong	erase_blk_tout;		/* maximum block erase timeout		*/
+	ulong	write_tout;		/* maximum write timeout		*/
+	ulong	buffer_write_tout;	/* maximum buffer write timeout		*/
+	ushort	vendor;			/* the primary vendor id		*/
+	ushort	cmd_reset;		/* vendor specific reset command	*/
+	ushort	interface;		/* used for x8/x16 adjustments		*/
+	ushort	legacy_unlock;		/* support Intel legacy (un)locking	*/
+	ushort	manufacturer_id;	/* manufacturer id			*/
+	ushort	device_id;		/* device id				*/
+	ushort	device_id2;		/* extended device id			*/
+	ushort	ext_addr;		/* extended query table address		*/
+	ushort	cfi_version;		/* cfi version				*/
+	ushort	cfi_offset;		/* offset for cfi query			*/
+	ulong   addr_unlock1;		/* unlock address 1 for AMD flash roms  */
+	ulong   addr_unlock2;		/* unlock address 2 for AMD flash roms  */
 	const char *name;		/* human-readable name	                */
 #endif
 } flash_info_t;
@@ -95,17 +95,17 @@ extern unsigned long flash_init (void);
 extern void flash_protect_default(void);
 extern void flash_print_info (flash_info_t *);
 extern int flash_erase	(flash_info_t *, int, int);
-extern int flash_sect_erase (unsigned long addr_first, unsigned long addr_last);
-extern int flash_sect_protect (int flag, unsigned long addr_first, unsigned long addr_last);
-extern int flash_sect_roundb (unsigned long *addr);
+extern int flash_sect_erase (ulong addr_first, ulong addr_last);
+extern int flash_sect_protect (int flag, ulong addr_first, ulong addr_last);
+extern int flash_sect_roundb (ulong *addr);
 extern unsigned long flash_sector_size(flash_info_t *info, flash_sect_t sect);
 extern void flash_set_verbose(uint);
 
 /* common/flash.c */
-extern void flash_protect (int flag, unsigned long from, unsigned long to, flash_info_t *info);
-extern int flash_write (char *, unsigned long, unsigned long);
-extern flash_info_t *addr2info (unsigned long);
-extern int write_buff (flash_info_t *info, unsigned char *src, unsigned long addr, unsigned long cnt);
+extern void flash_protect (int flag, ulong from, ulong to, flash_info_t *info);
+extern int flash_write (char *, ulong, ulong);
+extern flash_info_t *addr2info (ulong);
+extern int write_buff (flash_info_t *info, uchar *src, ulong addr, ulong cnt);
 
 /* drivers/mtd/cfi_mtd.c */
 #ifdef CONFIG_FLASH_CFI_MTD
@@ -120,13 +120,13 @@ extern void flash_read_factory_serial(flash_info_t * info, void * buffer, int of
 #endif	/* CONFIG_SYS_FLASH_PROTECTION */
 
 #ifdef CONFIG_FLASH_CFI_LEGACY
-extern unsigned long board_flash_get_legacy(unsigned long base, int banknum, flash_info_t *info);
-extern int jedec_flash_match(flash_info_t *info, unsigned long base);
+extern ulong board_flash_get_legacy(ulong base, int banknum, flash_info_t *info);
+extern int jedec_flash_match(flash_info_t *info, ulong base);
 #define CFI_CMDSET_AMD_LEGACY		0xFFF0
 #endif
 
 #if defined(CONFIG_SYS_FLASH_CFI)
-extern flash_info_t *flash_get_info(unsigned long base);
+extern flash_info_t *flash_get_info(ulong base);
 #endif
 
 /*-----------------------------------------------------------------------

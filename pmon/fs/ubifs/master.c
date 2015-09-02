@@ -43,7 +43,6 @@ static int scan_for_master(struct ubifs_info *c)
 	sleb = ubifs_scan(c, lnum, 0, c->sbuf);
 	if (IS_ERR(sleb))
 		return PTR_ERR(sleb);
-
 	nodes_cnt = sleb->nodes_cnt;
 	if (nodes_cnt > 0) {
 		snod = list_entry(sleb->nodes.prev, struct ubifs_scan_node,
@@ -62,17 +61,17 @@ static int scan_for_master(struct ubifs_info *c)
 		return PTR_ERR(sleb);
 	if (sleb->nodes_cnt != nodes_cnt)
 		goto out;
-	if (!sleb->nodes_cnt)	//scl
-//		goto out;
+	if (!sleb->nodes_cnt)
+		goto out;
 	snod = list_entry(sleb->nodes.prev, struct ubifs_scan_node, list);
-	if (snod->type != UBIFS_MST_NODE)	//scl
-//		goto out;
-	if (snod->offs != offs)	//scl
-//		goto out;
-//	if (memcmp((void *)c->mst_node + UBIFS_CH_SZ,	\
-		   (void *)snod->node + UBIFS_CH_SZ,	\
+	if (snod->type != UBIFS_MST_NODE)
+		goto out;
+	if (snod->offs != offs)
+		goto out;
+	if (memcmp((void *)c->mst_node + UBIFS_CH_SZ,
+		   (void *)snod->node + UBIFS_CH_SZ,
 		   UBIFS_MST_NODE_SZ - UBIFS_CH_SZ))
-//		goto out;	//scl
+		goto out;
 	c->mst_offs = offs;
 	ubifs_scan_destroy(sleb);
 	return 0;
@@ -99,18 +98,16 @@ static int validate_master(const struct ubifs_info *c)
 		goto out;
 	}
 
-#if 0	//scl
 	if (c->cmt_no >= c->max_sqnum) {
 		err = 2;
 		goto out;
 	}
-#endif
 
 	if (c->highest_inum >= INUM_WATERMARK) {
 		err = 3;
 		goto out;
 	}
-#if 0	//scl
+
 	if (c->lhead_lnum < UBIFS_LOG_LNUM ||
 	    c->lhead_lnum >= UBIFS_LOG_LNUM + c->log_lebs ||
 	    c->lhead_offs < 0 || c->lhead_offs >= c->leb_size ||
@@ -118,6 +115,7 @@ static int validate_master(const struct ubifs_info *c)
 		err = 4;
 		goto out;
 	}
+
 	if (c->zroot.lnum >= c->leb_cnt || c->zroot.lnum < c->main_first ||
 	    c->zroot.offs >= c->leb_size || c->zroot.offs & 7) {
 		err = 5;
@@ -139,9 +137,8 @@ static int validate_master(const struct ubifs_info *c)
 	    c->ihead_offs % c->min_io_size || c->ihead_offs < 0 ||
 	    c->ihead_offs > c->leb_size || c->ihead_offs & 7) {
 		err = 8;
-//		goto out;
+		goto out;
 	}
-#endif 
 
 	main_sz = (long long)c->main_lebs * c->leb_size;
 	if (c->old_idx_sz & 7 || c->old_idx_sz >= main_sz) {
@@ -149,27 +146,25 @@ static int validate_master(const struct ubifs_info *c)
 		goto out;
 	}
 
-#if 0	//scl
 	if (c->lpt_lnum < c->lpt_first || c->lpt_lnum > c->lpt_last ||
 	    c->lpt_offs < 0 || c->lpt_offs + c->nnode_sz > c->leb_size) {
 		err = 10;
-//		goto out;
+		goto out;
 	}
 
 	if (c->nhead_lnum < c->lpt_first || c->nhead_lnum > c->lpt_last ||
 	    c->nhead_offs < 0 || c->nhead_offs % c->min_io_size ||
 	    c->nhead_offs > c->leb_size) {
 		err = 11;
-//		goto out;
+		goto out;
 	}
 
 	if (c->ltab_lnum < c->lpt_first || c->ltab_lnum > c->lpt_last ||
 	    c->ltab_offs < 0 ||
 	    c->ltab_offs + c->ltab_sz > c->leb_size) {
 		err = 12;
-//		goto out;
+		goto out;
 	}
-#endif
 
 	if (c->big_lpt && (c->lsave_lnum < c->lpt_first ||
 	    c->lsave_lnum > c->lpt_last || c->lsave_offs < 0 ||
@@ -178,30 +173,26 @@ static int validate_master(const struct ubifs_info *c)
 		goto out;
 	}
 
-#if 0	//scl
 	if (c->lscan_lnum < c->main_first || c->lscan_lnum >= c->leb_cnt) {
 		err = 14;
-//		goto out;
+		goto out;
 	}
 
 	if (c->lst.empty_lebs < 0 || c->lst.empty_lebs > c->main_lebs - 2) {
 		err = 15;
-//		goto out;
+		goto out;
 	}
-#endif
 
 	if (c->lst.idx_lebs < 0 || c->lst.idx_lebs > c->main_lebs - 1) {
 		err = 16;
 		goto out;
 	}
 
-#if 0	//scl
 	if (c->lst.total_free < 0 || c->lst.total_free > main_sz ||
 	    c->lst.total_free & 7) {
 		err = 17;
-//		goto out;
+		goto out;
 	}
-#endif
 
 	if (c->lst.total_dirty < 0 || (c->lst.total_dirty & 7)) {
 		err = 18;
@@ -213,13 +204,11 @@ static int validate_master(const struct ubifs_info *c)
 		goto out;
 	}
 
-#if 0	//scl
 	if (c->lst.total_free + c->lst.total_dirty +
 	    c->lst.total_used > main_sz) {
 		err = 20;
-//		goto out;
+		goto out;
 	}
-#endif
 
 	if (c->lst.total_dead + c->lst.total_dark +
 	    c->lst.total_used + c->old_idx_sz > main_sz) {

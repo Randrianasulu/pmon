@@ -2,7 +2,19 @@
  * Copyright (c) International Business Machines Corp., 2006
  * Copyright (c) Nokia Corporation, 2006, 2007
  *
- * SPDX-License-Identifier:	GPL-2.0+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * Author: Artem Bityutskiy (Битюцкий Артём)
  */
@@ -10,7 +22,7 @@
 #ifndef __UBI_UBI_H__
 #define __UBI_UBI_H__
 
-#ifdef UBI_LINUX
+/*#ifdef UBI_LINUX
 #include <linux/init.h>
 #include <linux/types.h>
 #include <linux/list.h>
@@ -27,18 +39,18 @@
 #include <linux/vmalloc.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/ubi.h>
-#endif
-
-#include <linux/types.h>
+#endif*/
+#include <sys/types.h>
 #include <linux/list.h>
 #include <linux/rbtree.h>
 #include <linux/string.h>
-#include <linux/mtd/mtd.h>
-#include <linux/mtd/ubi.h>
-
+#include <linux/mtd.h>
+#include <linux/ubi.h>
+#include<ubi_uboot.h>
 #include "ubi-media.h"
-#include "scan.h"
-#include "debug.h"
+#include "scan2.h"
+#include "debug2.h"
+
 
 /* Maximum number of supported UBI devices */
 #define UBI_MAX_DEVICES 32
@@ -47,11 +59,7 @@
 #define UBI_NAME_STR "ubi"
 
 /* Normal UBI messages */
-#ifdef CONFIG_UBI_SILENCE_MSG
-#define ubi_msg(fmt, ...)
-#else
 #define ubi_msg(fmt, ...) printk(KERN_NOTICE "UBI: " fmt "\n", ##__VA_ARGS__)
-#endif
 /* UBI warning messages */
 #define ubi_warn(fmt, ...) printk(KERN_WARNING "UBI warning: %s: " fmt "\n", \
 				  __func__, ##__VA_ARGS__)
@@ -459,12 +467,7 @@ int ubi_destroy_gluebi(struct ubi_volume *vol);
 void ubi_gluebi_updated(struct ubi_volume *vol);
 #else
 #define ubi_create_gluebi(ubi, vol) 0
-
-static inline int ubi_destroy_gluebi(struct ubi_volume *vol)
-{
-	return 0;
-}
-
+#define ubi_destroy_gluebi(vol) 0
 #define ubi_gluebi_updated(vol)
 #endif
 
@@ -518,6 +521,20 @@ struct ubi_device *ubi_get_device(int ubi_num);
 void ubi_put_device(struct ubi_device *ubi);
 struct ubi_device *ubi_get_by_major(int major);
 int ubi_major2num(int major);
+
+/*kapi.c*/
+int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,int len, int check);
+int ubi_leb_unmap(struct ubi_volume_desc *desc, int lnum);
+int ubi_leb_change(struct ubi_volume_desc *desc, int lnum, const void *buf,int len, int dtype);
+void ubi_get_volume_info(struct ubi_volume_desc *desc,struct ubi_volume_info *vi);
+void ubi_close_volume(struct ubi_volume_desc *desc);
+struct ubi_volume_desc *ubi_open_volume_nm(int ubi_num, const char *name,int mode);
+struct ubi_volume_desc *ubi_open_volume(int ubi_num, int vol_id, int mode);
+int ubi_is_mapped(struct ubi_volume_desc *desc, int lnum);
+
+
+
+
 
 /*
  * ubi_rb_for_each_entry - walk an RB-tree.
