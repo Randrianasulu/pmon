@@ -20,10 +20,16 @@
 /****** 需要根据不同内存芯片进行修改的值 *******/
 /*1C Demo核心板上使用两个８位　13(row)x10(col) 的sdram 颗粒并联，相当于16位位宽*/
 #define	ROW_WIDTH	13			/*A0~A12*/
+#ifndef ROW_VAL
 #define ROW_VAL     ROW_8K		
+#endif
 
+#ifndef WIDTH_VAL
 #define WIDTH_VAL   WIDTH_16   /*位宽*/
+#endif
+#ifndef COL_VAL
 #define COL_VAL		COL_1K
+#endif
 /****************************************/
 
 #define	TIME_SET(x)	(x * SD_FREQ +999)/1000
