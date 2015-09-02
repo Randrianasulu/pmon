@@ -396,19 +396,12 @@ tgt_devconfig(void)
 
 	config_init();
    
-	/*end usb reset*/
-#if LS1ASOC
-	/*ls1a usb reset stop*/
-	*(volatile int *)0xbff10204 |= 0x40000000;
-#elif   LS1BSOC
-	/*ls1b usb reset stop*/
-	*(volatile int *)0xbfd00424 |= 0x80000000;
-#else   
 
-	*(volatile int *)0xbff10204 |= 0x40000000;
-    
-	//*(volatile int *)0xbfd00424 |= 0x80000000;
-#endif
+	/*usb reset*/
+	*(volatile unsigned int *)0xbfd00424 &= ~(1 << 31);
+	delay(100);
+	*(volatile unsigned int *)0xbfd00424 |= (1 << 31);
+
 
     *((volatile unsigned int *)0xbfd00424) &= ~(7 << 28); //lxy  MII mode
 #ifdef RMII
