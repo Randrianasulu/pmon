@@ -228,6 +228,7 @@ select gzip
 option INPUT_FROM_BOTH
 option OUTPUT_TO_BOTH
 select nand
+select nand_bch
 select cmd_xyzmodem
 select loop
 select raw_ether
