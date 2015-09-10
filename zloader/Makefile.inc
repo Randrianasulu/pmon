@@ -71,7 +71,7 @@ all: ${tgt}
 sim: clean pmon.bin.c
 	gcc -o zloader  -DSIM zloader.c
 ejtag_rom ejtag_rom1 ejtag_ram rom: clean ${START} zloader.o 
-	gcc  -DSTARTADDR=${GZROMSTARTADDR} -D_ROM1 -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ld.script
+	gcc  -DSTARTADDR=${GZROMSTARTADDR} -D_NOALIGN -DOUT_FORMAT=\"${OUT_FORMAT}\" -DOUT_ARCH=mips -Umips -E -P ld.script.S  > ld.script
 	${LD} -T ld.script -e start -g -o gzrom ${START} zloader.o 
 	${CROSS_COMPILE}objcopy -O binary gzrom gzrom.bin
 
