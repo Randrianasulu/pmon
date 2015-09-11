@@ -89,18 +89,18 @@ extern char           *heaptop;
 
 #ifdef NVRAM_IN_FLASH
 #	define	NVRAM_SIZE		512
-#	define	NVRAM_SECSIZE		NVRAM_SECSIZE
+#	define	NVRAM_SECSIZE		0x10000
 #	define	NVRAM_OFFS		0x00070000
 #	define	NVRAM_POS		NVRAM_OFFS
-#	define ETHER_OFFS		(NVRAM_SIZE-6) 	/* Ethernet address base */
-#	define PLL_OFFS			(ETHER_OFFS-10)
+#	define ETHER_OFFS		NVRAM_SIZE 	/* Ethernet address base */
+#	define PLL_OFFS			(ETHER_OFFS+6)
 #else	/* Use clock ram, 256 bytes only */
 #	define NVRAM_SECSIZE		2048	/* Helper */  /*nand flash  pagesize*/
 #	define NVRAM_SIZE	        (NVRAM_SECSIZE-16)
 #	define NVRAM_OFFS		0
 #	define NVRAM_POS	    0x70000
-#	define ETHER_OFFS		(NVRAM_SECSIZE-6) 	/* Ethernet address base */
-#	define PLL_OFFS			(ETHER_OFFS-10)
+#	define ETHER_OFFS		NVRAM_SIZE 	/* Ethernet address base */
+#	define PLL_OFFS			(ETHER_OFFS+6)
 #endif
 
 //#	define NVNAND_POS		0x3c0   /* the nand is  2k bytes per page,and 64 pages per block, 3c0th pages(byte addr is;0x1e0000) is 2m pmon  最后128k */
