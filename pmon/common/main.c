@@ -56,6 +56,7 @@
 #include <exec.h>
 #include <file.h>
 #include <sys/device.h>
+#include <grub.h>
 
 #include "mod_debugger.h"
 #include "mod_symbols.h"
@@ -118,7 +119,7 @@ get_line(char *line, int how)
 }
 #endif
 
-
+#if NGRUB
 static int load_menu_list()
 {
         char* rootdev = NULL;
@@ -196,6 +197,7 @@ static int load_menu_list()
         return 1;
 
 }
+#endif
 
 int check_user_password()
 {
@@ -390,8 +392,10 @@ main()
 	{
 
 		check_user_password();
+#if NGRUB
 		if(!getenv("al"))
 		load_menu_list();
+#endif
 	}
 
 {
