@@ -4,14 +4,14 @@ open(F,qq(objdump -x $ARGV[0]|));
 while(<F>)
 {
 chomp;
-if(/([0-9a-f]+).+_edata/){
+if(/([0-9a-f]+).+\s_edata/){
    $myedata=qq(0x$1);
  }
 
-if(/([0-9a-f]+).+_end$/){
+if(/([0-9a-f]+).+\s_end$/){
    $myend=qq(0x$1);
  }
-if(/([0-9a-f]+).+initmips$/){
+if(/([0-9a-f]+).+\sinitmips$/){
    $myinitmips=qq(0x$1);
  }
 if(/([0-9a-f]+).+\s_start$/){
