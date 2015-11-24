@@ -289,58 +289,93 @@ int spi_erase_area(unsigned int saddr,unsigned int eaddr,unsigned sectorsize)
     return 0;
 }
 
-void spi_write_page(unsigned int addr,unsigned char *buf,unsigned int num)
+
+int spi_write_bytes(unsigned int addr,unsigned char *buffer, int size)
 {
-    /*byte_prog$31m,CE 0, cmd 0x2,addr2,addr1,addr0,data in,CE 1*/
-    unsigned char addr2,addr1,addr0;
-    unsigned int i,real_num;
-    addr2 = (addr & 0xff0000)>>16;
-    addr1 = (addr & 0x00ff00)>>8;
-    addr0 = (addr & 0x0000ff);
-    set_wren();
-    wait_sr();
-    real_num = min(num,SPIF_PAGE_SIZE);
+	int i;
+    /*byte_program,CE 0, cmd 0x2,addr2,addr1,addr0,data in,CE 1*/
+	unsigned char addr2,addr1,addr0;
+        unsigned char val;
+	addr2 = (addr & 0xff0000)>>16;
+    	addr1 = (addr & 0x00ff00)>>8;
+	addr0 = (addr & 0x0000ff);
+	size = (size>(256-addr0))?(256-addr0):size;
+        set_wren();
+	//wait_sr();
 
-    CS_L;
-    SEND_CMD(0x2);
-    SEND_DATA(addr2);
-    SEND_DATA(addr1);
-    SEND_DATA(addr0);
-    for(i=0;i<real_num;i++){
-        SEND_DATA(buf[i]);
-    }
-    CS_H;
+	CS_L;
+	/*write 5 data to fifo, depth>4?*/
 
+        SET_SPI(TXFIFO,0x2);/*byte_program */
+        
+        /*send addr2*/
+        SET_SPI(TXFIFO,addr2);     
+        /*send addr1*/
+        SET_SPI(TXFIFO,addr1);
+        /*send addr0*/
+        SET_SPI(TXFIFO,addr0);
+
+	for(i=0;i<4;i++)
+	{
+        while((GET_SPI(SPSR)&RFEMPTY) == RFEMPTY);
+        val = GET_SPI(RXFIFO);
+	}
+
+	for(i=0;i<size;i++)
+	{
+        /*send data(one byte)*/
+       	SET_SPI(TXFIFO,buffer[i]);
+
+
+        while((GET_SPI(SPSR)&RFEMPTY) == RFEMPTY);
+        val = GET_SPI(RXFIFO);
+	}
+        
+        /*CE 1*/
+        CS_H;
+
+	return size;	
+}
+
+
+int spi_write_area_page(int flashaddr,char *buffer,int size)
+{
+	int cnt;
+	spi_initw();
+	SET_SPI(0x5,0x10);
+	write_sr(0x00);
+        for(;size > 0;)
+        {
+		if((flashaddr&0xfffff)==0)printf("%x\n",flashaddr);
+            cnt = spi_write_bytes(flashaddr,buffer, size);
+	    size -= cnt;
+	    flashaddr += cnt;
+	    buffer += cnt;
+        }
+
+	SET_SPI(SOFTCS,0x11);
+	delay(10);
+	return 0;
 }
 
 
 int spi_write_area(int flashaddr,char *buffer,int size)
 {
-    int j,i;
-    spi_initw();
+	int j,i;
+	if(getenv("spi-page")){
+		spi_write_area_page(flashaddr, buffer, size);
+	}else{
+		spi_initw();
 
-    write_sr(0x00);
-    if(getenv("spi-page")){
-        for(j=0;(size > 0 &&(flashaddr & (SPIF_PAGE_SIZE -1 )));flashaddr++,size--,j++){
-            spi_write_byte(flashaddr,*buffer++);
-        }
-        for(;size >= SPIF_PAGE_SIZE;){
-            spi_write_page(flashaddr,buffer,SPIF_PAGE_SIZE);
-            buffer += SPIF_PAGE_SIZE;
-            flashaddr += SPIF_PAGE_SIZE;
-            size -= SPIF_PAGE_SIZE;
-            j += SPIF_PAGE_SIZE;
-        } 
-        spi_write_page(flashaddr,buffer,size);
-    }else{
-        for(j=0;size > 0;flashaddr++,size--,j++)
-        {
-            //        if((j&0xffff)==0)printf("%x\n",j);
-            spi_write_byte(flashaddr,buffer[j]);
-        }
-    }
-    wait_sr();
-    return 0;
+		write_sr(0x00);
+		for(j=0;size > 0;flashaddr++,size--,j++)
+		{
+			//        if((j&0xffff)==0)printf("%x\n",j);
+			spi_write_byte(flashaddr,buffer[j]);
+		}
+		wait_sr();
+	}
+	return 0;
 }
 
 
