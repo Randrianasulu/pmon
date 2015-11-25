@@ -395,6 +395,7 @@ cpu_win_fixup:
         // mmap[1:0] -> destination
         //
         // NOTE: the address windows has priority, win0 > win1 > ... > win7
+        set_cpu_window(7, 0x1fc00000, 0xfff00000, 0x1fc000f3) // boot rom
         set_cpu_window(0, 0x1fc00000, 0xfff00000, 0x1fc000f3) // boot rom
         set_cpu_window(1, 0x10000000, 0xf8000000, 0x10000081) // PCI mem0, mem1,    disabled
         set_cpu_window(2, 0x18000000, 0xfc000000, 0x18000081) // PCI mem2           disabled
