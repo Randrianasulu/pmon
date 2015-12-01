@@ -583,7 +583,7 @@ static int check_volume_empty(struct ubifs_info *c)
  * Note, the function does not de-allocate resources it it fails half way
  * through, and the caller has to do this instead.
  */
-static int mount_ubifs(struct ubifs_info *c)
+int mount_ubifs(struct ubifs_info *c)
 {
 //	puts("in mount_ubifs!!");
 	struct super_block *sb = c->vfs_sb;
