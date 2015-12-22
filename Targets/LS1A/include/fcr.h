@@ -72,7 +72,7 @@ extern char           *heaptop;
 #	define	NVRAM_OFFS		0x00070000
 #	define	NVRAM_POS		NVRAM_OFFS
 #	define ETHER_OFFS		(NVRAM_SIZE) 	/* Ethernet address base */
-#	define PLL_OFFS			(ETHER_OFFS+6)
+#	define PLL_OFFS			(ETHER_OFFS+8)
 #	define XRES_OFFS		(PLL_OFFS+8)
 #	define YRES_OFFS		(XRES_OFFS+2)
 #	define DEPTH_OFFS		(YRES_OFFS+2)
@@ -82,7 +82,7 @@ extern char           *heaptop;
 #	define NVRAM_OFFS		0
 #	define NVRAM_POS	    0x70000
 #	define ETHER_OFFS		(NVRAM_SIZE) 	/* Ethernet address base */
-#	define PLL_OFFS			(ETHER_OFFS+6)
+#	define PLL_OFFS			(ETHER_OFFS+8)
 #	define XRES_OFFS		(PLL_OFFS+8)
 #	define YRES_OFFS		(XRES_OFFS+2)
 #	define DEPTH_OFFS		(YRES_OFFS+2)
