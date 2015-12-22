@@ -136,7 +136,7 @@ loopdev0	at mainbus0
 
 #lakers0		at localbus0
 syn0		at localbus0
-syn1		at localbus0
+#syn1		at localbus0
 option GMAC_PHY_BASE=1
 option GMAC0_ADDR=0xbfe10000
 option GMAC1_ADDR=0xbfe20000
@@ -218,3 +218,5 @@ select tgtcmd
 select memscan
 select hpet
 option CONFIG_USB_HOTPLUG
+#select ubi
+#select ubifs
