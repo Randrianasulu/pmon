@@ -139,6 +139,7 @@ void __gccmain(void){}
 int
 main(int argc, char **argv, char **env, struct callvectors *cv)
 {
+	callvec = cv;
 	printf("begin guess\n");
 	mymain(0,0);
 	return(0);

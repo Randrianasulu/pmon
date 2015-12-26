@@ -20,7 +20,6 @@ OBJDUMP		= $(CROSS_COMPILE)objdump
 SIZE		= $(CROSS_COMPILE)size
 
 guess:	guess.c
-	${CC} -G 0 -O2 -EL -mips2  -Ttext=0x80200000 -N -Wl,-T ld.script -o guess guess.c -nostdlib -e main
-	cp guess /tftpboot
+	${CC} -G 0 -O2 -mips2  -Ttext=0x80200000 -N -Wl,-T ld.script -o guess guess.c -nostdlib -fno-pic -mno-abicalls -e main
 clean:
 	rm -f guess
