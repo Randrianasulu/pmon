@@ -129,6 +129,11 @@ void mv_error(unsigned long *adr, unsigned long good, unsigned long bad);
 void print_err( unsigned long *adr, unsigned long good, unsigned long bad, unsigned long xor);
 static void init_legacy_rtc(void);
 
+#include "netterm.h"
+#ifdef NNETTERM
+int netterm (int op, struct DevEntry *dev, unsigned long param, int data);
+#endif
+
 #ifdef CONFIG_EJTAG_SERIAL
 /*used for debug,only work on ejtag mode*/
 int ejtag_serial (int op, struct DevEntry *dev, unsigned long param, int data)
@@ -153,6 +158,7 @@ int ejtag_serial (int op, struct DevEntry *dev, unsigned long param, int data)
 }
 #endif
 
+
 ConfigEntry	ConfigTable[] =
 {
 #ifdef CONFIG_EJTAG_SERIAL
@@ -162,6 +168,9 @@ ConfigEntry	ConfigTable[] =
 #endif
 #if NMOD_VGACON >0 && NMOD_FRAMEBUFFER >0
 	{ (char *)1, 0, fbterm, 256, CONS_BAUD, NS16550HZ },
+#endif
+#if NNETTERM
+	{ (char *)2, 0, netterm, 256, CONS_BAUD, NS16550HZ },
 #endif
 	{ 0 }
 };
