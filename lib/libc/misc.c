@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include <sys/errno.h>
 
+#define ULONGLONG_MAX 0xffffffffffffffffUL
 #define ULONG_MAX 	4294967295UL
 #define LONG_MAX 	2147483647L
 #define LONG_MIN 	(-LONG_MAX-1)

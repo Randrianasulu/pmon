@@ -39,7 +39,7 @@
 #define INFO_W  80
 extern void delay1(int);
 extern void (*__cprint)(int y, int x,int width,char color, const char *text);
-static int pause()
+static int lpause()
 {
 char cmd[20];
 struct termio tbuf;
@@ -135,7 +135,7 @@ for(i=0;i<31;i++)
 			disktest();
 			break;
 	}
-	if(ac==2)	pause();
+	if(ac==2)	lpause();
 }
 
 

@@ -437,6 +437,7 @@ struct mii_if_info {
 
 static inline void netif_carrier_on(struct net_device *dev);
 static inline void netif_carrier_off(struct net_device *dev);
+static inline int netif_carrier_ok(struct net_device *dev);
 void mii_check_link (struct mii_if_info *mii)
 {
 	int cur_link = mii_link_ok(mii);
