@@ -432,3 +432,5 @@ file pmon/dev/md5.c
 #command: cat
 file pmon/cmds/cat.c	mod_cat
 file sys/dev/rtc/rtc-ds1308.c ds1308
+
+file pmon/dev/netterm.c netterm needs-flag
