@@ -177,11 +177,39 @@ ext_map_and_reboot:
 	b	exc_common
 
 	.align	7			/* bfc00480 */
-la	a0, v480_msg
-	bal	stringserial
-	nop
-b	exc_common
-	nop
+.set mips32
+    mtc0 k0, $31
+    lui k0, 0xFF30
+    sw k1, 0x2300(k0)
+
+    mfc0 k1, $23
+    sw k1, 0x2320(k0)
+    move gp, k1
+    andi k1, k1, 0x2
+    beqz k1, 1f
+    nop
+    
+    li k1, 0x80000000
+    sw k1, 0x2100(k0)
+    li k1, 0x0fffffff
+    sw k1, 0x2108(k0)
+    sw zero, 0x2110(k0)
+    li k1, 0xf1
+    sw k1, 0x2118(k0)
+    sw zero, 0x2120(k0) 
+    mfc0 k1, $24
+    addiu k1, 4
+    mtc0 k1, $24
+2:
+    lw k1, 0x2300(k0)
+    mfc0 k0, $31
+    deret
+1:
+    sw zero, 0x1000(k0)
+    sw zero, 0x2000(k0)
+    b 2b
+    nop
+.set mips0
 	
 	.align	8			/* bfc00500 */
 exc_common:
@@ -239,6 +267,9 @@ exc_common:
 locate:
 	la	s0,uncached
 	subu	s0,ra,s0
+        .set mips32
+	//sdbbp
+        .set mips0
 
 	#bal	CPU_TLBClear
 	#nop
