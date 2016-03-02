@@ -1755,12 +1755,40 @@ void set_phy_manu(synopGMACdevice * gmacdev)
 int init_phy(synopGMACdevice *gmacdev)
 {
 	u16 data;
-	
+
 	synopGMAC_read_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,2,&data);
 	/*set 88e1111 clock phase delay*/
 	if(data == 0x141)
-	 rtl88e1111_config_init(gmacdev);
-		return 0;
+		rtl88e1111_config_init(gmacdev);
+#if defined (RMII)
+	else if(data == 0x8201)
+	{
+		//RTL8201
+		data = 0x400;    // set RMII mode
+		synopGMAC_write_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x19,data);
+		synopGMAC_read_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x19,&data);
+		TR("phy reg25 is %0x \n",data);
+
+		data = 0x3100;    //set  100M speed
+		synopGMAC_write_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x0,data);
+	}
+	else if(data == 0x0180 || data == 0x0181)
+	{
+		//DM9161
+		synopGMAC_read_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x10,&data);
+		data |= (1 << 8);  //set RMII mode 
+		synopGMAC_write_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x10,data); //set RMII mode
+		synopGMAC_read_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x10,&data);
+		TR("phy reg16 is 0x%0x \n",data);
+
+		//	synopGMAC_read_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x0,&data);
+		//	data &= ~(1<<10);
+		data = 0x3100;  //set auto-
+		//data = 0x0100;    //set  10M speed
+		synopGMAC_write_phy_reg(gmacdev->MacBase,gmacdev->PhyBase,0x0,data);
+	}
+#endif
+	return 0;
 }
 
 
