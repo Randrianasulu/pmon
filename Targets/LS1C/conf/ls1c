@@ -67,7 +67,7 @@ select		elf32only
 #
 select		cmd_newmt
 select		cmd_setup
-select		mod_display
+#select		mod_display
 select		cmd_about		# Display info about PMON
 select		cmd_boot		# Boot wrapper
 select		cmd_mycmd
@@ -269,4 +269,4 @@ select      cmd_1c_bsp_test
 select      camera
 select      sdio
 #option		CONFIG_CHINESE
-
+option RMII
