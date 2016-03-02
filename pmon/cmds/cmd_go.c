@@ -152,6 +152,12 @@ extern char	*optarg;
 		strcat(clientcmd, buf);
 	}
 
+	if(getenv("mtdparts"))
+	{
+		strcat(clientcmd, " mtdparts=");
+		strcat(clientcmd, getenv("mtdparts"));
+	}
+
 	if (!sflag) {
 		md_adjstack(NULL, tgt_clienttos ());
 	}
