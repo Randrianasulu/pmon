@@ -1285,7 +1285,6 @@ int nand_flash_add_parts(struct mtd_info * soc_mtd ,int parts)
     return 0;
 }
 #endif 
-static char *mtd_id="nand-flash";
 int ls1g_soc_nand_init(void)
 {
  //       nand_gpio_read_id();
@@ -1322,7 +1321,11 @@ int ls1g_soc_nand_init(void)
             printf("error: PMON driver don't support the NANDFlash!\n ");
            return -ENXIO;
         }  
-        ls1g_soc_mtd->name=mtd_id;
+#ifdef LOONGSON_SOC_NAND_NAME
+        ls1g_soc_mtd->name=LOONGSON_SOC_NAND_NAME;
+#else
+        ls1g_soc_mtd->name="ls1x-nand";
+#endif
   
         if(!nand_flash_add_parts(ls1g_soc_mtd,0)){
             add_mtd_device(ls1g_soc_mtd,0,0x00e00000,"kernel");
