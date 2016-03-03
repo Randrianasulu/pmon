@@ -69,8 +69,6 @@
 #include "mod_vgacon.h"
 #include "mod_framebuffer.h"
 
-#define DEBUG_YG 0
-
 
 #if (NMOD_X86EMU_INT10 > 0)||(NMOD_X86EMU >0)
 extern int vga_bios_init(void);
@@ -136,7 +134,6 @@ void mv_error(unsigned long *adr, unsigned long good, unsigned long bad);
 void print_err( unsigned long *adr, unsigned long good, unsigned long bad, unsigned long xor);
 void init_legacy_rtc(void);
 
-/*** changed by sunyoung_yg 2015-07-04 *****/
 ConfigEntry	ConfigTable[] =
 {
 	 { (char *)COM_BASE, 0, ns16550, 256, CONS_BAUD, NS16550HZ},
@@ -148,19 +145,7 @@ ConfigEntry	ConfigTable[] =
 #endif
 	{ 0 }
 };
-/*
-ConfigEntry	ConfigTable[] =
-{
-	 { (char *)COM1_BASE_ADDR, 0, ns16550, 256, CONS_BAUD, NS16550HZ},
-#ifdef	HAVE_MUT_COM
-	 { (char *)COM3_BASE_ADDR, 0, ns16550, 256, CONS_BAUD, NS16550HZ},
-#endif
-#if NMOD_VGACON >0 && NMOD_FRAMEBUFFER >0
-	{ (char *)1, 0, fbterm, 256, CONS_BAUD, NS16550HZ },
-#endif
-	{ 0 }
-};
-*/
+
 unsigned long _filebase;
 
 extern int memorysize;
@@ -589,67 +574,12 @@ void _probe_frequencies(void)
 	
 	/*clock manager register*/
 #define PLL_FREQ_REG(x) *(volatile unsigned int *)(0xbfe78030+x)
-#ifdef LS1ASOC
-	{
-		int val= PLL_FREQ_REG(0);
-		md_pipefreq = ((val&7)+1)*APB_CLK;        /* NB FPGA*/
-		md_cpufreq  =  (((val>>8)&7)+3)*APB_CLK;
-	}
-/*
-#elif defined    LS1BSOC
-	{
-		int pll,ctrl,clk;
-		pll=PLL_FREQ_REG(0);
-		ctrl=PLL_FREQ_REG(4);
-		clk=(12+(pll&0x3f))*33333333/2 + ((pll>>8)&0x3ff)*33333333/2/1024;
-		md_pipefreq = ((ctrl&0x300)==0x300)?33333333:(ctrl&(1<<25))?clk/((ctrl>>20)&0x1f):clk/2;
-		md_cpufreq  = ((ctrl&0xc00)==0xc00)?33333333:(ctrl&(1<<19))?clk/((ctrl>>14)&0x1f):clk/2;
-	}
-*/
-#else
-#if 0  //ori
-		unsigned int val = *(volatile unsigned int *)0xbfe78030;
-		md_pipefreq = ((val >> 8) & 0xff) * 6 / 2 * 1000000 ;
-		val = (1 << ((val & 0x3) + 1)) % 5;
-		md_cpufreq  = md_pipefreq / val;
-#else  //by zmz
 		unsigned int val = *(volatile unsigned int *)0xbfe78030;
 		unsigned int cpu_div = *(volatile unsigned int*)0xbfe78034;
 		cpu_div = (cpu_div >> 8) & 0x3f;
 		md_pipefreq = ((val >> 8) & 0xff) * 6 / cpu_div * 1000000 ;
 		val = (1 << ((val & 0x3) + 1)) % 5;
 		md_cpufreq  = md_pipefreq / val;
-#endif
-#if 0
-		float aa=0;
-             static    int bb=0;
-                //md_pipefreq = ((val >> 8) & 0xff) * 6 / 2 * 1000000 ;
-		//val = (1 << ((val & 0x3) + 1)) % 5;
-		//md_cpufreq  = md_pipefreq / val;
-		//aa = (APB_CLK/4/CPU_DIV*((val>>8 & 0xff)+(val >>16 &0xff)*1.0/256)) ;
-		//bb = (int)(APB_CLK/4/CPU_DIV*((val>>8 & 0xff)+(val >>16 &0xff)*1.0/256)) ;
-	        //val = 0x7fffffff;
-	        //val =   0x80000000;
-                //tgt_printf("val====0x%08x\n",val);
-                
-                //bb = (int)((0x8064409c)*1.0/1) ;
-                //bb = (int)((val)*1.0/1) ;
-                //bb = (int)((val)*1.0/1) ;
-                //while(1);
-		//kkkk = (int)(APB_CLK/4/CPU_DIV*((val>>8 & 0xff)+(val >>16 &0xff)*1.0/256)) ;
-		//md_pipefreq = (int)(APB_CLK/4/CPU_DIV*((val>>8 & 0xff)+(val >>16 &0xff)*1.0/256)) ;
-  //              printf("aa===%f\n",aa);
-		//md_pipefreq =(int) (APB_CLK/4/CPU_DIV*((val>>8 & 0xff)+(val >>16 &0xff)*1.0/256)) ;
-		md_pipefreq =(int) (APB_CLK/4/CPU_DIV*((val>>8 & 0xff)+(val >>16 &0xff)/256)) ;
-    #ifdef CPU_2_SDRAM_DIV2 
-                md_cpufreq  = md_pipefreq /2 ;
-    #elif defined CPU_2_SDRAM_DIV3                
-                md_cpufreq  = md_pipefreq /3 ;
-    #else                
-                md_cpufreq  = md_pipefreq /4 ;  
-    #endif
-#endif
-#endif
 
 //clk_invalid用于标记RTC是否有效 1：无效 0：有效
 #ifdef HAVE_TOD
@@ -658,8 +588,7 @@ void _probe_frequencies(void)
 #endif
 //如果定义了HAVE_TOD即使用RTC实时时钟（loongson 1B 有实时时钟模块）则执行下面的代码 用于计算CPU和总线(内存)的频率
 //这会导致1-2秒钟的延时
-//#ifdef HAVE_TOD
-#if 0
+#if 0//def HAVE_TOD
 	int i, timeout, cur, sec, cnt;
 	unsigned int v;
 	init_legacy_rtc();
@@ -884,15 +813,6 @@ tgt_flashprogram(void *p, int size, void *s, int endian)
 
 /*add by hb, test program nand flash*/
 #ifdef NAND_BOOT
- void
-tgt_nand_flashinfo(void *p, size_t *t)
-{
-
-//	printf("tgt_nand_flashinfo\n");
-	nand_probe_boot();
-	
-	*t = 128*1024;  //  128M
-}
 /*********************************************************
  *p   : flashaddr  (bytes)
  *size: size (bytes)
@@ -974,30 +894,11 @@ tgt_mapenv(int (*func) __P((char *, char *)))
 	printf("nvram=%08x\n",(unsigned int)nvram);
 	if(fl_devident(nvram, NULL) == 0 ||
            cksum(nvram + NVRAM_OFFS, NVRAM_SIZE, 0) != 0) {
-#else /**/ 
-	size_t * flashsize;
-	tgt_nand_flashinfo(NVNAND_POS, &flashsize );  /*初始化 nand 相关结构体*/
+#else
+	nand_probe_boot();
     nvram = (char *)malloc(NVRAM_SECSIZE);
-
-#if DEBUG_YG
-	unsigned char buf[2048];
-//	memset(buf, 0x55, 2048);
-	for(i=0;i<2048; i++)
-		buf[i] = i&0xff;
-	nvram_put(buf);
-#endif
 	memset(nvram, 0, NVRAM_SECSIZE);
 	nvram_get(nvram);
-#endif
-#if DEBUG_YG
-	i = strncmp(buf, nvram, NVRAM-SECSIZE);
-	printf(" ----------------------------------------dbg-yg i = %d ...\r\n", i);
-	for(i=0; i<100; i++)
-	{
-		if(i%16==0) printf("\r\n");
-		printf(" 0x%02x ",nvram[i]);
-		
-	}
 #endif
 	if(cksum(nvram, NVRAM_SIZE, 0) != 0) {
 		        printf("NVRAM is invalid!\n");
@@ -1017,7 +918,7 @@ tgt_mapenv(int (*func) __P((char *, char *)))
                                 }
                         }
                         if(ep <= nvram + NVRAM_SIZE - 1 && i < 255) {
-                                (*func)(env, val);  /* env 是pmon下 set 时显示的“=”左边的变量，val是右边的字符串*/
+                                (*func)(env, val);
                         }
                         else {
                                 nvram_invalid = 2;
@@ -1026,7 +927,6 @@ tgt_mapenv(int (*func) __P((char *, char *)))
                 }
         }
 
-	printf(" -----------------dbg-yg  nvram_invalid is %d .......\r\n", nvram_invalid);
 	printf("NVRAM@%x\n",(u_int32_t)nvram);
 
 	/*
@@ -1117,7 +1017,7 @@ tgt_unsetenv(char *name)
                 if((*np == '\0') && ((*ep == '\0') || (*ep == '='))) {
                         while(*ep++);
                         while(ep < nvrambuf + NVRAM_SIZE) {
-                                *sp++ = *ep++;  /*   */
+                                *sp++ = *ep++;
                         }
                         if(nvrambuf[2] == '\0') {
                                 nvrambuf[3] = '\0';
@@ -1199,7 +1099,7 @@ tgt_setenv(char *name, char *value)
                 nvrambuf[2] = '\0';
                 nvrambuf[3] = '\0';
                 cksum((void *)nvrambuf, NVRAM_SIZE, 1);
-		printf("Warning! NVRAM checksum fail. Reset!\n");  //???
+		printf("Warning! NVRAM checksum fail. Reset!\n");
 #ifdef NVRAM_IN_FLASH
                 if(fl_erase_device(nvram, NVRAM_SECSIZE, FALSE)) {
 			printf("Error! Nvram erase failed!\n");
@@ -1282,7 +1182,7 @@ tgt_setenv(char *name, char *value)
 				*ep++ = '\0';
 			}
 		}
-		else {  /*把命令行下 name 和 value 加入字符串，并中间加上=*/
+		else {
 			while(*name != '\0') {
 				*ep++ = *name++;
 			}
@@ -1359,7 +1259,7 @@ nvram_get(char *buffer)
 	int i;
 	unsigned char *ptr;
 
-    ptr = 	nand_read_boot(NVNAND_POS<<6, buffer, 2);  //2 is EDC
+    ptr = 	nand_read_boot(NVNAND_PAGE, buffer, 2);  //2 is EDC
 	memcpy(buffer, ptr, NVRAM_SECSIZE);
 
 #else	
@@ -1374,8 +1274,7 @@ nvram_put(char *buffer)
 	int i;
 
 #ifdef NAND_BOOT
-	size_t * flashsize;
-	tgt_nand_flashprogram( NVNAND_POS, NVRAM_SECSIZE, (void *)buffer, 0);
+	tgt_nand_flashprogram( NVNAND_BLOCK, NVRAM_SECSIZE, (void *)buffer, 0);
 #else
 	spi_erase_area(NVRAM_POS,NVRAM_POS+NVRAM_SECSIZE,0x10000);
 	spi_write_area(NVRAM_POS,buffer,NVRAM_SECSIZE);

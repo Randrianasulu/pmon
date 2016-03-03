@@ -103,9 +103,9 @@ extern char           *heaptop;
 #	define PLL_OFFS			(ETHER_OFFS+6)
 #endif
 
-//#	define NVNAND_POS		0x3c0   /* the nand is  2k bytes per page,and 64 pages per block, 3c0th pages(byte addr is;0x1e0000) is 2m pmon  最后128k */
 
-#	define NVNAND_POS		15
+#	define NVNAND_BLOCK		((0x100000-2048*64)/2048/64)
+#	define NVNAND_PAGE (NVNAND_BLOCK*64)
 
 #endif
 /*********************************************************************/
