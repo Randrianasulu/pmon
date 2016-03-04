@@ -47,7 +47,6 @@ int   ubifs_close (int);
 int   ubifs_read (int, void *, size_t);
 int   ubifs_write (int, const void *, size_t);
 off_t ubifs_lseek (int, off_t, int);
-
 DECLARE_GLOBAL_DATA_PTR;
 
 /* compress.c */
@@ -1099,6 +1098,7 @@ ubifs_open(int fd, const char *path, int flags, int mode)
 		return -1;
 	filename=poffset2;
 	mtdfile *p;
+
         LIST_FOREACH(p, &mtdfiles, i_next)
         {
 		if(p->index==mtdx)
@@ -1109,6 +1109,9 @@ ubifs_open(int fd, const char *path, int flags, int mode)
 		puts("there is no MTD device numberd %d!!\n",mtdx);
 		return -1;
 	}
+/*modify by niu*/
+mtd_offset = p->part_offset;
+mtd_size   = p->part_size;
 	mt=p->mtd;
 	if((ubinum=ubi_attach_mtd_dev(mt, 0, 0))<0)
 	{

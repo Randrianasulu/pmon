@@ -912,7 +912,7 @@ struct ubi_scan_info *ubi_scan(struct ubi_device *ubi)
 {
 //	puts("ubi_scan!!");
 //	printf("mtd=%p,mtd->priv=%p\n",ubi->mtd,ubi->mtd->priv);
-	int err, pnum;
+	int err, pnum,i,num;
 	struct rb_node *rb1, *rb2;
 	struct ubi_scan_volume *sv;
 	struct ubi_scan_leb *seb;
@@ -938,7 +938,15 @@ struct ubi_scan_info *ubi_scan(struct ubi_device *ubi)
 	if (!vidh)
 		goto out_ech;
 
+
+/*modify by niu to add the mtd part information*/
+#if 0
 	for (pnum = 0; pnum < ubi->peb_count; pnum++) {
+#else
+pnum = mtd_offset/ubi->mtd->erasesize;
+num  = mtd_size /ubi->mtd->erasesize;
+	for (i=0; i < num; i++,pnum++) {
+#endif
 //		puts("before con_resched!!");
 		cond_resched();
 //		puts("after con_resched!!");

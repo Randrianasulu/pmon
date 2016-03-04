@@ -51,7 +51,9 @@
 #include "scan2.h"
 #include "debug2.h"
 
-
+/*modify by niu to distinguish the mtd parts*/
+int mtd_offset;
+int mtd_size;
 /* Maximum number of supported UBI devices */
 #define UBI_MAX_DEVICES 32
 
