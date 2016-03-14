@@ -128,6 +128,7 @@ struct usb_linux_config_descriptor {
 #else
 #define hc32_to_cpu(x)		le32_to_cpu((x))
 #define cpu_to_hc32(x)		cpu_to_le32((x))
+#define virt_to_hc32(x)		cpu_to_le32(CACHED_TO_PHYS(x))
 #endif
 
 /*
@@ -393,11 +394,15 @@ do {									\
 
 /* Queue Element Transfer Descriptor (qTD). */
 struct qTD {
-	uint32_t qt_next;
+	/* this part defined by EHCI spec */
+	uint32_t qt_next;		/* see EHCI 3.5.1 */
 #define	QT_NEXT_TERMINATE	1
-	uint32_t qt_altnext;
-	uint32_t qt_token;
-	uint32_t qt_buffer[5];
+	uint32_t qt_altnext;		/* see EHCI 3.5.2 */
+	uint32_t qt_token;		/* see EHCI 3.5.3 */
+	uint32_t qt_buffer[5];		/* see EHCI 3.5.4 */
+	uint32_t qt_buffer_hi[5];	/* Appendix B */
+	/* pad struct for 32 byte alignment */
+	uint32_t unused[3];
 };
 
 /* Queue Head (QH). */
