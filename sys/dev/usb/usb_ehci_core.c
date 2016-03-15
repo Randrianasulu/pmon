@@ -937,6 +937,7 @@ static void lehci_attach(struct device *parent, struct device *self, void *aux)
 
 	struct ehci *ehci= (struct ehci*)self;
 	struct confargs *cf = aux;
+	hccr = (struct ehci_hccr *)cf->ca_baseaddr;
 	
 
 	dev_index = 0;

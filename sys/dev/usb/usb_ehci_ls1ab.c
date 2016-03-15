@@ -28,14 +28,6 @@
  */
 int ehci_hcd_init(void)
 {
-#if defined  (CONFIG_CPU_LOONGSON1A)
-	unsigned int mux_val = ehci_readl(0xbff10204);
-	ehci_writel(0xbff10204,0x40000000 | mux_val);
-#elif defined  (CONFIG_CPU_LOONGSON1B)
-	unsigned int mux_val = ehci_readl(0xbfd00424);
-	ehci_writel(0xbfd00424,0x80000000 | mux_val);
-#endif
-	hccr = (struct ehci_hccr *)(0xbfe00000);
 	hcor = (struct ehci_hcor *)((uint32_t) hccr
 			+ HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 	//printf("LS1A/B init hccr %x,and hcor %x hc_length %d,hcsparams=%d,hccparams=%d\n",(uint32_t) hccr,(uint32_t) hcor,HC_LENGTH(ehci_readl(&hccr->cr_capbase)),ehci_readl(&hccr->cr_hcsparams),ehci_readl(&hccr->cr_hccparams));
