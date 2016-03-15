@@ -292,6 +292,11 @@ initmips(unsigned int memsz)
 	SBD_DISPLAY("BEV0",0);
 	
 	printf("BEV in SR set to zero.\n");
+/*fix cpu guess window*/
+//asm volatile("mtc0 %0,$22,5;mtc0 %1, $22, 4; mtc0 %2, $22, 5;mtc0 %3, $22, 4;mtc0 %4,$22,7"::"r"(0),"r"(0x10000000),"r"(1),"r"(0xf0000000),"r"(1));
+*(volatile int *)0xbfd80080 = 0x1fc00083;
+*(volatile int *)0xbfd800a0 = 0x1c200082;
+*(volatile int *)0xbfd800a8 = 0x1f000083;
 #if NNAND
 #ifdef LS1FSOC
 	/*mutex nand use lpc pin*/
