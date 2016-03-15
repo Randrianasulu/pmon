@@ -1901,6 +1901,8 @@ void usb_hub_port_connect_change(struct usb_device *dev, int port)
 		/* Woops, disable the port */
 		USB_HUB_PRINTF("hub: disabling port %d\n", port + 1);
 		usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_ENABLE);
+		usb_disconnect(dev->children[port]);
+		dev->children[port] = NULL;
 	}
 }
 
