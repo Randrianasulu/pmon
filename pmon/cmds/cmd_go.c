@@ -53,6 +53,10 @@
 #include "mod_usb_uhci.h"
 #include "mod_usb_ohci.h"
 #include "initrd.h"
+#ifdef INET
+#include <sys/sys/socket.h>
+#include <sys/net/if.h>
+#endif
 
 extern struct trapframe DBGREG;
 extern struct trapframe TRPREG;
@@ -182,6 +186,21 @@ extern char	*optarg;
 #if NMOD_USB_OHCI !=0
 	usb_ohci_stop();
 #endif
+
+#ifdef INET
+	{
+	register struct ifnet *ifp;
+	for (ifp = ifnet.tqh_first; ifp != 0; ifp = ifp->if_list.tqe_next)
+	 {
+		 if (ifp->if_flags & IFF_UP)
+		 {
+			 if_down(ifp);
+			 ifp->if_ioctl(ifp, SIOCSIFFLAGS, 0);
+		 }
+	 }
+	}
+#endif
+
 #if NMOD_DEBUGGER > 0
 	if (setjmp (go_return_jump) == 0) {	
 		goclient ();
