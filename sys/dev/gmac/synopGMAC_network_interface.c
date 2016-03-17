@@ -581,8 +581,7 @@ s32 synopGMAC_setup_rx_desc_queue(synopGMACdevice * gmacdev,u32 no_of_desc, u32 
   * \note No referece should be made to descriptors once this function is called. This function is invoked when the device is closed.
   */
 
-/*
-void synopGMAC_giveup_rx_desc_queue(synopGMACdevice * gmacdev, struct pci_dev *pcidev, u32 desc_mode)
+void synopGMAC_giveup_rx_desc_queue(synopGMACdevice * gmacdev, u32 desc_mode)
 {
 s32 i;
 
@@ -600,17 +599,17 @@ if(desc_mode == RINGMODE){
 	for(i =0; i < gmacdev -> RxDescCount; i++){
 		synopGMAC_get_desc_data(gmacdev->RxDesc + i, &status, &dma_addr1, &length1, &data1, &dma_addr2, &length2, &data2);
 		if((length1 != 0) && (data1 != 0)){
-			pci_unmap_single(pcidev,dma_addr1,0,PCI_DMA_FROMDEVICE);
-			dev_kfree_skb((struct sk_buff *) data1);	// free buffer1
+			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_R);
+			plat_free_memory(data1);	// free buffer1
 			TR("(Ring mode) rx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
 		if((length2 != 0) && (data2 != 0)){
-			pci_unmap_single(pcidev,dma_addr2,0,PCI_DMA_FROMDEVICE);
-			dev_kfree_skb((struct sk_buff *) data2);	//free buffer2
+			plat_dma_map_single(gmacdev,data2,RX_BUF_SIZE,SYNC_R);
+			plat_free_memory(data2);	//free buffer2
 			TR("(Ring mode) rx buffer2 %08x of size %d from %d rx descriptor is given back\n",data2, length2, i);
 		}
 	}
-	plat_free_consistent_dmaable_memory(pcidev,(sizeof(DmaDesc) * gmacdev->RxDescCount),gmacdev->RxDesc,gmacdev->RxDescDma); //free descriptors memory
+	plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc) * gmacdev->RxDescCount),gmacdev->RxDesc,gmacdev->RxDescDma); //free descriptors memory
 	TR("Memory allocated %08x  for Rx Desriptors (ring) is given back\n",(u32)gmacdev->RxDesc);
 }
 else{
@@ -621,11 +620,11 @@ else{
 		synopGMAC_get_desc_data(first_desc, &status, &dma_addr1, &length1, &data1, &dma_addr2, &length2, &data2);
 		TR("%02d %08x %08x %08x %08x %08x %08x %08x\n",i,(u32)first_desc,first_desc->status,first_desc->length,first_desc->buffer1,first_desc->buffer2,first_desc->data1,first_desc->data2);
 		if((length1 != 0) && (data1 != 0)){
-			pci_unmap_single(pcidev,dma_addr1,0,PCI_DMA_FROMDEVICE);
-			dev_kfree_skb((struct sk_buff *) data1);	// free buffer1
+			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_R);
+			plat_free_memory(data1);	// free buffer1
 			TR("(Chain mode) rx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
-		plat_free_consistent_dmaable_memory(pcidev,(sizeof(DmaDesc)),first_desc,first_desc_dma_addr); //free descriptors
+		plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc)),first_desc,first_desc_dma_addr); //free descriptors
 		TR("Memory allocated %08x for Rx Descriptor (chain) at  %d is given back\n",data2,i);
 
 		first_desc = (DmaDesc *)data2;
@@ -638,7 +637,6 @@ gmacdev->RxDesc    = NULL;
 gmacdev->RxDescDma = 0;
 return;
 }
-*/
 
 /**
   * This gives up the transmit Descriptor queue in ring or chain mode.
@@ -660,8 +658,7 @@ return;
   * \note No reference should be made to descriptors once this function is called. This function is invoked when the device is closed.
   */
 
-/*
-void synopGMAC_giveup_tx_desc_queue(synopGMACdevice * gmacdev,struct pci_dev * pcidev, u32 desc_mode)
+void synopGMAC_giveup_tx_desc_queue(synopGMACdevice * gmacdev, u32 desc_mode)
 {
 s32 i;
 
@@ -679,17 +676,17 @@ if(desc_mode == RINGMODE){
 	for(i =0; i < gmacdev -> TxDescCount; i++){
 		synopGMAC_get_desc_data(gmacdev->TxDesc + i,&status, &dma_addr1, &length1, &data1, &dma_addr2, &length2, &data2);
 		if((length1 != 0) && (data1 != 0)){
-			pci_unmap_single(pcidev,dma_addr1,0,PCI_DMA_TODEVICE);
-			dev_kfree_skb((struct sk_buff *) data1);	// free buffer1
+			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_W);
+			plat_free_memory(data1);	// free buffer1
 			TR("(Ring mode) tx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
 		if((length2 != 0) && (data2 != 0)){
-			pci_unmap_single(pcidev,dma_addr2,0,PCI_DMA_TODEVICE);
-			dev_kfree_skb((struct sk_buff *) data2);	//free buffer2
+			plat_dma_map_single(gmacdev,data2,RX_BUF_SIZE,SYNC_W);
+			plat_free_memory(data2);	//free buffer2
 			TR("(Ring mode) tx buffer2 %08x of size %d from %d rx descriptor is given back\n",data2, length2, i);
 		}
 	}
-	plat_free_consistent_dmaable_memory(pcidev,(sizeof(DmaDesc) * gmacdev->TxDescCount),gmacdev->TxDesc,gmacdev->TxDescDma); //free descriptors
+	plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc) * gmacdev->TxDescCount),gmacdev->TxDesc,gmacdev->TxDescDma); //free descriptors
 	TR("Memory allocated %08x for Tx Desriptors (ring) is given back\n",(u32)gmacdev->TxDesc);
 }
 else{
@@ -700,11 +697,11 @@ else{
 		synopGMAC_get_desc_data(first_desc, &status, &dma_addr1, &length1, &data1, &dma_addr2, &length2, &data2);
 		TR("%02d %08x %08x %08x %08x %08x %08x %08x\n",i,(u32)first_desc,first_desc->status,first_desc->length,first_desc->buffer1,first_desc->buffer2,first_desc->data1,first_desc->data2);
 		if((length1 != 0) && (data1 != 0)){
-			pci_unmap_single(pcidev,dma_addr1,0,PCI_DMA_TODEVICE);
-			dev_kfree_skb((struct sk_buff *) data2);	// free buffer1
+			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_W);
+			plat_free_memory(data1);	// free buffer1
 			TR("(Chain mode) tx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
-		plat_free_consistent_dmaable_memory(pcidev,(sizeof(DmaDesc)),first_desc,first_desc_dma_addr); //free descriptors
+		plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc)),first_desc,first_desc_dma_addr); //free descriptors
 		TR("Memory allocated %08x for Tx Descriptor (chain) at  %d is given back\n",data2,i);
 
 		first_desc = (DmaDesc *)data2;
@@ -717,7 +714,6 @@ gmacdev->TxDesc    = NULL;
 gmacdev->TxDescDma = 0;
 return;
 }
-*/
 
 
 /**
@@ -1003,6 +999,7 @@ int synopGMAC_intr_handler(struct synopGMACNetworkAdapter * tp)
         }
 
 	ifp = &(adapter->PInetdev->arpcom.ac_if);
+	if(!(adapter->PInetdev->flags & 1)) return;
 
 	if(gmacdev->LinkState == LINKUP)
 	ifp->if_flags = ifp->if_flags | IFF_RUNNING;
@@ -1404,9 +1401,7 @@ unsigned long synopGMAC_linux_open(struct synopGMACNetworkAdapter *tp)
 	synopGMAC_check_phy_init(adapter);
 	synopGMAC_mac_init(gmacdev);
 	
-		PInetdev->sc_ih = pci_intr_establish(0, 0, IPL_NET, synopGMAC_intr_handler, adapter, 0);
-		TR("register poll interrupt: gmac 0\n");
-
+        PInetdev->flags |= 1;
 	return retval;
 
 }
@@ -1430,23 +1425,16 @@ unsigned long synopGMAC_linux_open(struct synopGMACNetworkAdapter *tp)
  * \callgraph
  */
 
-/*
-s32 synopGMAC_linux_close(struct net_device *netdev)
+s32 synopGMAC_linux_close(struct synopGMACNetworkAdapter *tp)
 {
 	
 //	s32 status = 0;
 //	s32 retval = 0;
 //	u32 dma_addr;
-	synopGMACPciNetworkAdapter *adapter;
+        struct synopGMACNetworkAdapter *adapter = tp;
         synopGMACdevice * gmacdev;
-	struct pci_dev *pcidev;
 	
-	TR0("%s\n",__FUNCTION__);
-	adapter = (synopGMACPciNetworkAdapter *) netdev->priv;
-	if(adapter == NULL){
-		TR0("OOPS adapter is null\n");
-		return -1;
-	}
+	printf("%s\n",__FUNCTION__);
 
 	gmacdev = (synopGMACdevice *) adapter->synopGMACdev;
 	if(gmacdev == NULL){
@@ -1454,11 +1442,7 @@ s32 synopGMAC_linux_close(struct net_device *netdev)
 		return -1;
 	}
 
-	pcidev = (struct pci_dev *)adapter->synopGMACpcidev;
-	if(pcidev == NULL){
-		TR("OOPS pcidev is null\n");
-		return -1;
-	}
+        adapter->PInetdev->flags &= ~1;
 
 	synopGMAC_disable_interrupt_all(gmacdev);
 	TR("the synopGMAC interrupt has been disabled\n");
@@ -1471,26 +1455,25 @@ s32 synopGMAC_linux_close(struct net_device *netdev)
         synopGMAC_take_desc_ownership_tx(gmacdev);
 
 	TR("the synopGMAC Transmission has been disabled\n");
-	netif_stop_queue(netdev);
+	//netif_stop_queue(netdev);
 	
-	free_irq(pcidev->irq, netdev);
+	//free_irq(pcidev->irq, netdev);
 	TR("the synopGMAC interrupt handler has been removed\n");
 	
 	TR("Now calling synopGMAC_giveup_rx_desc_queue \n");
-	synopGMAC_giveup_rx_desc_queue(gmacdev, pcidev, RINGMODE);
-//	synopGMAC_giveup_rx_desc_queue(gmacdev, pcidev, CHAINMODE);
+	synopGMAC_giveup_rx_desc_queue(gmacdev, RINGMODE);
+	//synopGMAC_giveup_rx_desc_queue(gmacdev, CHAINMODE);
 	TR("Now calling synopGMAC_giveup_tx_desc_queue \n");
-	synopGMAC_giveup_tx_desc_queue(gmacdev, pcidev, RINGMODE);
-//	synopGMAC_giveup_tx_desc_queue(gmacdev, pcidev, CHAINMODE);
+	synopGMAC_giveup_tx_desc_queue(gmacdev, RINGMODE);
+	//synopGMAC_giveup_tx_desc_queue(gmacdev, CHAINMODE);
 	
 	TR("Freeing the cable unplug timer\n");	
-	del_timer(&synopGMAC_cable_unplug_timer);
+	//del_timer(&synopGMAC_cable_unplug_timer);
 
 	return -ESYNOPGMACNOERR;
 
 //	TR("%s called \n",__FUNCTION__);
 }
-*/
 
 /**
  * Function to transmit a given packet on the wire.
@@ -2005,10 +1988,12 @@ static int gmac_ether_ioctl(struct ifnet *ifp, unsigned long cmd, caddr_t data)
 		 * such as IFF_PROMISC are handled.
 		 */
 
-		printf("===ioctl sifflags\n");
+		printf("===ioctl1 sifflags\n");
 		if(ifp->if_flags & IFF_UP){
 			synopGMAC_linux_open(adapter);
 		}
+		else
+		  synopGMAC_linux_close(adapter);
 		break;
 /*
         case SIOCETHTOOL:
@@ -2458,6 +2443,8 @@ s32  synopGMAC_init_network_interface(char* xname,u64 synopGMACMappedAddr)
 	synopGMACadapter->mii.phy_id = synopGMACadapter->synopGMACdev->PhyBase;
 	synopGMACadapter->mii.supports_gmii = mii_check_gmii_support(&synopGMACadapter->mii);
 
+	synopGMACadapter->PInetdev->sc_ih = pci_intr_establish(0, 0, IPL_NET, synopGMAC_intr_handler, synopGMACadapter, 0);
+	TR("register poll interrupt: gmac 0\n");
 	return 0;
 }
 

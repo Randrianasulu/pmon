@@ -59,7 +59,7 @@ struct	PmonInet{
 	char  dev_addr[6]; //the net interface's address
 	unsigned long ioaddr;
 
-//	int flags;
+	int flags;
 //	int mc_count;
 
 };
