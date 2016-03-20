@@ -217,6 +217,7 @@ foundit:
     priv->flags = flags;
     priv->file=p;
     priv->open_size=open_size?open_size:p->part_size;
+    priv->open_size_real=open_size?open_size:p->part_size_real;
     priv->open_offset=open_offset;
 
     _file[fd].posn = 0;

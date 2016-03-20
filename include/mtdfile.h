@@ -28,6 +28,7 @@ typedef struct mtdpriv {
 struct mtdfile *file;
 	unsigned int open_offset;
 	unsigned int open_size;
+	unsigned int open_size_real;
         int flags;
 } mtdpriv;
 
