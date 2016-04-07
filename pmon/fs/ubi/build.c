@@ -572,7 +572,11 @@ static int io_init(struct ubi_device *ubi)
 //	printf("ubi->mtd->erasesize=%d\n",ubi->mtd->erasesize);
 	ubi->peb_count  = mtd_div_by_eb(ubi->mtd->size, ubi->mtd);
 	ubi->flash_size = ubi->mtd->size;
-
+/*modify by niu*/
+#if 0
+	ubi->peb_count  = mtd_div_by_eb(mtd_size, ubi->mtd);
+	ubi->flash_size = mtd_size;
+#endif
 	if (ubi->mtd->block_isbad && ubi->mtd->block_markbad)
 		ubi->bad_allowed = 1;
 	ubi->min_io_size = ubi->mtd->writesize;

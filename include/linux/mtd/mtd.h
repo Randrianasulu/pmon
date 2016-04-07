@@ -392,6 +392,8 @@ struct mtd_info {
 
 
 	void *priv;
+/*add by niu to support ubifs*/
+        void *part;
 	struct list_head siblings;
 	/*added by zw; If the driver is something smart, like UBI, it may need to maintain
          * its own reference counting. The below functions are only for driver.

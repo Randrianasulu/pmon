@@ -1110,9 +1110,12 @@ ubifs_open(int fd, const char *path, int flags, int mode)
 		return -1;
 	}
 /*modify by niu*/
+#if 0
 mtd_offset = p->part_offset;
-mtd_size   = p->part_size;
+mtd_size   = p->part_size_real;
+#endif
 	mt=p->mtd;
+        mt->part = p;
 	if((ubinum=ubi_attach_mtd_dev(mt, 0, 0))<0)
 	{
 		puts("ubi_attach_mtd_dev error!!");

@@ -48,6 +48,7 @@
 
 #include "ubi.h"
 
+#include <mtdfile.h>
 #ifdef CONFIG_MTD_UBI_DEBUG_PARANOID
 static int paranoid_check_si(struct ubi_device *ubi, struct ubi_scan_info *si);
 #else
@@ -908,6 +909,7 @@ adjust_mean_ec:
  * This function does full scanning of an MTD device and returns complete
  * information about it. In case of failure, an error code is returned.
  */
+
 struct ubi_scan_info *ubi_scan(struct ubi_device *ubi)
 {
 //	puts("ubi_scan!!");
@@ -917,7 +919,10 @@ struct ubi_scan_info *ubi_scan(struct ubi_device *ubi)
 	struct ubi_scan_volume *sv;
 	struct ubi_scan_leb *seb;
 	struct ubi_scan_info *si;
-
+/*modify by niu to distinguish the mtd parts*/
+         int mtdx_offset;
+	 int mtdx_size;
+        mtdfile *priv;
 	si = kzalloc(sizeof(struct ubi_scan_info), GFP_KERNEL);
 	if (!si)
 		return ERR_PTR(-ENOMEM);
@@ -943,8 +948,11 @@ struct ubi_scan_info *ubi_scan(struct ubi_device *ubi)
 #if 0
 	for (pnum = 0; pnum < ubi->peb_count; pnum++) {
 #else
-pnum = mtd_offset/ubi->mtd->erasesize;
-num  = mtd_size /ubi->mtd->erasesize;
+priv       = (mtdfile *)(ubi->mtd->part);
+mtdx_offset = priv->part_offset;
+mtdx_size   = priv->part_size_real;
+pnum = mtdx_offset/ubi->mtd->erasesize;
+num  = mtdx_size /ubi->mtd->erasesize;
 	for (i=0; i < num; i++,pnum++) {
 #endif
 //		puts("before con_resched!!");
