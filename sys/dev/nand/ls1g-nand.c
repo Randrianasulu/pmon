@@ -387,12 +387,14 @@ static void ls1g_nand_init_mtd(struct mtd_info *mtd,struct ls1g_nand_info *info)
 	this->write_buf		= ls1g_nand_write_buf;
 	this->verify_buf	= ls1g_nand_verify_buf;
 
+#if 0
         this->ecc.mode		= NAND_ECC_NONE;
+#else
+	this->ecc.mode		= NAND_ECC_SOFT;
+#endif
 	this->ecc.hwctl		= ls1g_nand_ecc_hwctl;
 	this->ecc.calculate	= ls1g_nand_ecc_calculate;
 	this->ecc.correct	= ls1g_nand_ecc_correct;
-	this->ecc.size		= 2048;
-        this->ecc.bytes         = 24;
 
 	this->ecc.layout = &hw_largepage_ecclayout;
 //        mtd->owner = THIS_MODULE;
