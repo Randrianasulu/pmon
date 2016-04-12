@@ -691,6 +691,81 @@ int my_mtdparts(int argc,char**argv)
 }
 
 
+int mtd_update_ecc(char *file)
+{
+	char *buf;
+	mtdpriv *priv;
+	mtdfile        *mf;
+	struct mtd_info *mtd;
+	struct nand_chip *chip;
+	struct mtd_oob_ops ops;
+	int fd;
+	int pos, len;
+	int wecc;
+	fd = open(file, O_RDWR);
+	priv = (mtdpriv *)_file[fd].data;
+	mf = priv->file;
+	mtd = mf->mtd;
+	chip=mtd->priv;
+	buf = malloc(mtd->writesize+mtd->oobsize);
+
+        pos=mf->part_offset+priv->open_offset;
+        len = (mf->part_offset + priv->open_size_real)-pos;
+
+	while(len>0)
+	{
+		ops.mode = MTD_OOB_RAW;
+		ops.ooblen = mtd->oobsize;
+		ops.ooboffs = 0;
+		ops.oobbuf = buf + mtd->writesize;
+		ops.datbuf = buf; 
+		ops.len = mtd->writesize;
+		mtd->read_oob(mtd,pos,&ops);
+		if(ops.retlen<=0)break;
+		wecc  = 0;
+		{
+			int i, eccsize = chip->ecc.size;
+			int eccbytes = chip->ecc.bytes;
+			int eccsteps = chip->ecc.steps;
+			uint8_t *ecc_calc = chip->buffers.ecccalc;
+			const uint8_t *p = buf;
+			int *eccpos = chip->ecc.layout->eccpos;
+
+			/* Software ecc calculation */
+			for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize)
+				chip->ecc.calculate(mtd, p, &ecc_calc[i]);
+
+			for (i = 0; i < chip->ecc.total; i++)
+			{
+				if(ops.oobbuf[eccpos[i]] != ecc_calc[i])
+				{
+			 	  ops.oobbuf[eccpos[i]] = ecc_calc[i];
+				  wecc = 1;
+				}
+			}
+		}
+
+		if(wecc)
+		{
+			ops.datbuf = NULL; 
+			ops.len = mtd->oobsize;
+			mtd->write_oob(mtd,pos,&ops);
+		}
+		pos += mtd->writesize;
+		len -= mtd->writesize;
+	}
+
+	free(buf);
+	return 0;
+}
+
+int cmd_mtd_updateecc(int argc,char **argv)
+{
+ char *file = argc>1? argv[1]: "/dev/mtd0r";
+ mtd_update_ecc(file);
+ return 0;
+}
+
 
 const Optdesc         mtd_opts[] = {
 	{"-h", "HELP"},
@@ -705,6 +780,7 @@ static const Cmd Cmds[] =
 	{"MyCmds"},
 	{"mtdparts","0",0,"NANDFlash OPS:mtdparts ",my_mtdparts,0,99,CMD_REPEAT},
 	{"mtd_erase","[option] mtd_dev",mtd_opts,0,cmd_flash_erase,0,99,CMD_REPEAT},
+	{"mtd_updateecc","mtd_dev",NULL,0,cmd_mtd_updateecc,0,99,CMD_REPEAT},
 	{0, 0}
 };
 
