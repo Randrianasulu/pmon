@@ -42,13 +42,14 @@ def writeenv(fname,foff,fsz,d):
     f.close()
     
 if __name__ == '__main__':
-    opt,argv=getopt.getopt(sys.argv[1:],'o:s:f:')
+    opt,argv=getopt.getopt(sys.argv[1:],'o:s:f:w')
     opt=dict(opt)
-    foff = opt['-o'] if opt.has_key('-o') else 0x70000
-    fsz = opt['-s'] if opt.has_key('-s') else 0x80000
+    foff = int(opt['-o'],0) if opt.has_key('-o') else 0x70000
+    fsz = int(opt['-s'],0) if opt.has_key('-s') else 494
     fname = opt['-f'] if opt.has_key('-f') else 'gzrom.bin'
     
     d=readenv(fname,foff,fsz,argv)
     print(d)
-    writeenv(fname,foff,fsz,d)
+    if opt.has_key('-w'):
+     writeenv(fname,foff,fsz,d)
 
