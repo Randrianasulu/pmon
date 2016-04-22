@@ -351,12 +351,16 @@ static int ls1g_nand_verify_buf(struct mtd_info *mtd,const uint8_t *buf, int len
 {
        int i=0; 
         struct ls1g_nand_info *info = mtd->priv;
+	struct nand_chip *chip = &info->nand_chip;
+        uint8_t verify_buf[4096];
             show_debug(info->data_buff,0x20);
+	chip->ecc.read_page(mtd, chip, verify_buf);
         while(len--){
-            if(buf[i++] != ls1g_nand_read_byte(mtd) ){
-                printk("?????????????????????????????????????????????????????verify error...\n\n");
+            if(buf[i] != verify_buf[i] ){
+                printk("nand-flash (driver) write verify error...\n\n");
                 return -1;
             }
+		i++;
         }
 	return 0;
 }
