@@ -216,8 +216,8 @@ foundit:
     priv=malloc(sizeof(struct mtdpriv));
     priv->flags = flags;
     priv->file=p;
-    priv->open_size=open_size?open_size:p->part_size;
-    priv->open_size_real=open_size?open_size:p->part_size_real;
+    priv->open_size=open_size?open_size:(p->part_size-open_offset);
+    priv->open_size_real=open_size?open_size:(p->part_size_real-open_offset);
     priv->open_offset=open_offset;
 
     _file[fd].posn = 0;
@@ -693,67 +693,117 @@ int my_mtdparts(int argc,char**argv)
 
 int mtd_update_ecc(char *file)
 {
-	char *buf;
+	uint8_t *buf, *p;
 	mtdpriv *priv;
 	mtdfile        *mf;
 	struct mtd_info *mtd;
 	struct nand_chip *chip;
 	struct mtd_oob_ops ops;
+	struct erase_info erase;
 	int fd;
-	int pos, len;
+	unsigned int pos, len, once;
 	int wecc;
+        unsigned long long checked;
 	fd = open(file, O_RDWR);
 	priv = (mtdpriv *)_file[fd].data;
 	mf = priv->file;
 	mtd = mf->mtd;
 	chip=mtd->priv;
-	buf = malloc(mtd->writesize+mtd->oobsize);
+	p = buf = malloc((mtd->writesize+mtd->oobsize)*mtd->erasesize/mtd->writesize);
 
         pos=mf->part_offset+priv->open_offset;
-        len = (mf->part_offset + priv->open_size_real)-pos;
+        len = priv->open_size_real;
+        checked = 0;
+	len +=  pos&(mtd->erasesize -1);
+	pos -= pos&(mtd->erasesize -1);
+	if(len&(mtd->erasesize -1))
+		len += mtd->erasesize - (len&(mtd->erasesize -1));
 
 	while(len>0)
 	{
-		ops.mode = MTD_OOB_RAW;
-		ops.ooblen = mtd->oobsize;
-		ops.ooboffs = 0;
-		ops.oobbuf = buf + mtd->writesize;
-		ops.datbuf = buf; 
-		ops.len = mtd->writesize;
-		mtd->read_oob(mtd,pos,&ops);
-		if(ops.retlen<=0)break;
+		int once;
+		/*check a erasesize*/
+		if((checked & 0xfffff) == 0) printf("0x%llx\n", checked);
 		wecc  = 0;
+		p = buf;
+		for(once=0;once<mtd->erasesize;once += mtd->writesize)
 		{
-			int i, eccsize = chip->ecc.size;
-			int eccbytes = chip->ecc.bytes;
-			int eccsteps = chip->ecc.steps;
-			uint8_t *ecc_calc = chip->buffers.ecccalc;
-			const uint8_t *p = buf;
-			int *eccpos = chip->ecc.layout->eccpos;
-
-			/* Software ecc calculation */
-			for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize)
-				chip->ecc.calculate(mtd, p, &ecc_calc[i]);
-
-			for (i = 0; i < chip->ecc.total; i++)
+			ops.mode = MTD_OOB_RAW;
+			ops.ooblen = mtd->oobsize;
+			ops.ooboffs = 0;
+			ops.oobbuf = p + mtd->writesize;
+			ops.datbuf = p; 
+			ops.len = mtd->writesize;
+			mtd->read_oob(mtd,pos,&ops);
+			if(ops.retlen<=0)
 			{
-				if(ops.oobbuf[eccpos[i]] != ecc_calc[i])
+				printf("ops.retlen=%d\n", ops.retlen);
+				break;
+			}
+
+			if(once == 0 && (ops.oobbuf[0] != 0xff || ops.oobbuf[1] != 0xff))
+			{
+			  pos += mtd->erasesize;
+			  wecc  = 0;
+			  break;
+			}
+
+			{
+				int i, eccsize = chip->ecc.size;
+				int eccbytes = chip->ecc.bytes;
+				int eccsteps = chip->ecc.steps;
+				uint8_t *ecc_calc = chip->buffers.ecccalc;
+				const uint8_t *p1 = p;
+				int *eccpos = chip->ecc.layout->eccpos;
+
+				/* Software ecc calculation */
+				for (i = 0; eccsteps; eccsteps--, i += eccbytes, p1 += eccsize)
+					chip->ecc.calculate(mtd, p1, &ecc_calc[i]);
+
+				for (i = 0; i < chip->ecc.total; i++)
 				{
-			 	  ops.oobbuf[eccpos[i]] = ecc_calc[i];
-				  wecc = 1;
+					if(ops.oobbuf[eccpos[i]] != ecc_calc[i])
+					{
+						ops.oobbuf[eccpos[i]] = ecc_calc[i];
+						wecc = 1;
+					}
 				}
 			}
+		       p += mtd->writesize + mtd->oobsize;
+		       pos += mtd->writesize;
 		}
 
 		if(wecc)
 		{
-			ops.datbuf = NULL; 
-			ops.len = mtd->oobsize;
-			mtd->write_oob(mtd,pos,&ops);
+			pos -= mtd->erasesize;
+			p = buf;
+			erase.mtd = mtd;
+			erase.callback = 0;
+			erase.addr = pos;
+			erase.len = mtd->erasesize;
+			erase.priv = 0;
+
+			mtd->erase(mtd,&erase);
+
+			for(once=0;once<mtd->erasesize;once += mtd->writesize)
+			{
+				ops.mode = MTD_OOB_RAW;
+				ops.ooblen = mtd->oobsize;
+				ops.ooboffs = 0;
+				ops.oobbuf = p + mtd->writesize;
+				ops.datbuf = p; 
+				ops.len = mtd->writesize;
+				mtd->write_oob(mtd,pos,&ops);
+				pos += mtd->writesize;
+				p += mtd->writesize + mtd->oobsize;
+			}
 		}
-		pos += mtd->writesize;
-		len -= mtd->writesize;
+
+		len -= mtd->erasesize;
+                checked += mtd->erasesize;
+
 	}
+	if((checked & 0xfffff) == 0) printf("0x%llx\n", checked);
 
 	free(buf);
 	return 0;
