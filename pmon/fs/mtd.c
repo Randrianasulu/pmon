@@ -72,6 +72,7 @@ static off_t mtdfile_lseek (int, off_t, int);
 int highmemcpy(long long dst,long long src,long long count);
 void mycacheflush(long long addrin,unsigned int size,unsigned int rw);
 
+static int check_real_bad_block(struct mtd_info *mtd,loff_t addr,unsigned char *buf,int len);
 #define TO_MIN(x,y,z)   min(min((p->mtd->erasesize - ((z) & (p->mtd->erasesize-1))),(x)),(y))
 static creat_part_trans_table(mtdfile *p)
 {
@@ -291,6 +292,119 @@ static int
     }
 }
 
+static void mark_bad(struct mtd_info *mtd,loff_t addr)
+{
+	unsigned char buf[mtd->writesize+mtd->oobsize];
+	struct mtd_oob_ops ops_r;
+	struct erase_info erase;
+	loff_t page_addr;
+	int i, ret = 0 ;
+	erase.mtd = mtd;
+	erase.callback = 0;
+	erase.addr = (addr+mtd->erasesize-1)&~(mtd->erasesize-1);
+	erase.len = (1+mtd->erasesize-1)&~(mtd->erasesize-1);
+	erase.priv = 0;
+	mtd->erase(mtd,&erase);
+	addr = (addr)&~(mtd->erasesize-1);
+	ops_r.mode = MTD_OOB_RAW;
+	ops_r.len = mtd->writesize;
+	ops_r.retlen = 0;
+	ops_r.ooblen = mtd->oobsize;
+	ops_r.ooboffs = 0;
+	ops_r.datbuf = buf;
+	ops_r.oobbuf = ( buf + mtd->writesize );
+
+
+	/*first read after erase*/
+	memset(buf,0x00,mtd->writesize+mtd->oobsize);
+	ret = mtd->write_oob(mtd,addr,&ops_r); 
+
+	//  check_real_bad_block(mtd,addr,buf,mtd->writesize + mtd->oobsize);
+
+}
+
+static	void  copy_block(int fd,mtdfile *p,unsigned int old_start_addr,unsigned int *maxlen)
+{
+	unsigned char data_buffer[p->mtd->writesize+p->mtd->oobsize];
+	unsigned int finished=1;
+	unsigned int new_start_addr,new_block_addr,old_block_addr;
+	unsigned int page_addr=0;
+	struct erase_info erase;
+	struct mtd_oob_ops ops;
+	struct nand_chip *chip;
+	struct mtd_info *mtd;
+	chip = (struct nand_chip*)(p->mtd->priv);
+	mtd=p->mtd;
+	while(finished)
+	{
+		finished = 0;
+		new_start_addr =file_to_mtd_pos(fd,maxlen);
+		new_block_addr =(new_start_addr)&~(p->mtd->erasesize-1);
+		old_block_addr =(old_start_addr)&~(p->mtd->erasesize-1);
+		printf("old_block_addr %x , new_start_addr %x, new_block_addr %x\n",old_block_addr,new_start_addr,new_block_addr); 	
+		for(page_addr=0;(page_addr+old_block_addr)< old_start_addr;page_addr+=p->mtd->writesize){
+
+			//printf("i am here *************   page_addr %x\n",page_addr);
+			ops.ooblen = p->mtd->oobsize;
+			ops.ooboffs = 0;
+			ops.oobbuf = data_buffer + p->mtd->writesize;
+			ops.datbuf = data_buffer; 
+			ops.len = p->mtd->writesize;
+			//p->mtd->read_oob(p->mtd,page_addr+old_block_addr,&ops);
+
+
+			erase.mtd = p->mtd;
+			erase.callback = 0;
+			erase.addr = (new_start_addr+p->mtd->erasesize-1)&~(p->mtd->erasesize-1);
+			erase.len = (1+p->mtd->erasesize-1)&~(p->mtd->erasesize-1);
+			erase.priv = 0;
+
+#if 1
+			struct mtd_oob_ops ops_w,ops_r;
+			ops_w.mode = MTD_OOB_RAW;
+			ops_w.len = mtd->writesize;
+			ops_w.retlen = 0;
+			ops_w.ooblen = mtd->oobsize;
+			ops_w.ooboffs = 0;
+			ops_w.datbuf = data_buffer;
+			ops_w.oobbuf = ( data_buffer + mtd->writesize );
+
+
+			ops_r.mode = MTD_OOB_RAW;
+			ops_r.len = mtd->writesize;
+			ops_r.retlen = 0;
+			ops_r.ooblen = mtd->oobsize;
+			ops_r.ooboffs = 0;
+			ops_r.datbuf = data_buffer;
+			ops_r.oobbuf = ( data_buffer + mtd->writesize );
+
+
+			/*first read after erase*/
+			mtd->read_oob(mtd,page_addr+old_block_addr,&ops_r); 
+
+
+
+
+#endif
+			if(erase.addr>=new_start_addr && erase.addr<new_start_addr+ops.len)
+			{
+				//    	p->mtd->erase(p->mtd,&erase);
+			}
+
+			if(p->mtd->write_oob(p->mtd,page_addr+new_block_addr,&ops_w)){
+				p->mtd->block_markbad(p->mtd,new_start_addr); 
+				printf("New bad block==%d page==0x%08x addr==0x%08x\n",(new_start_addr / p->mtd->erasesize),(new_start_addr >> chip->page_shift),new_start_addr);
+				creat_part_trans_table(p);
+				mark_bad(p->mtd,new_start_addr);
+				finished = 1;
+				break;
+			}
+
+		}
+	}
+}
+
+
 
 static int
    mtdfile_write (fd, buf, n)
@@ -304,8 +418,10 @@ static int
     unsigned int start_addr;
     unsigned int maxlen,newpos,retlen,left;
     struct mtd_oob_ops ops;
+    struct nand_chip *chip;
     priv = (mtdpriv *)_file[fd].data;
     p = priv->file;
+    chip = (struct nand_chip*)(p->mtd->priv);
     if(priv->flags & MTD_FLAGS_CHAR_MARK || priv->flags & MTD_FLAGS_CHAR|| priv->flags & MTD_FLAGS_RAW)
         n -= p->mtd->oobsize;
     left=n;
@@ -338,7 +454,15 @@ static int
             ops.ooboffs = 0;
             ops.oobbuf = buf+p->mtd->writesize;
             ops.datbuf = buf; 
-            p->mtd->write_oob(p->mtd,start_addr,&ops);
+	    if(p->mtd->write_oob(p->mtd,start_addr,&ops)){
+		    p->mtd->block_markbad(p->mtd,start_addr); 
+		    printf("New bad block==%d page==0x%08x addr==0x%08x\n",(start_addr / p->mtd->erasesize),(start_addr >> chip->page_shift),start_addr);
+		    creat_part_trans_table(p);
+		    //               copy_block(fd,p,start_addr,&ops.len);
+		    mark_bad(p->mtd,start_addr);
+
+		    continue;
+	    }
             if(ops.retlen<=0)break;
             _file[fd].posn += ops.retlen;
             buf += (ops.retlen);
@@ -353,6 +477,7 @@ static int
             maxlen=min(left,maxlen);
             maxlen=(maxlen+p->mtd->writesize-1)&~(p->mtd->writesize-1);
 
+            maxlen=p->mtd->writesize;
             erase.mtd = p->mtd;
             erase.callback = 0;
             erase.addr = (start_addr+p->mtd->erasesize-1)&~(p->mtd->erasesize-1);
@@ -363,7 +488,19 @@ static int
             {
                 p->mtd->erase(p->mtd,&erase);
             }
-            p->mtd->write(p->mtd,start_addr,maxlen,&retlen,buf);
+            if(p->mtd->write(p->mtd,start_addr,maxlen,&retlen,buf)){
+              
+		    printf("start_addr is %x\n",start_addr);
+		    printf("block_addr is %x\n",erase.addr);
+		    p->mtd->block_markbad(p->mtd,start_addr); 
+		    printf("New bad block==%d page==0x%08x addr==0x%08x\n",(start_addr / p->mtd->erasesize),(start_addr >> chip->page_shift),start_addr);
+		    creat_part_trans_table(p);
+		    //               copy_block(fd,p,start_addr,&maxlen);
+		    mark_bad(p->mtd,start_addr);
+		    printf("retlen = %x \n",retlen);
+		    continue;
+
+            }
 
             if(retlen<=0)break;
             _file[fd].posn += retlen;
@@ -501,6 +638,7 @@ int del_mtd_device (struct mtd_info *mtd)
 				if(ptail == rmp) ptail = list_entry(*rmp->i_next.le_prev, struct mtdfile, i_next.le_next);
 				LIST_REMOVE(rmp, i_next);
                                 mtdidx--;
+                                free(rmp->trans_table);
 				free(rmp);
 				return(0);
 			} else {
@@ -535,11 +673,91 @@ static void
 	filefs_init(&mtdfs);
 
 }
+static int write_a_data(struct mtd_info *mtd,loff_t addr,unsigned char *buf,int len)
+{
+    struct mtd_oob_ops ops_w,ops_r;
+    int i, ret = 0 ;
+    ops_w.mode = MTD_OOB_RAW;
+    ops_w.len = mtd->writesize;
+    ops_w.retlen = 0;
+    ops_w.ooblen = mtd->oobsize;
+    ops_w.ooboffs = 0;
+    ops_w.datbuf = buf;
+    ops_w.oobbuf = ( buf + mtd->writesize );
+
+
+    ops_r.mode = MTD_OOB_RAW;
+    ops_r.len = mtd->writesize;
+    ops_r.retlen = 0;
+    ops_r.ooblen = mtd->oobsize;
+    ops_r.ooboffs = 0;
+    ops_r.datbuf = buf;
+    ops_r.oobbuf = ( buf + mtd->writesize );
+
+
+    /*first read after erase*/
+#if 1
+    memset(buf,0x00,len);
+    ret = mtd->read_oob(mtd,addr,&ops_r); 
+    if(ret){
+        goto go_exit;
+    }
+    for(i=0;i<(len-4) ;i+=4){
+        if(*(unsigned long*)(buf+i) != 0xffffffff)
+            goto go_exit;
+    }
+    for(;i<len ;i++){
+        if(buf[i] != 0xff)
+            goto go_exit;
+    }
+#endif
+    memset(buf,0x00,len);
+    ret = mtd->write_oob(mtd,addr,&ops_w); 
+    if(ret){
+        goto go_exit;
+    }    
+#if 1
+    memset(buf,0xff,len);
+    ret = mtd->read_oob(mtd,addr,&ops_r); 
+    if(ret){
+        goto go_exit;
+    }
+
+    for(i=0;i<(len-4);i+=4){
+        if(*(unsigned long*)(buf+i))
+            goto go_exit;
+    }
+    for(;i<len;i++){
+        if(buf[i])
+            goto go_exit;
+    }
+#endif
+    return 0;
+go_exit:
+    return 1;
+}
+
+static int check_real_bad_block(struct mtd_info *mtd,loff_t addr,unsigned char *buf,int len)
+{
+    loff_t  page_addr; 
+    int  ret = 0;
+    if(!mtd)
+        return -1;
+#if 1
+    for ( page_addr = addr ;page_addr < addr + mtd->erasesize ; page_addr += mtd->writesize){
+        ret = write_a_data(mtd,page_addr,buf,len);
+        if(ret)
+            return ret;
+
+    }
+#endif
+    return ret;
+}
 
 static int cmd_flash_erase(int argc,char **argv)
 {
-    char *path=0,str[250]={0};
-    int fp=-1,retlen;
+    char *path=0, *buf=NULL,str[250]={0};
+    int fp=-1,retlen, ret;
     unsigned int start=0,end=0 ;
     unsigned int c,jffs2=0;
     mtdfile *p;
@@ -585,6 +803,13 @@ static int cmd_flash_erase(int argc,char **argv)
     priv = (mtdpriv*)_file[fp].data;
     p = priv->file;
     mtd = p->mtd;
+    
+    buf = (unsigned char *)malloc(mtd->writesize + mtd->oobsize  + 64);
+    if(!buf){
+        printf("%s:malloc error...\n",__func__);
+        return -1;
+    }
+
     start = (p->part_offset)&~(mtd->erasesize-1);
     end = ((p->part_offset + p->part_size_real)&~(mtd->erasesize-1));
     erase.mtd = mtd;
@@ -601,8 +826,27 @@ static int cmd_flash_erase(int argc,char **argv)
          while(start<end){
             chip->erase_cmd(mtd,start >> chip->page_shift);
             printf("\b\b\b\b\b\b\b\b\b\b%08x  ",start);
+#ifdef NAND_CHECK_BADBOCK
+#if 1
+            ret = check_real_bad_block(mtd,start,buf,mtd->writesize + mtd->oobsize);
+            if(ret == 1){
+                printf("New bad block==%d page==0x%08x addr==0x%08x\n",(start / mtd->erasesize),(start >> chip->page_shift),start);
+                mtd->block_markbad(mtd,start); 
+               creat_part_trans_table(p);
+            }else if(!ret){
+                chip->erase_cmd(mtd,start >> chip->page_shift);
+            }else{
+                printf("%s maybe a mem-error...\n");
+                free(buf);
+                return -1; 
+            }
+#endif
+#endif
             start += mtd->erasesize;
         }
+#ifdef NAND_CHECK_BADBOCK
+        creat_part_trans_table(p);
+#endif
     }else{
         while(start<end){
             erase.addr = start;
@@ -620,6 +864,7 @@ static int cmd_flash_erase(int argc,char **argv)
     }
     close(fp);    
     printf("\nmtd_erase work done!\n");
+    free(buf);
     return 0;
 }
 
