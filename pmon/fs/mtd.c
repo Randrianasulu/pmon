@@ -72,7 +72,6 @@ static off_t mtdfile_lseek (int, off_t, int);
 int highmemcpy(long long dst,long long src,long long count);
 void mycacheflush(long long addrin,unsigned int size,unsigned int rw);
 
-static int check_real_bad_block(struct mtd_info *mtd,loff_t addr,unsigned char *buf,int len);
 #define TO_MIN(x,y,z)   min(min((p->mtd->erasesize - ((z) & (p->mtd->erasesize-1))),(x)),(y))
 static creat_part_trans_table(mtdfile *p)
 {
@@ -82,6 +81,7 @@ static creat_part_trans_table(mtdfile *p)
     int end = (p->part_offset + p->part_size)/mtd->erasesize;
     int tmp=0,len,good;
     int *table =NULL;
+    if(p->trans_table) free(p->trans_table);
     p->part_size_real = p->part_size;
     len = (end-start+1)*sizeof(int); 
     table = (int*)malloc(len);
@@ -318,9 +318,6 @@ static void mark_bad(struct mtd_info *mtd,loff_t addr)
 	/*first read after erase*/
 	memset(buf,0x00,mtd->writesize+mtd->oobsize);
 	ret = mtd->write_oob(mtd,addr,&ops_r); 
-
-	//  check_real_bad_block(mtd,addr,buf,mtd->writesize + mtd->oobsize);
-
 }
 
 static	void  copy_block(int fd,mtdfile *p,unsigned int old_start_addr,unsigned int *maxlen)
@@ -490,14 +487,11 @@ static int
             }
             if(p->mtd->write(p->mtd,start_addr,maxlen,&retlen,buf)){
               
-		    printf("start_addr is %x\n",start_addr);
-		    printf("block_addr is %x\n",erase.addr);
 		    p->mtd->block_markbad(p->mtd,start_addr); 
 		    printf("New bad block==%d page==0x%08x addr==0x%08x\n",(start_addr / p->mtd->erasesize),(start_addr >> chip->page_shift),start_addr);
 		    creat_part_trans_table(p);
 		    //               copy_block(fd,p,start_addr,&maxlen);
 		    mark_bad(p->mtd,start_addr);
-		    printf("retlen = %x \n",retlen);
 		    continue;
 
             }
@@ -673,108 +667,22 @@ static void
 	filefs_init(&mtdfs);
 
 }
-static int write_a_data(struct mtd_info *mtd,loff_t addr,unsigned char *buf,int len)
-{
-    struct mtd_oob_ops ops_w,ops_r;
-    int i, ret = 0 ;
-    ops_w.mode = MTD_OOB_RAW;
-    ops_w.len = mtd->writesize;
-    ops_w.retlen = 0;
-    ops_w.ooblen = mtd->oobsize;
-    ops_w.ooboffs = 0;
-    ops_w.datbuf = buf;
-    ops_w.oobbuf = ( buf + mtd->writesize );
 
 
-    ops_r.mode = MTD_OOB_RAW;
-    ops_r.len = mtd->writesize;
-    ops_r.retlen = 0;
-    ops_r.ooblen = mtd->oobsize;
-    ops_r.ooboffs = 0;
-    ops_r.datbuf = buf;
-    ops_r.oobbuf = ( buf + mtd->writesize );
-
-
-    /*first read after erase*/
-#if 1
-    memset(buf,0x00,len);
-    ret = mtd->read_oob(mtd,addr,&ops_r); 
-    if(ret){
-        goto go_exit;
-    }
-    for(i=0;i<(len-4) ;i+=4){
-        if(*(unsigned long*)(buf+i) != 0xffffffff)
-            goto go_exit;
-    }
-    for(;i<len ;i++){
-        if(buf[i] != 0xff)
-            goto go_exit;
-    }
-#endif
-    memset(buf,0x00,len);
-    ret = mtd->write_oob(mtd,addr,&ops_w); 
-    if(ret){
-        goto go_exit;
-    }    
-#if 1
-    memset(buf,0xff,len);
-    ret = mtd->read_oob(mtd,addr,&ops_r); 
-    if(ret){
-        goto go_exit;
-    }
-
-    for(i=0;i<(len-4);i+=4){
-        if(*(unsigned long*)(buf+i))
-            goto go_exit;
-    }
-    for(;i<len;i++){
-        if(buf[i])
-            goto go_exit;
-    }
-#endif
-    return 0;
-go_exit:
-    return 1;
-}
-
-static int check_real_bad_block(struct mtd_info *mtd,loff_t addr,unsigned char *buf,int len)
-{
-    loff_t  page_addr; 
-    int  ret = 0;
-    if(!mtd)
-        return -1;
-#if 1
-    for ( page_addr = addr ;page_addr < addr + mtd->erasesize ; page_addr += mtd->writesize){
-        ret = write_a_data(mtd,page_addr,buf,len);
-        if(ret)
-            return ret;
-
-    }
-#endif
-    return ret;
-}
 
 static int cmd_flash_erase(int argc,char **argv)
 {
     char *path=0, *buf=NULL,str[250]={0};
     int fp=-1,retlen, ret;
     unsigned int start=0,end=0 ;
-    unsigned int c,jffs2=0;
+    unsigned int c,jffs2=0, checkbb = 0, foundbb = 0;
     mtdfile *p;
     mtdpriv *priv;
     struct mtd_info *mtd;
     struct erase_info erase;
     unsigned char clearmark[12]={0x85,0x19,  0x03,0x20,  0x0c,0x00,0x00,0x00,  0xb1,0xb0,0x1e,0xe4};
     optind = 0;
-#if 0
-    if(argc!=2){
-        printf("args error...\n");
-        printf("uargs:mtd_erase /dev/mtdx\n");
-        printf("example:mtd_erase /dev/mtd0\n\n");
-        return -1;
-    }
-#endif
-    while((c = getopt(argc, argv, "hHj")) != EOF) {
+    while((c = getopt(argc, argv, "hHjc")) != EOF) {
         switch(c){    
             case 'h':
             case 'H':
@@ -784,6 +692,9 @@ static int cmd_flash_erase(int argc,char **argv)
             case 'j':
                 jffs2 = 1;
                 break;
+	    case 'c':
+		checkbb = 1;
+		break;
             default :
                 return 0;
         }
@@ -819,34 +730,18 @@ static int cmd_flash_erase(int argc,char **argv)
         printf("\nERASE the device:\"%s\",DON'T skip bad-blocks\n\n",path);
     else 
         printf("\nERASE the device:\"%s\",SKIP bad-blocks\n\n",path);
-//    printf("end==0x%08x,start=0x%08x\n",end,start);
-    printf("mtd_erase working: \n%08x  ",start);
+
     if(priv->flags & MTD_FLAGS_RAW){
         struct nand_chip *chip=mtd->priv;
          while(start<end){
             chip->erase_cmd(mtd,start >> chip->page_shift);
             printf("\b\b\b\b\b\b\b\b\b\b%08x  ",start);
-#ifdef NAND_CHECK_BADBOCK
-#if 1
-            ret = check_real_bad_block(mtd,start,buf,mtd->writesize + mtd->oobsize);
-            if(ret == 1){
-                printf("New bad block==%d page==0x%08x addr==0x%08x\n",(start / mtd->erasesize),(start >> chip->page_shift),start);
-                mtd->block_markbad(mtd,start); 
-               creat_part_trans_table(p);
-            }else if(!ret){
-                chip->erase_cmd(mtd,start >> chip->page_shift);
-            }else{
-                printf("%s maybe a mem-error...\n");
-                free(buf);
-                return -1; 
-            }
-#endif
-#endif
+	    if(checkbb)
+		    foundbb |= mtd_check_fullblock(mtd, start, 1, 1);
             start += mtd->erasesize;
         }
-#ifdef NAND_CHECK_BADBOCK
-        creat_part_trans_table(p);
-#endif
+	 if(checkbb && foundbb)
+		 creat_part_trans_table(p);
     }else{
         while(start<end){
             erase.addr = start;
@@ -1054,6 +949,178 @@ int mtd_update_ecc(char *file)
 	return 0;
 }
 
+
+static int mtd_read_fullblock(struct mtd_info *mtd, unsigned int pos, uint8_t *buf, int raw)
+{
+int once;
+struct mtd_oob_ops ops;
+uint8_t *p = buf;
+		for(once=0;once<mtd->erasesize;once += mtd->writesize)
+		{
+			ops.mode = MTD_OOB_RAW;
+			ops.ooblen = mtd->oobsize;
+			ops.ooboffs = 0;
+			ops.oobbuf = p + mtd->writesize;
+			ops.datbuf = p; 
+			ops.len = mtd->writesize;
+			mtd->read_oob(mtd,pos,&ops);
+			if(ops.retlen<=0)
+			{
+				printf("ops.retlen=%d\n", ops.retlen);
+				break;
+			}
+
+			if(!raw && once == 0 && (ops.oobbuf[0] != 0xff || ops.oobbuf[1] != 0xff))
+				break;
+
+		       p += mtd->writesize + mtd->oobsize;
+		       pos += mtd->writesize;
+		}
+return once;
+}
+
+
+static int mtd_erase_fullblock(struct mtd_info *mtd, unsigned int pos, int raw)
+{
+	struct erase_info erase;
+	struct nand_chip *chip;
+
+	if(raw)
+	{
+		chip  = mtd->priv;
+		chip->erase_cmd(mtd, pos >> chip->page_shift);
+		return 0;
+	}
+	else
+	{
+		erase.mtd = mtd;
+		erase.callback = 0;
+		erase.addr = pos;
+		erase.len = mtd->erasesize;
+		erase.priv = 0;
+		return mtd->erase(mtd,&erase);
+	}
+}
+
+
+static int mtd_write_fullblock(struct mtd_info *mtd, unsigned int pos, uint8_t *buf)
+{
+int once;
+struct mtd_oob_ops ops;
+uint8_t *p = buf;
+			for(once=0;once<mtd->erasesize;once += mtd->writesize)
+			{
+				ops.mode = MTD_OOB_RAW;
+				ops.ooblen = mtd->oobsize;
+				ops.ooboffs = 0;
+				ops.oobbuf = p + mtd->writesize;
+				ops.datbuf = p; 
+				ops.len = mtd->writesize;
+				mtd->write_oob(mtd,pos,&ops);
+				pos += mtd->writesize;
+				p += mtd->writesize + mtd->oobsize;
+			}
+return once;
+}
+
+int mtd_check_fullblock(struct mtd_info *mtd,int pos,int eraseit, int raw)
+{
+	int foundbb, badbb;
+	int buflen;
+	uint8_t *buf, *buf1;
+        int i;
+
+	buflen = (mtd->writesize+mtd->oobsize)*mtd->erasesize/mtd->writesize;
+	buf = malloc(buflen*2);
+        buf1 = buf + buflen;
+
+	foundbb = 0;
+	badbb = 0;
+	if(!eraseit && mtd_read_fullblock(mtd, pos, buf, raw) != mtd->erasesize)
+		badbb = 1;
+
+
+	if(badbb)
+	{
+		printf("skip bad block 0x%x at 0x%x\n", pos/mtd->erasesize, pos); 
+	}
+	else
+	{
+		mtd_erase_fullblock(mtd, pos, raw);
+		memset(buf1,0,buflen);
+		if(mtd_read_fullblock(mtd, pos, buf1, 1) != mtd->erasesize)
+			goto bb1;
+		for(i=0;i<buflen;i=i+4)
+			if(*(volatile int *)(buf1+i) != -1)
+				goto bb1;
+		memset(buf1,0,buflen);
+		mtd_write_fullblock(mtd, pos, buf1);
+		memset(buf1,-1,buflen);
+		if(mtd_read_fullblock(mtd, pos, buf1, 1) != mtd->erasesize)
+			goto bb1;
+		for(i=0;i<buflen;i=i+4)
+			if(*(volatile *)(buf1+i) != 0)
+				goto bb1;
+bb:
+		mtd_erase_fullblock(mtd, pos, raw);
+		if(!eraseit)
+			mtd_write_fullblock(mtd, pos, buf);
+
+		if(foundbb)
+		{
+			mtd->block_markbad(mtd, pos); 
+			printf("\nNew bad block==%d addr==0x%08x\n",(pos / mtd->erasesize), pos);
+		}
+	}
+	free(buf);
+	return foundbb;
+bb1:
+	foundbb = 1;
+	goto bb;
+}
+
+int mtd_find_bb(char *file, int eraseit, int raw)
+{
+	mtdpriv *priv;
+	mtdfile        *mf;
+	struct mtd_info *mtd;
+	struct mtd_oob_ops ops;
+	struct erase_info erase;
+	int fd;
+	unsigned int pos, len, buflen;
+        unsigned long long checked;
+	int foundbb;
+	int i;
+	fd = open(file, O_RDWR);
+	priv = (mtdpriv *)_file[fd].data;
+	mf = priv->file;
+	mtd = mf->mtd;
+
+        pos=mf->part_offset+priv->open_offset;
+        len = priv->open_size_real;
+        checked = 0;
+	len +=  pos&(mtd->erasesize -1);
+	pos -= pos&(mtd->erasesize -1);
+	if(len&(mtd->erasesize -1))
+		len += mtd->erasesize - (len&(mtd->erasesize -1));
+        foundbb = 0;
+
+	while(len>0)
+	{
+		/*check a erasesize*/
+		if((checked & 0xfffff) == 0) printf("\r0x%llx", checked);
+		foundbb |= mtd_check_fullblock(mtd, pos, eraseit, raw);
+
+		pos += mtd->erasesize;
+		len -= mtd->erasesize;
+                checked += mtd->erasesize;
+	}
+	if((checked & 0xfffff) == 0) printf("\r0x%llx\n", checked);
+	creat_part_trans_table(mf);
+
+	return 0;
+}
+
 int cmd_mtd_updateecc(int argc,char **argv)
 {
  char *file = argc>1? argv[1]: "/dev/mtd0r";
@@ -1061,11 +1128,31 @@ int cmd_mtd_updateecc(int argc,char **argv)
  return 0;
 }
 
+int cmd_mtd_findbb(int argc,char **argv)
+{
+	char c;
+	char *file;
+	int eraseit = 0, raw = 0;
+	while((c = getopt(argc, argv, "er")) != EOF) {
+		switch(c){    
+			case 'e':
+				eraseit = 1;
+				break;
+			case 'r':
+				raw = 1;
+				break;
+		}
+	}
+	file = optind < argc? argv[optind]: "/dev/mtd0r";
+	mtd_find_bb(file, eraseit, raw);
+	return 0;
+}
 
 const Optdesc         mtd_opts[] = {
 	{"-h", "HELP"},
 	{"-H", "HELP"},
 	{"-j", "format the device for jffs2,the clearmark-size is 12 Byte"},
+        {"-c", "check for bad block"},
 	{0}
 };
 
@@ -1076,6 +1163,7 @@ static const Cmd Cmds[] =
 	{"mtdparts","0",0,"NANDFlash OPS:mtdparts ",my_mtdparts,0,99,CMD_REPEAT},
 	{"mtd_erase","[option] mtd_dev",mtd_opts,0,cmd_flash_erase,0,99,CMD_REPEAT},
 	{"mtd_updateecc","mtd_dev",NULL,0,cmd_mtd_updateecc,0,99,CMD_REPEAT},
+	{"mtd_findbb","[-e] [-r] [mtd_dev]","e: erase,r: rawerase","find badblock, keep data or erase",cmd_mtd_findbb,0,99,CMD_REPEAT},
 	{0, 0}
 };
 
