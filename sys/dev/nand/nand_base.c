@@ -1545,10 +1545,24 @@ static int nand_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 
 #if 1//def CONFIG_MTD_NAND_VERIFY_WRITE
 	/* Send command to read back the data */
-	chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
 
-	if (chip->verify_buf(mtd, buf, mtd->writesize)) 
-		return -EIO;
+	if(chip->ecc.write_page == nand_write_page_raw)
+	{
+		chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
+		if (chip->verify_buf(mtd, buf, mtd->writesize)) 
+			return -EIO;
+	}
+	else
+	{
+		int i;
+		uint8_t verify_buf[4096];
+		chip->ecc.read_page(mtd, chip, verify_buf);
+		for(i=0;i<mtd->writesize;i++)
+		{
+			if(buf[i] != verify_buf[i] )
+				return -EIO;
+		}
+	}
 #endif
 	return 0;
 }
