@@ -670,7 +670,7 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
                     break;
  
                 if(((info->num)++) % 512 == 0){
-                    printk("nand have write : %d M\n",(info->size)++); 
+                    //printk("nand have write : %d M\n",(info->size)++); 
                 }
                 info->cac_size = info->buf_count;
 
