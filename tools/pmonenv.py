@@ -19,7 +19,7 @@ def readenv(fname,foff,fsz,argv):
      e = a[2:].find('\x00\x00')
      t = a[2:2+e].split('\x00')+argv
     for i in t:
-       a=i.split('=')
+       a=i.split('=',1)
        if len(a) > 1:
          d[a[0]] = a[1]
        elif d.has_key(a[0]):
@@ -44,8 +44,8 @@ def writeenv(fname,foff,fsz,d):
 if __name__ == '__main__':
     opt,argv=getopt.getopt(sys.argv[1:],'o:s:f:w')
     opt=dict(opt)
-    foff = int(opt['-o'],0) if opt.has_key('-o') else 0x70000
-    fsz = int(opt['-s'],0) if opt.has_key('-s') else 494
+    foff = int(opt['-o'],0) if opt.has_key('-o') else 0xb000
+    fsz = int(opt['-s'],0) if opt.has_key('-s') else 500
     fname = opt['-f'] if opt.has_key('-f') else 'gzrom.bin'
     
     d=readenv(fname,foff,fsz,argv)
