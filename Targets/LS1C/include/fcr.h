@@ -71,43 +71,41 @@ extern char           *heaptop;
 /*********************************************************************/
 /*nvram define                                                       */
 /*********************************************************************/
-#if 0
-
-#ifdef NVRAM_IN_FLASH
-#	define	NVRAM_SIZE		494
-#	define	NVRAM_SECSIZE		500
-#	define	NVRAM_OFFS		0x00070000
-#	define ETHER_OFFS		494 	/* Ethernet address base */
-#else	/* Use clock ram, 256 bytes only */
-#	define NVRAM_SIZE	        512	
-#	define NVRAM_SECSIZE		NVRAM_SIZE	/* Helper */
-#	define NVRAM_OFFS		0
-#	define ETHER_OFFS		(NVRAM_SIZE-6) 	/* Ethernet address base */
-#endif
-
-#else
 
 #ifdef NVRAM_IN_FLASH
 #	define	NVRAM_SIZE		512
-#	define	NVRAM_SECSIZE		0x10000
+#	define	NVRAM_SECSIZE		NVRAM_SIZE
 #	define	NVRAM_OFFS		0x00070000
 #	define	NVRAM_POS		NVRAM_OFFS
-#	define ETHER_OFFS		NVRAM_SIZE 	/* Ethernet address base */
-#	define PLL_OFFS			(ETHER_OFFS+6)
-#else	/* Use clock ram, 256 bytes only */
+#	define ETHER_OFFS		(NVRAM_SIZE-6) 	/* Ethernet address base */
+#	define PLL_OFFS			(ETHER_OFFS-10)
+#elif defined NAND_BOOT /*ls1c nvram in nandflash*/	/* Use clock ram, 256 bytes only */
 #	define NVRAM_SECSIZE		2048	/* Helper */  /*nand flash  pagesize*/
 #	define NVRAM_SIZE	        (NVRAM_SECSIZE-16)
 #	define NVRAM_OFFS		0
 #	define NVRAM_POS	    0x70000
-#	define ETHER_OFFS		NVRAM_SIZE 	/* Ethernet address base */
-#	define PLL_OFFS			(ETHER_OFFS+6)
+#	define ETHER_OFFS		(NVRAM_SECSIZE-6) 	/* Ethernet address base */
+#	define PLL_OFFS			(ETHER_OFFS-10)
+#   define XRES_OFFS		(PLL_OFFS-2)
+#   define YRES_OFFS		(PLL_OFFS-4)
+#   define DEPTH__OFFS		(PLL_OFFS+8)
+/* environment variable is store at 7th block,(前1M 空间的最后一块（128k） */
+#	define NVNAND_BLOCK		(0x100000-64*2048/64/2048)
+//#	define NVNAND_BLOCK		7
+#	define NVNAND_PAGE		NVNAND_BLOCK*64
+#else	/* store in spi flash*/
+#	define NVRAM_SECSIZE		512		/* Helper */
+#	define NVRAM_SIZE	        (NVRAM_SECSIZE-20)
+#	define NVRAM_OFFS		0
+#	define NVRAM_POS	    0x70000
+#	define ETHER_OFFS		(NVRAM_SECSIZE-6) 	/* Ethernet address base */
+#	define PLL_OFFS			(ETHER_OFFS-10)
+#   define XRES_OFFS		(PLL_OFFS-2)
+#   define YRES_OFFS		(PLL_OFFS-4)
+#   define DEPTH__OFFS		(PLL_OFFS+8)
 #endif
 
 
-#	define NVNAND_BLOCK		((0x100000-2048*64)/2048/64)
-#	define NVNAND_PAGE (NVNAND_BLOCK*64)
-
-#endif
 /*********************************************************************/
 /*PCI map	                                                     */
 /*********************************************************************/
