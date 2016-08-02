@@ -90,7 +90,7 @@ extern char           *heaptop;
 #   define YRES_OFFS		(PLL_OFFS-4)
 #   define DEPTH__OFFS		(PLL_OFFS+8)
 /* environment variable is store at 7th block,(前1M 空间的最后一块（128k） */
-#	define NVNAND_BLOCK		(0x100000-64*2048/64/2048)
+#	define NVNAND_BLOCK		((0x100000-2048*64)/64/2048)
 //#	define NVNAND_BLOCK		7
 #	define NVNAND_PAGE		NVNAND_BLOCK*64
 #else	/* store in spi flash*/
