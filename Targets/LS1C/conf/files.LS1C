@@ -35,6 +35,7 @@ file    sys/dev/nand/loongson-soc-nand.c  nand
 #file    sys/dev/nand/ls1g-nand.c  nand
 file	Targets/LS1C/dev/nand_ops.c nand
 file	Targets/LS1C/dev/nand.c	nand
+file	Targets/LS1C/dev/ls1c_bsp_test.c 
 
 #file 	sys/dev/phy/bcm5461config.c
 
