@@ -28,17 +28,7 @@ void uda1342_test();
 #define dma_reg_write(addr, val) do{ *(volatile u32 *)(dma_base+(addr))=val; }while(0)
 //#define dma_reg_read(addr) *(volatile u32 * )(dma_base+(addr))
 #define dma_reg_read(addr) *(volatile u32 *)(addr)
-#if 0
-#define codec_wait(n) do{ int __i=n;\
-        while (__i-->0){ \
-            if ((ac97_reg_read(0x54) & 0x3) != 0) break;\
-            udelay(1000); }\
-            if (__i>0){ \
-                ac97_reg_read(0x6c);\
-                ac97_reg_read(0x68);\
-            }\
-        }while (0)
-#endif
+
 
 //yq:0x70-->0x68
         
@@ -135,28 +125,39 @@ static u32 rec_desc2[7]={
 	0x00000001
 };
 
+
+/***************************************************************************
+ * Description: get_clock()
+ * Parameters:
+ *				md_cpufreq is the sdram's freq
+ *				md_pipefreq is the cpu's freq
+ * Author  :Sunyoung_yg 
+ * Date    : 2015-11-15
+ ***************************************************************************/
+static unsigned int md_pipefreq, md_cpufreq;
+
+static void get_clock()
+{
+
+	unsigned int val = *(volatile unsigned int *)0xbfe78030;
+	unsigned int cpu_div = *(volatile unsigned int*)0xbfe78034;
+
+	cpu_div = (cpu_div >> 8) & 0x3f;
+	md_pipefreq = ((val >> 8) & 0xff) * 6 / cpu_div * 1000000 ;
+	val = (1 << ((val & 0x3) + 1)) % 5;
+	md_cpufreq  = md_pipefreq / val;
+}
+
 void  init_audio_data(void)
 {
 	unsigned int *data = (unsigned int*)(DMA_BUF|0xa0000000);
 	int i;
 
-#if 0
-	for (i=0; i<((BUF_SIZE)>>3); i++){
-//		data[i*2] = 0x7fffe000;
-//		data[i*2+1] = 0x1f2e3d4c;
-		data[i*2] = 0x77777777;
-		data[i*2+1] = 0x77777777;
-//		data[i*2+1] = 0x11111111;
-	}
-#endif
 
-#if 1
 	for (i=0; i<((BUF_SIZE)>>3); i++){
 		data[i*2] = (i*11)<<5 + i*3 + i;
 		data[i*2+1] = (i*11)<<4 + i*5 + i;
 	}
-#endif
-
 
 	for(i=0; i<40; i++){
 		TR("%x:  data:%x\n",((DMA_BUF|0xa0000000)+(i*4)),*(volatile unsigned int *)(DMA_BUF|0xa0000000+(i*4)));
@@ -187,17 +188,15 @@ void uda1342_config()
     unsigned char dev_addr[2];
     unsigned short value;
 
+	get_clock();
     dev_addr[0] = uda_dev_addr;
-//    rat_bitdiv = (33*1000000 - 48*1000*24*8)/(48*1000*24*4);
-//    rat_cddiv = 33*1000000 / (2*256*48*1000) - 2;
-#if 0 
-    rat_bitdiv = 0x7;
-    rat_cddiv = 0x0;
-#endif
-	/*内存频率120M，音频采样频率:44.1k，16位数据，双声道：  bitclock= 44.1k×16*2 = 1.5M */
-    rat_bitdiv = 0x27;//1.5M = 120M/(2*(0x27+1))
-    rat_cddiv = 0x4;  //12M = 120M/(2*(4+1))
-    
+
+//rat_bitdiv = bclk_div=Fsdram/2/BCLK -1
+//rat_cddiv  = mclk_div = Fsdram/2/(MCLK)-1
+	
+    rat_bitdiv = md_cpufreq/2/1500000-1;
+	rat_cddiv  = md_cpufreq/2/(1500000*8)-1;
+	
     * IISCONFIG = (16<<24) | (16<<16) | (rat_bitdiv<<8) | (rat_cddiv<<0) ;
 //    * IISSTATE = 0xc220;
     * IISSTATE = 0xc200;
@@ -208,118 +207,7 @@ void uda1342_config()
 //    set_uda_reg(dev_addr);
 }
  
-#if 0 
-int ac97_config(void)
-{
-	int i=0;
-	int codec_id;
-#ifdef CONFIG_CHINESE
-	printf("配置 ac97 编解码器\n");
-#else
-	printf("config ac97 codec\n");
-#endif
-	
-	/* 必须执行？？ AC97 codec冷启动 */
-	for(i=0;i<100000;i++) *(volatile unsigned char *)0xbfe74000 |= 1;
-	
-	/* 输出通道配置寄存器 */
-	ac97_reg_write(0x4, 0x6969);
-	TR("OCCR0 complete:%x\n",ac97_reg_read(0x4));
-	/* 输入通道配置寄存器 */
-	ac97_reg_write(0x10,0x690001);
-	TR("ICCR complete\n");
-	ac97_reg_write(0x58,0x0); //INTM
-	TR("INTM complete\n");
-	
-	/* codec reset */
-	ac97_reg_write(0x18,0x0|(0x0<<16)|(0<<31));
-	codec_wait(10000);
 
-	/* 读取0x7c寄存器地址的值 参考ALC203数据手册 */
-	ac97_reg_write(0x18,0|(0x7c<<16)|(1<<31));
-	codec_wait(10000);
-	codec_id = ac97_reg_read(0x18)&0xffff;
-	ac97_reg_write(0x18,0|(0x7e<<16)|(1<<31));
-	codec_wait(10000);
-	codec_id = (codec_id<<16) | (ac97_reg_read(0x18)&0xffff);
-#ifdef CONFIG_CHINESE
-	printf("编解码器ID： %x \n", codec_id); //read ID
-#else
-	printf("codec ID :%x \n", codec_id); //read ID
-#endif
-	
-	if (codec_id == 0x414c4760){
-		/* 输出通道配置寄存器 */
-		ac97_reg_write(0x4, 0x6969);
-		TR("OCCR0 complete:%x\n",ac97_reg_read(0x4));
-		/* 输入通道配置寄存器 */
-		ac97_reg_write(0x10,0x690001);
-		TR("ICCR complete\n");
-		
-		ac97_reg_write(0x18,0x201|(0x6a<<16)|(0<<31));
-		codec_wait(10000);
-		ac97_reg_write(0x18,0x0808|(0x38<<16)|(0<<31));
-		codec_wait(10000);
-		ac97_reg_write(0x18,0x0e|(0x66<<16)|(0<<31));
-		codec_wait(10000);
-	}
-	else{
-		/* 输出通道配置寄存器 */
-		ac97_reg_write(0x4, 0x6b6b);
-		TR("OCCR0 complete:%x\n",ac97_reg_read(0x4));
-		/* 输入通道配置寄存器 */
-		ac97_reg_write(0x10,0x6b0001);
-		TR("ICCR complete\n");
-	}
-	
-	/* ALC655 需要设置该寄存器 */
-	ac97_reg_write(0x18,0x0f0f|(0x1c<<16)|(0<<31));
-	codec_wait(10000);
-	/* line in */
-	ac97_reg_write(0x18,0x0101|(0x10<<16)|(0<<31));
-	codec_wait(10000);
-	
-	for(i=5;i>0;i--){
-		ac97_reg_write(0x18,0x0|(0x26<<16)|(1<<31));
-		codec_wait(10000);
-		TR("===D/A status:%x\n",ac97_reg_read(0x18)&0xffffffff);
-	}
-	//设置音量
-	ac97_reg_write(0x18,0x0808|(0x2<<16)|(0<<31));      //Master Volume. data=0x0808
-	TR("register 0x18 Master Volume.content2:%x\n",ac97_reg_read(0x18));
-	codec_wait(10000);
-	ac97_reg_write(0x18,0x0808|(0x4<<16)|(0<<31));      //headphone Vol.
-	codec_wait(10000);
-	ac97_reg_write(0x18,0x0008|(0x6<<16)|(0<<31));      //headphone Vol.
-	codec_wait(10000);
-	ac97_reg_write(0x18,0x0008|(0xc<<16)|(0<<31));      //phone Vol.
-	codec_wait(10000);
-	ac97_reg_write(0x18,0x0808|(0x18<<16)|(0<<31));     //PCM Out Vol.
-	codec_wait(10000);
-	ac97_reg_write(0x18,0x1|(0x2A<<16)|(0<<31));        //Extended Audio Status  and control
-	codec_wait(10000);
-	ac97_reg_write(0x18,sample_rate|(0x2c<<16)|(0<<31));     //PCM Out Vol. FIXME:22k can play 44k wav data?
-	codec_wait(10000);
-	/* record设置录音寄存器 */
-	if (ac97_rw==AC97_RECORD){
-		TR("===record config\n");
-		ac97_reg_write(0x18,sample_rate|(0x32<<16)|(0<<31));     //ADC rate .
-		codec_wait(10000);
-		ac97_reg_write(0x18,0x035f|(0x0E<<16)|(0<<31));     //Mic vol .
-		codec_wait(10000);
-		ac97_reg_write(0x18,0x0f0f|(0x1E<<16)|(0<<31));     //MIC Gain ADC.
-		codec_wait(10000);
-		ac97_reg_write(0x18,sample_rate|(0x34<<16)|(0<<31));     //MIC rate.
-		codec_wait(10000);
-	}
-#ifdef CONFIG_CHINESE
-	printf("配置完毕\n");
-#else
-	printf("config done\n");
-#endif
-	return 0;
-}
-#endif
 
 void dma_config(void)
 {
