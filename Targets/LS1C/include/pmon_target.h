@@ -70,5 +70,5 @@ extern int mtd_rescan(char *,char *);
 /*
 #define TGT_DEFENV  {"mtdparts","nand-flash:20M@0(kernel)ro,-(rootfs)",0,&mtd_rescan},   \                   
 */
-#define TGT_DEFENV  {"mtdparts","ls1x-nand:1M@0(boot),20M@0x200000(kernel),-(rootfs)",0,&mtd_rescan},   \
+#define TGT_DEFENV  {"mtdparts","ls1x-nand:1M@0(boot),20M@0x100000(kernel),-(rootfs)",0,&mtd_rescan},   \
                     {"bootdelay","3",0,0}
