@@ -152,7 +152,7 @@ stack = start - 0x4000		/* Place PMON stack below PMON start in RAM */
 	li  t1,	0x908c83bf
 	sw 	t1,	0x4(t0)
 #endif
-	DELAY(2000)
+	DELAY(20)
 
 #include "sdram_cfg.S"
     li  t1, 0xbfd00410
@@ -162,7 +162,7 @@ stack = start - 0x4000		/* Place PMON stack below PMON start in RAM */
 	li  a1, SD_PARA1
 #	li 	a1, 0x24e
     sw  a1, 0x4(t1)
-	DELAY(1000)
+	DELAY(20)
 
 	/* sunyoung_yg: 20150702 */
 #if	(NAND_BOOT | SDIO_BOOT)
@@ -196,100 +196,101 @@ uncached:
 	j	ra
 	nop
 
-LEAF(tgt_putchar)
-	nop
-	la	v0, COM_BASE
-1:
-	lbu	v1, NSREG(NS16550_LSR)(v0)
-	and	v1, LSR_TXRDY
-	beqz	v1, 1b
-	nop
-
-	sb	a0, NSREG(NS16550_DATA)(v0)
-	j	ra
-	nop	
-END(tgt_putchar)
-
-LEAF(stringserial)
-	nop
-	move	a2, ra
-	addu	a1, a0, s0
-	lbu	a0, 0(a1)
-1:
-	beqz	a0, 2f
-	nop
-	bal	tgt_putchar
-	addiu	a1, 1
-	b	1b
-	lbu	a0, 0(a1)
-
-2:
-	j	a2
-	nop
-END(stringserial)
-
-LEAF(hexserial_lr)
-	move	a2, ra
-	move	a1, a0
-	li	a3, 7
-1:
-	rol	a0, a1, 4
-	move	a1, a0
-	and	a0, 0xf
-	la	v0, hexchar
-	addu	v0, s0
-	addu	v0, a0
-	bal	tgt_putchar
-	lbu	a0, 0(v0)
-
-	bnez	a3, 1b
-	addu	a3, -1
-
-	li a0,'\r'
-	bal	tgt_putchar
+/*
+ *  Reboot vector usable from outside pmon.
+ */
+	.align	9
+ext_map_and_reboot:
+	bal	CPU_TLBClear
 	nop
 
-	li a0,'\n'
-	bal	tgt_putchar
+	li	a0, 0xc0000000
+	li	a1, 0x40000000
+	bal	CPU_TLBInit
+	nop
+	la	v0, tgt_reboot
+	la	v1, start
+	subu	v0, v1
+	lui	v1, 0xffc0
+	addu	v0, v1
+	jr	v0
 	nop
 
-	j	a2
+ /* */
 	nop
-END(hexserial)
+	b	exc_common
 
-v380_msg:
-	.asciz	"\r\nPANIC! Unexpected General exception!\r\nepc,cause,status,errorpc:\r\n"
-hexchar:
-	.ascii	"0123456789abcdef"
+	.align	7			/* bfc00280 */
+	la	a0, v280_msg
+	bal	stringserial
+	nop
+	b	exc_common
 
-	.org 0x380
-	li	a0,0x10000000 /*test from 0xbfcxxxxx or 0xff20xxxx */
-	and	a0,ra
-	bnez	a0,1f
-	la	a0,_start
-	li	s0,0xbfc00000
-	subu	s0,a0
-1:
+/* Cache error */
+	.align	8			/* bfc00300 */
+	PRINTSTR("\r\nPANIC! Unexpected Cache Error exception! ")
+	mfc0	a0, COP_0_CACHE_ERR
+	bal	hexserial
+	nop
+	b	exc_common
+
+/* General exception */
+	.align	7			/* bfc00380 */
 	la	a0, v380_msg
 	bal	stringserial
 	nop
-	mfc0	a0, COP_0_EXC_PC
-	bal	hexserial_lr
+	b	exc_common
+	
+	.align	9			/* bfc00400 */
+	la	a0, v400_msg
+	bal	stringserial
 	nop
+	b	exc_common
+
+	.align	7			/* bfc00480 */
+	la	a0, v480_msg
+	bal	stringserial
+	nop
+	b	exc_common
+
+	
+	.align	8			/* bfc00500 */
+exc_common:
+	PRINTSTR("\r\nCAUSE=")
 	mfc0	a0, COP_0_CAUSE_REG
-	bal	hexserial_lr
+	bal	hexserial
 	nop
+	PRINTSTR("\r\nSTATUS=")
 	mfc0	a0, COP_0_STATUS_REG
-	bal	hexserial_lr
+	bal	hexserial
 	nop
+	PRINTSTR("\r\nERRORPC=")
 	mfc0	a0, COP_0_ERROR_PC
-	bal	hexserial_lr
+	bal	hexserial
 	nop
+	PRINTSTR("\r\nEPC=")
+	mfc0	a0, COP_0_EXC_PC
+	bal	hexserial
+	nop
+	PRINTSTR("\r\nDERR0=")
+	cfc0	a0, COP_0_DERR_0
+	bal	hexserial
+	nop
+	PRINTSTR("\r\nDERR1=")
+	cfc0	a0, COP_0_DERR_1
+	bal	hexserial
+	nop
+
 1:
     b   1b
     nop
 
-    .org 0x400
+	b	ext_map_and_reboot
+	nop
+
+	.align 9
+		nop
+	.align 8
 	.word read
 	.word write
 	.word open
@@ -322,18 +323,19 @@ locate:
 	.set noreorder
 
 #if  (SPI_BOOT)
+#if 0  //sst25*  flash 不支持
 	/*spi speed*/
 	li  t0, 0xbfe80000
 	li  t1, 0x1f	// div 4, fast_read + burst_en + memory_en double I/O 模式 部分SPI flash可能不支持
 	sb  t1, 0x4(t0)	// sfc_param
 	li  t1, 0x05
 	sb  t1, 0x6(t0)
-
+#endif 
 #endif
 
+#if 0
 ####### config serial uart pad ######
-##### uart 0 gpio74/75 mux 2 #####
-
+##### uart 0 mux LCD_H/VSYNC (gpio74/75 mux 2)  #####
 	li	t1, 0xbfd011c0		
 	lw	t2, 0x8(t1)
 	li  t3,	~(0x3<<10)
@@ -363,6 +365,45 @@ locate:
 	li  t3,	~(0x3<<10)
 	and t2, t2,	t3
 	sw	t2, 0x8(t1)
+#endif
+	/* config uart10 use gpio82/84*/
+	//full uart8 split uart8~uart11
+	li	t1,	0xbfe4c904
+	lw	t2,	0x0(t1)
+	li	t3,	~(0x1)
+	and	t2,	t2,	t3
+	sw	t2,	0x0(t1)
+
+	li	t1, 0xbfd011c0		
+	lw	t2, 0x8(t1)
+	li  t3,	~(0x5<<(82-64))
+	and t2, t2,	t3
+	sw	t2, 0x8(t1)
+
+	li	t1, 0xbfd011d0		
+	lw	t2, 0x8(t1)
+	li  t3,	~(0x5<<(82-64))
+	and t2, t2,	t3
+	sw	t2, 0x8(t1)
+
+	li	t1, 0xbfd011e0		
+	lw	t2, 0x8(t1)
+	li  t3,	~(0x5<<(82-64))
+	and t2, t2,	t3
+	sw	t2, 0x8(t1)
+
+	li	t1, 0xbfd011f0		
+	lw	t2, 0x8(t1)
+	li  t3,	~(0x5<<(82-64))
+	and t2, t2,	t3
+	sw	t2, 0x8(t1)
+
+	li	t1, 0xbfd01200		
+	lw	t2, 0x8(t1)
+	li  t3,	(0x5<<(82-64))
+	or t2, t2,	t3
+	sw	t2, 0x8(t1)
+
 
 ##### uart2/3 config mux gpio #####
 	li	t1, 0xbfd011c0		#
@@ -397,32 +438,11 @@ locate:
  ×gpio38没有引出到芯片外，故需要将其设置位gpio功能。（下面的几行代码）
  *
  ***************************************************************************/
+#if 1
 	li  t1,	0xbfd010c0
 	li  t3, 0x40
 	sw  t3, 0x4(t1)
-
-//---------------------------------------------------
-
-######################## uart2/3 config mux gpio##########################
-	/*gpio 31,32 for uart11*/
-
-#if COM_BASE == COM11_BASE_ADDR
-	li	t1, 0xbfe4c904
-	li	t2, 0x0
-	sw	t2, (t1)
-
-	li	t1, 0xbfd01200	/*the fourth */
-	li	t2, 0x80000000
-	sw	t2, (t1)
-	li	t1, 0xbfd01204
-	li	t2, 0x1
-	sw	t2, (t1)			
-
-	li	t1, 0xbfd00420
-	li	t2, 0x0
-	sw	t2, (t1)		/*open i2c1*/
 #endif
-//---------------------------------------------------
 
 	bal	initserial
 	nop
@@ -615,7 +635,7 @@ do_caches:
 	sw	a0, CpuTertiaryCacheSize /* Set L3 cache size */
 
 	move	a0,msize
-	srl	a0,20
+	srl		a0,20
 
 	la	v0, initmips
 #	addu v0, s0  /* no add*/ 
@@ -699,6 +719,23 @@ LEAF(CPU_TLBInit)
 	nop
 END(CPU_TLBInit)
 
+LEAF(stringserial)
+	nop
+	move	a2, ra
+	addu	a1, a0, s0
+	lbu	a0, 0(a1)
+1:
+	beqz	a0, 2f
+	nop
+	bal	tgt_putchar
+	addiu	a1, 1
+	b	1b
+	lbu	a0, 0(a1)
+
+2:
+	j	a2
+	nop
+END(stringserial)
 
 LEAF(outstring)
 	move	a2, ra
@@ -738,6 +775,20 @@ LEAF(hexserial)
 	j	a2
 	nop
 END(hexserial)
+
+LEAF(tgt_putchar)
+	nop
+	la	v0, COM_BASE
+1:
+	lbu	v1, NSREG(NS16550_LSR)(v0)
+	and	v1, LSR_TXRDY
+	beqz	v1, 1b
+	nop
+
+	sb	a0, NSREG(NS16550_DATA)(v0)
+	j	ra
+	nop	
+END(tgt_putchar)
 
 LEAF(tgt_testchar)
 	la	v0, COM_BASE
@@ -818,10 +869,14 @@ v200_msg:
 	.asciz	"\r\nPANIC! Unexpected TLB refill exception!\r\n"
 v280_msg:
 	.asciz	"\r\nPANIC! Unexpected XTLB refill exception!\r\n"
+v380_msg:
+	.asciz	"\r\nPANIC! Unexpected General exception!\r\n"
 v400_msg:
 	.asciz	"\r\nPANIC! Unexpected Interrupt exception!\r\n"
 v480_msg:
 	.asciz	"\r\nPANIC! You have been in the Ejtag Debug MOde Trap is 0!\r\n"
+hexchar:
+	.ascii	"0123456789abcdef"
 
 	.text
 	.align	2
