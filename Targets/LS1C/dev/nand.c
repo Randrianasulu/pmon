@@ -1222,7 +1222,7 @@ static void ls1g_nand_cmdfunc(unsigned command, int column, int page_addr, int f
 					}
 					retry = verify_erase( page_addr>>6, -1);
 					printf("\r\nretry is:%d\r\n",retry);
-					udelay(3000000);
+					udelay(3000);
 			  // }
 				/*
 			   if (tmp<3)
