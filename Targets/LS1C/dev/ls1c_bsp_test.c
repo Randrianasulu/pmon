@@ -886,8 +886,8 @@ static int uart_test(unsigned int channel)
 //		,不能配置此寄存器, bit0 置位后，uart9-11 为uart8的全功能引脚
 		*(volatile unsigned char *)(uart_base+0x1) = 0x0;
 
-		pTestPort->freq = 144000000;
-		ns16550(OP_BAUD, pTestPort, NULL, 9600);
+		pTestPort->freq = md_cpufreq;
+		ns16550(OP_BAUD, pTestPort, NULL, 115200);
 
 		//########## print test character
 		val = strlen(str);
@@ -1407,6 +1407,7 @@ static int cmd_ls1c_bsp_test(int argc,char **argv)
 		printf(" cmd error!\r\n");
 		return -1;
 	}
+	get_clock();
 	if(!strcmp(argv[1],"uart"))
 	{
 		channel=strtoul(argv[2],0,0);
