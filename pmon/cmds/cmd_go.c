@@ -155,13 +155,13 @@ extern char	*optarg;
 			get_initrd_start(), get_initrd_size());
 		strcat(clientcmd, buf);
 	}
-
+#if 1
 	if(getenv("mtdparts"))
 	{
 		strcat(clientcmd, " mtdparts=");
 		strcat(clientcmd, getenv("mtdparts"));
 	}
-
+#endif
 	if (!sflag) {
 		md_adjstack(NULL, tgt_clienttos ());
 	}
