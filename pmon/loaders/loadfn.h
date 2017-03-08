@@ -45,11 +45,9 @@
 #define WFLAG 0x0400		/* Swapped endianness */
 #define UFLAG 0x0800		/* PMON upgrade flag */
 #define KFLAG 0x1000		/* Load symbols for kernel debugger */ 
-#define RFLAG 0x2000        //  bin wenjian ???
+#define RFLAG 0x2000
 #define OFLAG 0x4000
 #define ZFLAG 0x8000
-#define GFLAG 0x10000		/*load into nand flash */
-#define DFLAG 0x20000		/*load into sd card */
 
 #define DL_CONT		0
 #define DL_DONE		1

@@ -54,11 +54,6 @@
 #define HAVE_FLASH
 #endif
 
-#define NAND_FLASH
-#define SDCARD_FLASH
-
-#define SDCARD_DEBUG 1
-
 #ifdef __mips__
 #include <machine/cpu.h>
 #endif
@@ -85,9 +80,6 @@ const Optdesc         cmd_nload_opts[] =
 #ifdef HAVE_FLASH
 	{"-f flash_addr -o load_addr offsetr", ""},
 #endif
-	/*add by hb, test add opt for pragarm NAND*/	
-	{"-g flash_addr -o load_addr offsetr", ""},
-	{"-d flash_addr -o load_addr offsetr", ""},
 	{"-n", "don't load symbols"},
 	{"-y", "only load symbols"},
 	{"-v", "verbose messages"},
@@ -116,18 +108,17 @@ nload (argc, argv)
 	extern int optind;
 	extern char *optarg;
 	int c, err;
-	unsigned int flags;
+	int flags;
 	unsigned long offset;
 #ifdef HAVE_FLASH
 	void	    *flashaddr;
 	size_t	    flashsize;
 #endif
 
-
 	flags = 0;
 	optind = err = 0;
 	offset = 0;
-	while ((c = getopt (argc, argv, "sbeatif:g:d:nrvwyko:O:")) != EOF) {
+	while ((c = getopt (argc, argv, "sbeatif:nrvwyko:O:")) != EOF) {
 		switch (c) {
 			case 's':
 				flags |= SFLAG; break;
@@ -148,20 +139,6 @@ nload (argc, argv)
 				}
 				flags |= FFLAG; break;
 #endif
-/*add by hb, test program nand flash*/
-			case 'g':
-				printf("case g\n");
-				if (!get_rsa ((u_int32_t *)&flashaddr, optarg)) {
-					err++;
-				}
-				flags |= GFLAG; break;
-			case 'd':
-				printf("case d\n");
-				if (!get_rsa ((u_int32_t *)&flashaddr, optarg)) {
-					err++;
-				}
-				flags |= DFLAG; break;
-
 #if notyet
 			case 'u':
 				flashaddr = (void *)BOOTROMBASE;
@@ -235,45 +212,6 @@ nload (argc, argv)
 	}
 #endif
 
-/*add by hb, test program nand flash*/
-#ifdef NAND_FLASH
-	if (flags & GFLAG) {
-		nand_probe_boot();
-		/* any loaded program will be trashed... */
-		flags &= ~(SFLAG | BFLAG | EFLAG);
-		flags |= NFLAG;		/* don't bother with symbols */
-		/*
-		 * Recalculate any offset given on command line.
-		 * Addresses should be 0 based, so a given offset should be
-		 * the actual load address of the file.
-		 */
-		offset = (unsigned long)heaptop - offset;
-#if BYTE_ORDER == LITTLE_ENDIAN
-		bootbigend = 0;
-#else
-		bootbigend = 1;
-#endif
-	}
-#endif
-
-/*add by yg, test program sd card flash*/
-#if SDCARD_DEBUG
-#ifdef SDCARD_FLASH
-	if (flags & DFLAG) {
-		sdio_init();	
-		/* any loaded program will be trashed... */
-		flags &= ~(SFLAG | BFLAG | EFLAG);
-		flags |= NFLAG;		/* don't bother with symbols */
-		offset = (unsigned long)heaptop - offset;
-#if BYTE_ORDER == LITTLE_ENDIAN
-		bootbigend = 0;
-#else
-		bootbigend = 1;
-#endif
-	}
-#endif
-#endif
-
 	dl_initialise (offset, flags);
 
 	fprintf (stderr, "Loading file: %s ", path);
@@ -289,17 +227,15 @@ nload (argc, argv)
 	   }
 	} else {
 		if(flags&OFLAG){
-			dl_Oloadbuffer=malloc(0x1000);
-			if(dl_Oloadbuffer)
-			{
-				  ep = exec (NULL, bootfd, buf, &n, flags);
-				  free(dl_Oloadbuffer);
-			}
-			else 
-				ep=-1;
+		dl_Oloadbuffer=malloc(0x1000);
+		if(dl_Oloadbuffer)
+		 {
+		  ep = exec (NULL, bootfd, buf, &n, flags);
+		  free(dl_Oloadbuffer);
+		 }
+		else ep=-1;
 		}
-		else 
-			ep = exec (NULL, bootfd, buf, &n, flags);
+		else ep = exec (NULL, bootfd, buf, &n, flags);
 	}
 
 	close (bootfd);
@@ -315,7 +251,7 @@ nload (argc, argv)
 		return EXIT_FAILURE;
 	}
 
-	if (!(flags & (FFLAG|YFLAG|GFLAG))) {
+	if (!(flags & (FFLAG|YFLAG))) {
 		printf ("Entry address is %08x\n", ep);
 		/* Flush caches if they are enabled */
 		if (md_cachestat())
@@ -335,42 +271,8 @@ nload (argc, argv)
 				dl_maxaddr - dl_minaddr, 	/* size */
 				(void *)heaptop,		/* load */
 				bootbigend);
-	*(volatile unsigned int *)0xbfd00414 |= 0x10000;	//mhb
-	*(volatile unsigned int *)0xbfd00414 &= 0xfffeffff;	//mhb
-	*(volatile unsigned int *)0xbfd00414 |= 0x9000;		//mhb
 	}
 #endif
-
-/*add by hb, test program nand flash*/
-#ifdef NAND_FLASH
-	if (flags &GFLAG) {
-		extern long dl_minaddr;
-		extern long dl_maxaddr;
-		if (flags & WFLAG)
-			bootbigend = !bootbigend;
-		tgt_nand_flashprogram ((void *)flashaddr, 	   	/* address */
-				dl_maxaddr - dl_minaddr, 	/* size */
-				(void *)heaptop,		/* load */
-				bootbigend);
-	}
-#endif
-
-#if SDCARD_DEBUG
-#ifdef SDCARD_FLASH
-	if (flags &DFLAG) {
-		extern long dl_minaddr;
-		extern long dl_maxaddr;
-		if (flags & WFLAG)
-			bootbigend = !bootbigend;
-		tgt_sdcard_flashprogram ((void *)flashaddr, 	   	/* address */
-				dl_maxaddr - dl_minaddr, 	/* size */
-				(void *)heaptop,		/* load */
-				bootbigend);
-	}
-#endif
-
-#endif 
-
 	return EXIT_SUCCESS;
 }
 
