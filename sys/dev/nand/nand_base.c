@@ -1556,6 +1556,7 @@ static int nand_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 	{
 		int i;
 		uint8_t verify_buf[4096];
+		chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
 		chip->ecc.read_page(mtd, chip, verify_buf);
 		for(i=0;i<mtd->writesize;i++)
 		{
