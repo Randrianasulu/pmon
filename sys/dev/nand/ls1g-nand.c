@@ -36,6 +36,10 @@
 
 #define MAX_BUFF_SIZE	4096
 #define PAGE_SHIFT      12
+#ifdef LS232_SOC
+#undef LS1GSOC
+#define LS1FSOC 1
+#endif
 #ifdef LS1GSOC
 #define NO_SPARE_ADDRH(x)   ((x) >> (32 - (PAGE_SHIFT - 1 )))   
 #define NO_SPARE_ADDRL(x)   ((x) << (PAGE_SHIFT - 1))
@@ -509,6 +513,7 @@ static void nand_setup(unsigned int flags ,struct ls1g_nand_info *info)
     nand_base->timing = (flags & NAND_TIMING)==NAND_TIMING ? info->nand_regs.timing: info->nand_timing;
     nand_base->op_num = (flags & NAND_OP_NUM)==NAND_OP_NUM ? info->nand_regs.op_num: info->nand_op_num;
     nand_base->cs_rdy_map = (flags & NAND_CS_RDY_MAP)==NAND_CS_RDY_MAP ? info->nand_regs.cs_rdy_map: info->nand_cs_rdy_map;
+    nand_base->param = ((nand_base->param) & 0xc000ffff) | (nand_base->op_num << 16);
     if(flags & NAND_CMD){
 //        nand_base->cmd = (info->nand_regs.cmd) &(~0xff);
         nand_base->cmd = (info->nand_regs.cmd & (~1));
@@ -809,7 +814,7 @@ int ls1g_nand_detect(struct mtd_info *mtd)
 }
 static void ls1g_nand_init_info(struct ls1g_nand_info *info)
 {
-    _NAND_PARAM = 0x400;
+    _NAND_PARAM = 0x08005300;
     info->num=0;
     info->size=0;
     info->cac_size = 0; 
