@@ -396,6 +396,8 @@ static void ls1g_nand_init_mtd(struct mtd_info *mtd,struct ls1g_nand_info *info)
 #else
 	this->ecc.mode		= NAND_ECC_SOFT;
 #endif
+	this->ecc.size		= 256;
+	this->ecc.bytes		= 3;
 	this->ecc.hwctl		= ls1g_nand_ecc_hwctl;
 	this->ecc.calculate	= ls1g_nand_ecc_calculate;
 	this->ecc.correct	= ls1g_nand_ecc_correct;
