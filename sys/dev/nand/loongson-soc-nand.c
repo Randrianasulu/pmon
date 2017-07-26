@@ -398,10 +398,10 @@ static void ls1g_nand_init_mtd(struct mtd_info *mtd,struct ls1g_nand_info *info)
 		printk("using %u-bit/%u bytes BCH ECC\n", bch, this->ecc.size);
 	}
 #else
-	this->ecc.mode		= NAND_ECC_NONE;
-	//this->ecc.mode		= NAND_ECC_SOFT;
-	this->ecc.size		= 2048;
-	this->ecc.bytes		= 24;
+	//this->ecc.mode		= NAND_ECC_NONE;
+	this->ecc.mode		= NAND_ECC_SOFT;
+	this->ecc.size		= 256;
+	this->ecc.bytes		= 3;
 	this->ecc.layout = &hw_largepage_ecclayout;
 #endif
 	this->ecc.hwctl		= ls1g_nand_ecc_hwctl;
