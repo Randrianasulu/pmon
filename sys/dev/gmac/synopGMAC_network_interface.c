@@ -2276,12 +2276,30 @@ void reg_init(synopGMACdevice * gmacdev)
 	dumpreg(regbase);
 	
 }
+
+#ifdef GMAC_CONNECT_TO_SWITCH
+static int dummyphy[32] =
+{
+0x1140, 0x796d, 0x001c, 0xc915, 0x01e1, 0xc5e1, 0x000f, 0x2001, 0x6001, 0x0000, 0x4cff, 0x0000, 0x0000, 0x0000, 0x0000, 0x3000,
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x00000
+};
+#endif
 	
 static int mdio_read(synopGMACPciNetworkAdapter *adapter, int addr, int reg)
 {
 	synopGMACdevice * gmacdev;
 	u16 data;
 	gmacdev = adapter->synopGMACdev;
+
+#ifdef GMAC_CONNECT_TO_SWITCH
+	if((int)GMAC_CONNECT_TO_SWITCH==(int)gmacdev->MacBase)
+	{
+	 if(addr==0)
+	  return dummyphy[reg];
+         else 
+          return 0xffff;
+	}
+#endif
 	
 	synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,addr,reg, &data);
 	return data;
