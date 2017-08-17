@@ -82,7 +82,6 @@ static creat_part_trans_table(mtdfile *p)
     int tmp=0,len,good;
     int *table =NULL;
     if(p->trans_table) free(p->trans_table);
-    p->part_size_real = p->part_size;
     len = (end-start+1)*sizeof(int); 
     table = (int*)malloc(len);
     for(tmp=0,good=start;tmp<(end-start);tmp++){
@@ -556,6 +555,7 @@ int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
     rmp->part_offset=offset;
     if(size) rmp->part_size=size;
     else rmp->part_size=mtd->size - offset;
+    rmp->part_size_real = rmp->part_size;
     if(name)strcpy(rmp->name,name);
 
     if(!mtdfiles.lh_first)
