@@ -154,20 +154,22 @@ return 0;
 static int test_mtd_or_mtdc(int fp)
 {
     mtdpriv *priv;
-    int flags=0;
+	struct mtd_info *mtd;
     if(!strncmp(_file[fp].fs->devname,"mtd",3)){
-        flags=1;
         priv = (mtdpriv *)_file[fp].data;
+		mtd = priv->file->mtd;
         if(priv->flags & MTD_FLAGS_CHAR ||priv->flags & MTD_FLAGS_CHAR_MARK ||priv->flags & MTD_FLAGS_RAW  )
-            flags=2;
+			return mtd->writesize+mtd->oobsize;
+		else
+			return mtd->writesize;
     }
-    return flags;
+    return 0;
 }
 static int devcp(int argc,char **argv)
 {
 char *buf;
 int fp0,fp1;
-int n,i,flags;
+int n,i,mtdbs;
 int bs=0x20000;
 int seek=0,skip=0;
 char *fsrc=0,*fdst=0;
@@ -203,12 +205,10 @@ if(argc<3)return -1;
 
 
         if(!fp0||!fp1){printf("open file error!\n");free(buf);return -1;}
-        if(flags=(test_mtd_or_mtdc(fp0)|test_mtd_or_mtdc(fp1))){
-            if(flags & 0x2)
-                bs=0x840;
-            else
-                bs=0x20000;
-        };
+        if((mtdbs=(test_mtd_or_mtdc(fp0))))
+	  bs = mtdbs;
+	else if((mtdbs=(test_mtd_or_mtdc(fp1))))
+	  bs = mtdbs;
         lseek(fp0,skip*bs,SEEK_SET);
         lseek(fp1,seek*bs,SEEK_SET);
         buf=malloc(bs);
