@@ -2263,7 +2263,7 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	if (!mtd->name)
 		mtd->name = type->name;
 
-	chip->chipsize = type->chipsize << 20;
+	chip->chipsize = (unsigned long long)type->chipsize << 20;
 
 	/* Newer devices have all the information in additional id bytes */
 	if (!type->pagesize) {
@@ -2449,6 +2449,7 @@ int nand_scan(struct mtd_info *mtd, int maxchips)
 			chip->ecc.layout = &nand_oob_128;
 			break;
 		case 224:
+		case 256:
 			chip->ecc.layout = &nand_oob_128;
                         break;
 		default:

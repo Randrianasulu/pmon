@@ -112,8 +112,8 @@ static int
     char    *dname,namebuf[64];
     int idx=-1,flags=0;
     int found = 0;
-    int open_size=0;
-    int open_offset=0;
+    unsigned long long open_size=0;
+    unsigned long long  open_offset=0;
     char *poffset=0,*psize;
     strncpy(namebuf,fname,63);
     dname = namebuf;
@@ -184,9 +184,9 @@ static int
         {
 #define ftype(x) ((x==MTD_NANDFLASH)?"nand":(x==MTD_NORFLASH)?"nor":"others")
             if(p->part_offset||(p->part_size!=p->mtd->size))
-                printf("mtd%d: flash:%s type:%s size:%d writesize:%d erasesize:%d partoffset=0x%x,partsize=%d %s\n",p->index,p->mtd->name,ftype(p->mtd->type),p->mtd->size,p->mtd->writesize,p->mtd->erasesize,p->part_offset,p->part_size,p->name);
+                printf("mtd%d: flash:%s type:%s size:0x%llx writesize:0x%x erasesize:0x%x partoffset=0x%llx,partsize=0x%llx %s\n",p->index,p->mtd->name,ftype(p->mtd->type),p->mtd->size,p->mtd->writesize,p->mtd->erasesize,p->part_offset,p->part_size,p->name);
             else
-                printf("mtd%d: flash:%s type:%s size:%d writesize:%d erasesize:%d %s\n",p->index,p->mtd->name, ftype(p->mtd->type), p->mtd->size,p->mtd->writesize,p->mtd->erasesize, p->name);
+                printf("mtd%d: flash:%s type:%s size:0x%llx writesize:0x%x erasesize:0x%x %s\n",p->index,p->mtd->name, ftype(p->mtd->type), p->mtd->size,p->mtd->writesize,p->mtd->erasesize, p->name);
         }
         else if(p->index==idx) {
             found = 1;
@@ -204,12 +204,12 @@ foundit:
         {
             *psize++=0;
             if(flags & MTD_FLAGS_RAW || flags & MTD_FLAGS_CHAR ||flags & MTD_FLAGS_CHAR_MARK){
-                open_size=strtoul(psize,0,0);
+                open_size=strtoull(psize,0,0);
                 open_size -= ((open_size / 0x840)*0x40);
             }else
-            open_size=strtoul(psize,0,0);
+            open_size=strtoull(psize,0,0);
         }
-        open_offset=strtoul(poffset,0,0);
+        open_offset=strtoull(poffset,0,0);
     }
 
     p->refs++;
@@ -538,7 +538,7 @@ mtdfile_lseek (fd, offset, whence)
 	return (_file[fd].posn);
 }
 
-int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name)
+int add_mtd_device(struct mtd_info *mtd,unsigned long long offset,unsigned long long size,char *name)
 {
     struct mtdfile *rmp;
     int len=sizeof(struct mtdfile);

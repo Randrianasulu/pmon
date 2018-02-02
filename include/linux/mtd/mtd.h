@@ -293,7 +293,7 @@ struct nand_ecclayout {
 struct mtd_info {
 	u_char type;
 	u_int32_t flags;
-	u_int32_t size;	 // Total size of the MTD
+	u_int64_t size;	 // Total size of the MTD
 
 	/* "Major" erase size for the device. Naïve users may take this
 	 * to be the only erase size available, or may use the more detailed
@@ -462,7 +462,7 @@ static inline int call_old_write_oob(struct mtd_info *mtd, loff_t from, struct m
 
 	/* Kernel-side ioctl definitions */
 
-extern int add_mtd_device(struct mtd_info *mtd,int offset,int size,char *name);
+extern int add_mtd_device(struct mtd_info *mtd,unsigned long long offset,unsigned long long size,char *name);
 extern int del_mtd_device (struct mtd_info *mtd);
 
 extern struct mtd_info *__get_mtd_device(struct mtd_info *mtd, int num);

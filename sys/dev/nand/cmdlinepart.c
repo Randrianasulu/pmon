@@ -334,7 +334,7 @@ int parse_cmdline_partitions(struct mtd_info *master,
                              struct mtd_partition **pparts,
                              unsigned long origin,char *value)
 {
-	unsigned long offset;
+	unsigned long long offset;
 	int i;
 	struct cmdline_mtd_partition *part;
 	char *mtd_id = master->name;
