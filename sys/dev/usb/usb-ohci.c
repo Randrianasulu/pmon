@@ -3274,14 +3274,17 @@ int usb_lowlevel_stop(void *hc_data)
 
 void usb_ohci_stop_one(ohci_t *ohci)
 {
-	int cmd;
 
+	int cmd;
 	writel (0, &ohci->regs->control);
 	writel (OHCI_HCR,  &ohci->regs->cmdstatus);
 	(void) readl (&ohci->regs->cmdstatus);
 
-	cmd = pci_conf_read(ohci->sc_pc, ohci->pa.pa_tag, 0x04);
-	pci_conf_write(ohci->sc_pc, ohci->pa.pa_tag, 0x04, (cmd & ~0x7));
+	if(ohci->pa.pa_id!=-1)
+	{
+		cmd = pci_conf_read(ohci->sc_pc, ohci->pa.pa_tag, 0x04);
+		pci_conf_write(ohci->sc_pc, ohci->pa.pa_tag, 0x04, (cmd & ~0x7));
+	}
 }
 
 void usb_ohci_stop()
