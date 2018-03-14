@@ -601,12 +601,12 @@ if(desc_mode == RINGMODE){
 		if((length1 != 0) && (data1 != 0)){
 			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_R);
 			plat_free_memory(data1);	// free buffer1
-			TR("(Ring mode) rx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
+			TR0("(Ring mode) rx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
 		if((length2 != 0) && (data2 != 0)){
 			plat_dma_map_single(gmacdev,data2,RX_BUF_SIZE,SYNC_R);
 			plat_free_memory(data2);	//free buffer2
-			TR("(Ring mode) rx buffer2 %08x of size %d from %d rx descriptor is given back\n",data2, length2, i);
+			TR0("(Ring mode) rx buffer2 %08x of size %d from %d rx descriptor is given back\n",data2, length2, i);
 		}
 	}
 	plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc) * gmacdev->RxDescCount),gmacdev->RxDesc,gmacdev->RxDescDma); //free descriptors memory
@@ -618,14 +618,14 @@ else{
 	first_desc_dma_addr = gmacdev->RxDescDma;
 	for(i =0; i < gmacdev -> RxDescCount; i++){
 		synopGMAC_get_desc_data(first_desc, &status, &dma_addr1, &length1, &data1, &dma_addr2, &length2, &data2);
-		TR("%02d %08x %08x %08x %08x %08x %08x %08x\n",i,(u32)first_desc,first_desc->status,first_desc->length,first_desc->buffer1,first_desc->buffer2,first_desc->data1,first_desc->data2);
+		TR0("%02d %08x %08x %08x %08x %08x %08x %08x\n",i,(u32)first_desc,first_desc->status,first_desc->length,first_desc->buffer1,first_desc->buffer2,first_desc->data1,first_desc->data2);
 		if((length1 != 0) && (data1 != 0)){
 			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_R);
 			plat_free_memory(data1);	// free buffer1
 			TR("(Chain mode) rx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
 		plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc)),first_desc,first_desc_dma_addr); //free descriptors
-		TR("Memory allocated %08x for Rx Descriptor (chain) at  %d is given back\n",data2,i);
+		TR0("Memory allocated %08x for Rx Descriptor (chain) at  %d is given back\n",data2,i);
 
 		first_desc = (DmaDesc *)data2;
 		first_desc_dma_addr = dma_addr2;
@@ -678,7 +678,7 @@ if(desc_mode == RINGMODE){
 		if((length1 != 0) && (data1 != 0)){
 			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_W);
 			plat_free_memory(data1);	// free buffer1
-			TR("(Ring mode) tx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
+			TR0("(Ring mode) tx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
 		if((length2 != 0) && (data2 != 0)){
 			plat_dma_map_single(gmacdev,data2,RX_BUF_SIZE,SYNC_W);
@@ -687,22 +687,22 @@ if(desc_mode == RINGMODE){
 		}
 	}
 	plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc) * gmacdev->TxDescCount),gmacdev->TxDesc,gmacdev->TxDescDma); //free descriptors
-	TR("Memory allocated %08x for Tx Desriptors (ring) is given back\n",(u32)gmacdev->TxDesc);
+	TR0("Memory allocated %08x for Tx Desriptors (ring) is given back\n",(u32)gmacdev->TxDesc);
 }
 else{
-	TR("tx-------------------------------------------------------------------tx\n");
+	TR0("tx-------------------------------------------------------------------tx\n");
 	first_desc          = gmacdev->TxDesc;
 	first_desc_dma_addr = gmacdev->TxDescDma;
 	for(i =0; i < gmacdev -> TxDescCount; i++){
 		synopGMAC_get_desc_data(first_desc, &status, &dma_addr1, &length1, &data1, &dma_addr2, &length2, &data2);
-		TR("%02d %08x %08x %08x %08x %08x %08x %08x\n",i,(u32)first_desc,first_desc->status,first_desc->length,first_desc->buffer1,first_desc->buffer2,first_desc->data1,first_desc->data2);
+		TR0("%02d %08x %08x %08x %08x %08x %08x %08x\n",i,(u32)first_desc,first_desc->status,first_desc->length,first_desc->buffer1,first_desc->buffer2,first_desc->data1,first_desc->data2);
 		if((length1 != 0) && (data1 != 0)){
 			plat_dma_map_single(gmacdev,data1,RX_BUF_SIZE,SYNC_W);
 			plat_free_memory(data1);	// free buffer1
 			TR("(Chain mode) tx buffer1 %08x of size %d from %d rx descriptor is given back\n",data1, length1, i);
 		}
 		plat_free_consistent_dmaable_memory(gmacdev,(sizeof(DmaDesc)),first_desc,first_desc_dma_addr); //free descriptors
-		TR("Memory allocated %08x for Tx Descriptor (chain) at  %d is given back\n",data2,i);
+		TR0("Memory allocated %08x for Tx Descriptor (chain) at  %d is given back\n",data2,i);
 
 		first_desc = (DmaDesc *)data2;
 		first_desc_dma_addr = dma_addr2;
@@ -1445,29 +1445,29 @@ s32 synopGMAC_linux_close(struct synopGMACNetworkAdapter *tp)
         adapter->PInetdev->flags &= ~1;
 
 	synopGMAC_disable_interrupt_all(gmacdev);
-	TR("the synopGMAC interrupt has been disabled\n");
+	TR0("the synopGMAC interrupt has been disabled\n");
 
 	synopGMAC_disable_dma_rx(gmacdev);
         synopGMAC_take_desc_ownership_rx(gmacdev);
-	TR("the synopGMAC Reception has been disabled\n");
+	TR0("the synopGMAC Reception has been disabled\n");
 
 	synopGMAC_disable_dma_tx(gmacdev);
         synopGMAC_take_desc_ownership_tx(gmacdev);
 
-	TR("the synopGMAC Transmission has been disabled\n");
+	TR0("the synopGMAC Transmission has been disabled\n");
 	//netif_stop_queue(netdev);
 	
 	//free_irq(pcidev->irq, netdev);
-	TR("the synopGMAC interrupt handler has been removed\n");
+	TR0("the synopGMAC interrupt handler has been removed\n");
 	
-	TR("Now calling synopGMAC_giveup_rx_desc_queue \n");
+	TR0("Now calling synopGMAC_giveup_rx_desc_queue \n");
 	synopGMAC_giveup_rx_desc_queue(gmacdev, RINGMODE);
 	//synopGMAC_giveup_rx_desc_queue(gmacdev, CHAINMODE);
-	TR("Now calling synopGMAC_giveup_tx_desc_queue \n");
+	TR0("Now calling synopGMAC_giveup_tx_desc_queue \n");
 	synopGMAC_giveup_tx_desc_queue(gmacdev, RINGMODE);
 	//synopGMAC_giveup_tx_desc_queue(gmacdev, CHAINMODE);
 	
-	TR("Freeing the cable unplug timer\n");	
+	TR0("Freeing the cable unplug timer\n");	
 	//del_timer(&synopGMAC_cable_unplug_timer);
 
 	return -ESYNOPGMACNOERR;
@@ -2277,13 +2277,6 @@ void reg_init(synopGMACdevice * gmacdev)
 	
 }
 
-#ifdef GMAC_CONNECT_TO_SWITCH
-static int dummyphy[32] =
-{
-0x1140, 0x796d, 0x001c, 0xc915, 0x01e1, 0xc5e1, 0x000f, 0x2001, 0x6001, 0x0000, 0x4cff, 0x0000, 0x0000, 0x0000, 0x0000, 0x3000,
-0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x00000
-};
-#endif
 	
 static int mdio_read(synopGMACPciNetworkAdapter *adapter, int addr, int reg)
 {
@@ -2291,15 +2284,6 @@ static int mdio_read(synopGMACPciNetworkAdapter *adapter, int addr, int reg)
 	u16 data;
 	gmacdev = adapter->synopGMACdev;
 
-#ifdef GMAC_CONNECT_TO_SWITCH
-	if((int)GMAC_CONNECT_TO_SWITCH==(int)gmacdev->MacBase)
-	{
-	 if(addr==0)
-	  return dummyphy[reg];
-         else 
-          return 0xffff;
-	}
-#endif
 	
 	synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,addr,reg, &data);
 	return data;

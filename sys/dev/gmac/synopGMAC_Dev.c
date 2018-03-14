@@ -43,6 +43,13 @@ u32 synopGMAC_get_mdc_clk_div(synopGMACdevice *gmacdev)
 	return data;
 }
 
+#ifdef GMAC_CONNECT_TO_SWITCH
+static int dummyphy[32] =
+{
+0x1140, 0x796d, 0x001c, 0xc915, 0x01e1, 0xc5e1, 0x000f, 0x2001, 0x6001, 0x0300, 0x4cff, 0x0000, 0x0000, 0x0000, 0x0000, 0x3000,
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x00000
+};
+#endif
 
 /**
   * Function to read the Phy register. The access to phy register
@@ -59,6 +66,15 @@ u32 addr;
 u32 loop_variable;
 addr = ((PhyBase << GmiiDevShift) & GmiiDevMask) | ((RegOffset << GmiiRegShift) & GmiiRegMask) | GmiiCsrClk3;	//sw: add GmiiCsrClk 
 addr = addr | GmiiBusy ; //Gmii busy bit
+
+	
+#ifdef GMAC_CONNECT_TO_SWITCH
+	if((int)GMAC_CONNECT_TO_SWITCH==(int)RegBase && PhyBase == GMAC_PHY_BASE)
+	{
+	 *data = dummyphy[RegOffset];
+	 return -ESYNOPGMACNOERR;
+	}
+#endif
 
 synopGMACWriteReg(RegBase,GmacGmiiAddr,addr); //write the address from where the data to be read in GmiiGmiiAddr register of synopGMAC ip
 
