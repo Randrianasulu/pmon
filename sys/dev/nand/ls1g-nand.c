@@ -515,7 +515,7 @@ static void nand_setup(unsigned int flags ,struct ls1g_nand_info *info)
     nand_base->timing = (flags & NAND_TIMING)==NAND_TIMING ? info->nand_regs.timing: info->nand_timing;
     nand_base->op_num = (flags & NAND_OP_NUM)==NAND_OP_NUM ? info->nand_regs.op_num: info->nand_op_num;
     nand_base->cs_rdy_map = (flags & NAND_CS_RDY_MAP)==NAND_CS_RDY_MAP ? info->nand_regs.cs_rdy_map: info->nand_cs_rdy_map;
-    nand_base->param = ((nand_base->param) & 0xc000ffff) | (nand_base->op_num << 16);
+    nand_base->param = ((nand_base->param) & 0xc0000fff) | (info->size << 16);
     if(flags & NAND_CMD){
 //        nand_base->cmd = (info->nand_regs.cmd) &(~0xff);
         nand_base->cmd = (info->nand_regs.cmd & (~1));
@@ -577,6 +577,8 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
         page_prev = info->page_addr;
         info->cmd = command;
         info->page_addr = page_addr;
+		info->size = (mtd->writesize + mtd->oobsize)?:0x840;
+	    struct ls1g_nand_desc *nand_base = (struct ls1a_nand_desc *)(info->mmio_base);
 //show_dma_regs((void *)(info->mmio_base),0); 
         switch(command){
             case NAND_CMD_READOOB:
@@ -773,11 +775,13 @@ static void ls1g_nand_cmdfunc(struct mtd_info *mtd, unsigned command,int column,
                 info->buf_count = 0x5;
                 info->buf_start = 0;
 //                info->cac_size = info->buf_count;
+				nand_base->param = ((nand_base->param) & 0xc0000fff) | (info->size << 16)|0x5000;
                 {
 
                     unsigned int id_val_l=0,id_val_h=0;
                     unsigned int timing = 0;
                     unsigned char *data = (unsigned char *)(info->data_buff);
+                    _NAND_SET_REG(0x20, info->nand_cs_rdy_map) ; 
 //                    _NAND_READ_REG(0xc,timing);
   //                  _NAND_SET_REG(0xc,0x30f0); 
                     _NAND_SET_REG(0x0,0x21); 
@@ -816,7 +820,7 @@ int ls1g_nand_detect(struct mtd_info *mtd)
 }
 static void ls1g_nand_init_info(struct ls1g_nand_info *info)
 {
-    _NAND_PARAM = 0x08005300;
+    _NAND_PARAM = 0x08405300;
     info->num=0;
     info->size=0;
     info->cac_size = 0; 
