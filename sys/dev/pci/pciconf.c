@@ -868,7 +868,10 @@ _pci_setup_devices (struct pci_device *parent, int initialise)
 	    class = _pci_conf_read(tag, PCI_CLASS_REG);
 	    cmd |= PCI_COMMAND_MASTER_ENABLE 
 		| PCI_COMMAND_SERR_ENABLE 
-		| PCI_COMMAND_PARITY_ENABLE;
+#ifndef PCIBRIDGE_DISABLE_PARITY
+		| PCI_COMMAND_PARITY_ENABLE
+#endif
+		;
 	    /* always enable i/o & memory space, in case this card is
 	       just snarfing space from the fixed ISA block and doesn't
 	       declare separate PCI space. Exception from this is if
