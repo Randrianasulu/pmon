@@ -297,6 +297,7 @@ _pci_query_dev_func (struct pci_device *dev, pcitag_t tag, int initialise)
 			tmp = _pci_conf_read(pcidev->pa.pa_tag, PCI_PRIBUS_1);
 			tmp &= 0xff00ffff;
 			tmp |= pd->bridge.secbus_num << 16;
+			if(pcidev->parent)
 			_pci_conf_write(pcidev->pa.pa_tag, PCI_PRIBUS_1, tmp);
 		}
 
