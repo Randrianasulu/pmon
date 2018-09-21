@@ -110,6 +110,52 @@ int erase_nand(u32 start,u32 blocks);
 static int init_nand(int ecc_flag);
 
 int chipsize = 0x08000000;
+static int size_per_page(int flag, int ecc_flag)
+{
+	int chunkpage;
+	int pagesize = PAGE_TO_FLASH(1);
+	if(ecc_flag == 0)
+	{
+		switch(flag){
+			case 0:
+				chunkpage = pagesize;      //2k
+				break;
+			case 1:
+				chunkpage = pagesize/32;
+				break;
+			case 2:
+				chunkpage = pagesize + pagesize/32;
+				break;
+			default:
+				chunkpage = 0;
+				break;
+		}    
+	}
+	else
+	{
+		switch(flag){
+			case 0:
+				chunkpage = pagesize/204*188;
+				break;
+			case 1:
+				chunkpage = pagesize/32;
+				break;
+			case 2:
+				chunkpage = pagesize/204*188+pagesize/32;
+				break;
+			default:
+				chunkpage = 0;
+				break;
+		}    
+	}
+
+return chunkpage;
+}
+
+static int size_per_block(int flag, int ecc_flag)
+{
+return PAGES_A_BLOCK*size_per_page(flag, ecc_flag);
+}
 
 void nand_udelay(unsigned int us)
 {
@@ -131,17 +177,7 @@ static void nand_send_cmd(u32 cmd, u32 page)//Send addr and cmd
          }
     else if((cmd & 0x300) == 0x200)  // spare area
         {
-        #ifdef NAND_2k_page
-         NAND_WL(ADDR_COL,0x800);    // addr_col >2k is spare area
-        #else
-        #ifdef NAND_4k_page
-         NAND_WL(ADDR_COL,0x1000);   // addr_col >4k is spare area
-        #else
-        #ifdef NAND_512_page
-         NAND_WL(ADDR_COL,0x200);    // addr_col >512 is spare area
-        #endif
-        #endif
-        #endif
+         NAND_WL(ADDR_COL,PAGE_TO_FLASH(1));    // addr_col >2k is spare area
          NAND_WL(ADDR_ROW,page);
         }
     else                             // main + spare area
@@ -154,14 +190,6 @@ static void nand_send_cmd(u32 cmd, u32 page)//Send addr and cmd
 	NAND_WL(CMD, cmd);
 }
 
-#if 0
-void gpio_init(void)
-{
-    _WL(0xbfd010c0,0x3);//enable gpio0 and gpio1
-    _WL(0xbfd010d0,0x2);//gpio0 output,gpio1 intput
-    
-}
-#endif
 
 static u8 rdy_status(void)
 {
@@ -173,7 +201,7 @@ static int nand_op_ok(u32 len, u32 ram)
 {
 	unsigned int cmd,times;
 	times = 1000;
-    NAND_RL(CMD,cmd);
+	NAND_RL(CMD,cmd);
 	while(!(cmd & (0x1<<10))&& times--){
 		udelay(100);
 		NAND_RL(CMD,cmd);
@@ -246,147 +274,44 @@ int read_pages(u32 ram, u32 page, u32 pages, u8 flag, u8 ecc_flag)
     u32 dmalen = 0;	
 
   if(ecc_flag == 0)
-    {
-      #ifdef NAND_2k_page
-      switch(flag){
-      	case 0:
-      		len = pages * 0x800;	//2K（K9F1G08U0C）
-      		nand_cmd = 0x103;		//操作发生在NAND的MAIN区+读操作+命令有效
-      	break;
-      	case 1:
-      		len = pages * 0x40;	//64B
-      		nand_cmd = 0x203;		//操作发生在NAND的SPARE区+读操作+命令有效
-      	break;
-      	case 2:
-      		len = pages * 0x840;	//2K + 64B
-      		nand_cmd = 0x303;		//操作发生在NAND的SPARE区+操作发生在NAND的MAIN区+读操作+命令有效
-      	break;
-      	default:
-      		len = 0;
-      		nand_cmd = 0;
-      	break;
-      }
-      #else
-      #ifdef NAND_512_page
-      switch(flag){
-      	case 0:
-      		len = pages*0x200;  // 512 page
-      		nand_cmd = 0x103;
-      	break;
-      	case 1:
-      		len = pages*0x10;
-      		nand_cmd = 0x203;
-      	break;
-      	case 2:
-      		len = pages*0x210;
-      		nand_cmd = 0x303;
-      	break;
-      	default:
-      		len = 0;
-      		nand_cmd = 0;
-      	break;
-      }
-      #else
-      #ifdef NAND_4k_page
-      switch(flag){
-      	case 0:
-      		len = pages*0x1000;  // 4k page
-      		nand_cmd = 0x103;
-      	break;
-      	case 1:
-      		len = pages*0x80;
-      		nand_cmd = 0x203;
-      	break;
-      	case 2:
-      		len = pages*0x1080;
-      		nand_cmd = 0x303;
-      	break;
-      	default:
-      		len = 0;
-      		nand_cmd = 0;
-      	break;
-      }
-      #endif
-      #endif
-      #endif
-          dmalen = len;
-    }
+  {
+	  switch(flag){
+		  case 0:
+			  nand_cmd = 0x103;		//操作发生在NAND的MAIN区+读操作+命令有效
+			  break;
+		  case 1:
+			  nand_cmd = 0x203;		//操作发生在NAND的SPARE区+读操作+命令有效
+			  break;
+		  case 2:
+			  nand_cmd = 0x303;		//操作发生在NAND的SPARE区+操作发生在NAND的MAIN区+读操作+命令有效
+			  break;
+		  default:
+			  nand_cmd = 0;
+			  break;
+	  }
+	  dmalen = len = pages *size_per_page(flag, 0);
+  }
   else
     {
-      #ifdef NAND_2k_page
-	  switch(flag){
-	  	case 0:
-	  		len = pages * 0x7f8;	//2040（K9F1G08U0C）
-	  		nand_cmd = 0x4903;		//操作发生在NAND的MAIN区+读操作+命令有效
-	  		dmalen = pages * 0x758;	//1880（K9F1G08U0C）
-	  	break;
-	  	case 1:
-	  		len = pages * 0x40;	//64B
-	  		nand_cmd = 0x203;		//操作发生在NAND的SPARE区+读操作+命令有效
-	  		dmalen = len;	//64
-	  	break;
-	  	case 2:
-	  		len = pages * 0x840;	//2K + 64B
-	  		nand_cmd = 0x4b03;		//操作发生在NAND的SPARE区+操作发生在NAND的MAIN区+读操作+命令有效
-	  		dmalen = pages * 0x798;	//1880+64（K9F1G08U0C）
-	  	break;
-	  	default:
-	  		len = 0;
-	  		nand_cmd = 0;
-	  	break;
-	  }
-      #else
-      #ifdef NAND_512_page
-	  switch(flag){
-	  	case 0:
-	  		len = pages*0x198;  // 512 page
-	  		nand_cmd = 0x4903;
-	  		dmalen = pages * 0x178;	//376（K9F1G08U0C）
-	  	break;
-	  	case 1:
-	  		len = pages*0x10;  // 16
-	  		nand_cmd = 0x203;
-	  		dmalen = len;
-	  	break;
-	  	case 2:
-	  		len = pages*0x210;
-	  		nand_cmd = 0x4b03;
-	  		dmalen = pages*0x188; // 376 + 16
-	  	break;
-	  	default:
-	  		len = 0;
-	  		nand_cmd = 0;
-	  		dmalen = len;
-	  	break;
-	  }
-      #else
-      #ifdef NAND_4k_page
-	  switch(flag){
-	  	case 0:
-	  		len = pages*0xff0;  // 4080 Byte / page
-	  		nand_cmd = 0x4903;
-	  		dmalen = pages*0xeb0; // 3760 Byte 
-	  	break;
-	  	case 1:
-	  		len = pages*0x80;  // 128 Byte
-	  		nand_cmd = 0x203;
-	  		dmalen = len;
-	  	break;
-	  	case 2:
-	  		len = pages*0x1080; //
-	  		nand_cmd = 0x4b03;
-	  		dmalen = pages*0xf30; // 3760  + 128Byte 
-	  	break;
-	  	default:
-	  		len = 0;
-	  		nand_cmd = 0;
-	  		dmalen = len;
-	  	break;
-	  }
-      #endif
-      #endif
-      #endif
+	    switch(flag){
+		    case 0:
+			    nand_cmd = 0x4903;		//操作发生在NAND的MAIN区+读操作+命令有效
+			    break;
+		    case 1:
+			    nand_cmd = 0x203;		//操作发生在NAND的SPARE区+读操作+命令有效
+			    break;
+		    case 2:
+			    nand_cmd = 0x4b03;		//操作发生在NAND的SPARE区+操作发生在NAND的MAIN区+读操作+命令有效
+			    break;
+		    default:
+			    nand_cmd = 0;
+			    break;
+	    }
+
+	    dmalen = pages *size_per_page(flag, 1);
+	    len = pages*(size_per_page(0, 1)/188*204+(flag>0)*size_per_page(1,1));
     }
+
 	dma_config(dmalen, ram, dma_cmd);	//配置DMA
 	//#define STOP_DMA            (_WL(0xbfd01160,0x10))
 	STOP_DMA;	//用户请求停止DMA操作
@@ -415,150 +340,46 @@ int write_pages(u32 ram,u32 page,u32 pages,u8 flag,u8 ecc_flag)
 	u32 ret=0,step=1;
 	int val=pages;
     u32 dmalen = 0;	
-printf("page %d pages %d ecc %d ram 0x%x\n", page, pages, ecc_flag, ram);
 
   if(ecc_flag == 0)
     {
-      #ifdef NAND_2k_page
 	  switch(flag){
 	  	case 0:
-	  		len = step*0x800;  // 2k page
 	  		nand_cmd = 0x105;
 	  	break;
 	  	case 1:
-	  		len =  step*0x40;
 	  		nand_cmd = 0x205;
 	  	break;
 	  	case 2:
-	  		len = step*0x840;
 	  		nand_cmd = 0x305;
 	  	break;
 	  	default:
-	  		len = 0;
 	  		nand_cmd = 0;
 	  	break;
 	  }
-      #else
-      #ifdef NAND_512_page
-	  switch(flag){
-	  	case 0:
-	  		len = step*0x200;  // 512 page
-	  		nand_cmd = 0x105;
-	  	break;
-	  	case 1:
-	  		len =  step*0x10;
-	  		nand_cmd = 0x205;
-	  	break;
-	  	case 2:
-	  		len = step*0x210;
-	  		nand_cmd = 0x305;
-	  	break;
-	  	default:
-	  		len = 0;
-	  		nand_cmd = 0;
-	  	break;
-	  }
-      #else
-      #ifdef NAND_4k_page
-	  switch(flag){
-	  	case 0:
-	  		len = step*0x1000;  // 4k page
-	  		nand_cmd = 0x105;
-	  	break;
-	  	case 1:
-	  		len =  step*0x80;
-	  		nand_cmd = 0x205;
-	  	break;
-	  	case 2:
-	  		len = step*0x1080;
-	  		nand_cmd = 0x305;
-	  	break;
-	  	default:
-	  		len = 0;
-	  		nand_cmd = 0;
-	  	break;
-	  }
-      #endif
-      #endif
-      #endif
-      dmalen = pages*len/step;
+
+	  dmalen = len = step*size_per_page(flag, 0);
     }
   else
     {
-      #ifdef NAND_2k_page
 	  switch(flag){
 	  	case 0:
-	  		len = step*(2048/204*204); //2040 page
 	  		nand_cmd = 0x5105;
-	  		dmalen = step*(2048/204*188);	//1880（K9F1G08U0C）
 	  	break;
 	  	case 1:
-	  		len =  step*64;
 	  		nand_cmd = 0x205;
-              dmalen = len;
 	  	break;
 	  	case 2:
-	  		len = step*(2040+64);
 	  		nand_cmd = 0x5305;
-	  		dmalen = step * (1880+64);	//1880+ 64（K9F1G08U0C）
 	  	break;
 	  	default:
-	  		len = 0;
 	  		nand_cmd = 0;
-              dmalen = len;
 	  	break;
 	  }
-      #else
-      #ifdef NAND_512_page
-	  switch(flag){
-	  	case 0:
-	  		len = step*0x198;  // 408 page
-	  		nand_cmd = 0x1105;
-	  		dmalen = step * 0x178;	//376（K9F1G08U0C）
-	  	break;
-	  	case 1:
-	  		len =  step*0x10;
-	  		nand_cmd = 0x205;
-              dmalen = len;
-	  	break;
-	  	case 2:
-	  		len = step*0x210;
-	  		nand_cmd = 0x1305;
-	  		dmalen = step * 0x188;	//376+16（K9F1G08U0C）
-	  	break;
-	  	default:
-	  		len = 0;
-	  		nand_cmd = 0;
-              dmalen = len;
-	  	break;
-	  }
-      #else
-      #ifdef NAND_4k_page
-	  switch(flag){
-	  	case 0:
-	  		len = step*0xff0;  // 4080 page
-	  		nand_cmd = 0x1105;
-	  		dmalen = step*0xeb0; // 3760 Byte 
-	  	break;
-	  	case 1:
-	  		len =  step*0x80;
-	  		nand_cmd = 0x205;
-              dmalen = len;
-	  	break;
-	  	case 2:
-	  		len = step*0x1080;
-	  		nand_cmd = 0x1305;
-	  		dmalen = step*0xf30; // 3760  + 128Byte 
-	  	break;
-	  	default:
-	  		len = 0;
-	  		nand_cmd = 0;
-              dmalen = len;
-	  	break;
-	  }
-      #endif
-      #endif
-      #endif
+
+	  dmalen = step*size_per_page(flag, 1); //2040 page
+	  len = step*(size_per_page(0, 1)/188*204+(flag>0)*size_per_page(1,1));
+		
     }
 	for(; val>0; val-=step){
 		dma_config(dmalen,ram,dma_cmd);
@@ -616,137 +437,10 @@ int read_nand(u32 ram,u32 flash,u32 len,u8 flag,u8 ecc_flag)
 	//#define FLASH_TO_PAGE(x)  ((x)>>11)
 	//把输入的flash地址转换为页地址 这里页大小为2K 如果换用不同的Flash会如何？
 	page = FLASH_TO_PAGE(flash);//start page 
-if(ecc_flag == 0)
-  {
-     #ifdef NAND_2k_page
-      switch(flag){
-      	case 0:
-      		chunkblock = 0x20000;	//128K
-      		chunkpage = 0x800;
-			printf(" 2k page  ,128k block\r\n");
-      	break;
-      	case 1:
-      		chunkblock = 0x1000;		//4K
-      		chunkpage = 0x40;
-      	break;
-      	case 2:
-      		chunkblock = 0x21000;	//128K+4K
-      		chunkpage = 0x840;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_512_page
-      switch(flag){
-      	case 0:
-      		chunkblock = 0x4000;	//512*32=16k
-      		chunkpage = 0x200;
-      	break;
-      	case 1:
-      		chunkblock = 0x200;		//16*32=1K
-      		chunkpage = 0x10;
-      	break;
-      	case 2:
-      		chunkblock = 0x4200;	//32K+1K
-      		chunkpage = 0x210;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_4k_page
-      switch(flag){
-      	case 0:
-      		chunkblock = 0x80000;	//512K
-      		chunkpage = 0x1000;
-      	break;
-      	case 1:
-      		chunkblock = 0x4000;    //16K
-      		chunkpage = 0x80;
-      	break;
-      	case 2:
-      		chunkblock = 0x84000;	//512K+16K
-      		chunkpage = 0x1080;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-    #endif
-    #endif
-    #endif
-  }
-  else
-  {
-     #ifdef NAND_2k_page
-      switch(flag){
-      	case 0:
-      		chunkblock = 0x1fe00;	//2040 * 64
-      		chunkpage = 0x7f8;
-      	break;
-      	case 1:
-      		chunkblock = 0x1000;		//64 * 64
-      		chunkpage = 0x40;
-      	break;
-      	case 2:
-      		chunkblock = 0x21000;	//128K+4K
-      		chunkpage = 0x840;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_512_page
-      switch(flag){
-      	case 0:
-      		chunkblock = 0x3300;	//408 * 32
-      		chunkpage = 0x198;
-      	break;
-      	case 1:
-      		chunkblock = 0x200;		//16*32
-      		chunkpage = 0x10;
-      	break;
-      	case 2:
-      		chunkblock = 0x4200;	//16K+512
-      		chunkpage = 0x210;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_4k_page
-      switch(flag){
-      	case 0:
-      		chunkblock = 0x7f800;	//4080*128
-      		chunkpage = 0xff0;
-      	break;
-      	case 1:
-      		chunkblock = 0x4000;    //128*128
-      		chunkpage = 0x80;
-      	break;
-      	case 2:
-      		chunkblock = 0x84000;	//512K+16K
-      		chunkpage = 0x1080;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-    #endif
-    #endif
-    #endif
-  }
+
+	chunkblock = size_per_block(flag, ecc_flag);
+	chunkpage = size_per_page(flag, ecc_flag);
+
 //	printf("reading ");
 	pages = (len + chunkpage - 1)/chunkpage;
 //	printf("%x:pages==0x%08x\n",__LINE__,pages);
@@ -832,117 +526,8 @@ int write_nand(u32 ram, u32 flash, u32 len, u8 flag, u8 ecc_flag)
 		printf("the FLASH addr 0x%08x is a bad block,auto change FLASH addr 0x%08x\n", flash, PAGE_TO_FLASH(page));
 	}
 
-if(ecc_flag == 0)
-  {
-     #ifdef NAND_2k_page
-      switch(flag){
-      	case 0:
-      		chunkpage = 0x800;      //2k
-      	break;
-      	case 1:
-      		chunkpage = 0x40;
-      	break;
-      	case 2:
-      		chunkpage = 0x840;
-      	break;
-      	default:
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_512_page
-      switch(flag){
-      	case 0:
-      		chunkpage = 0x200;
-      	break;
-      	case 1:
-      		chunkpage = 0x10;
-      	break;
-      	case 2:
-      		chunkpage = 0x210;
-      	break;
-      	default:
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_4k_page
-      switch(flag){
-      	case 0:
-      		chunkpage = 0x1000;
-      	break;
-      	case 1:
-      		chunkpage = 0x80;
-      	break;
-      	case 2:
-      		chunkpage = 0x1080;
-      	break;
-      	default:
-      		chunkpage = 0;
-      	break;
-      }    
-    #endif
-    #endif
-    #endif
-  }
-else
-  {
-     #ifdef NAND_2k_page
-      switch(flag){
-      	case 0:
-      		chunkpage = 2048/204*188;
-      	break;
-      	case 1:
-      		chunkpage = 64;
-      	break;
-      	case 2:
-      		chunkpage = 2048/204*188+64;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_512_page
-      switch(flag){
-      	case 0:
-      		chunkpage = 512/204*188;
-      	break;
-      	case 1:
-      		chunkpage = 0x10;
-      	break;
-      	case 2:
-      		chunkpage = 512/204*188+16;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-     #else
-     #ifdef NAND_4k_page
-      switch(flag){
-      	case 0:
-      		chunkpage = 4096/204*188;
-      	break;
-      	case 1:
-      		chunkpage = 0x80;
-      	break;
-      	case 2:
-      		chunkpage = 4096/204*188+0x80;
-      	break;
-      	default:
-      		chunkblock = 0;
-      		chunkpage = 0;
-      	break;
-      }    
-    #endif
-    #endif
-    #endif
-  }
-
-      	chunkblock = chunkpage*64;	//2040 * 64
+	chunkblock = size_per_block(flag, ecc_flag);
+	chunkpage = size_per_page(flag, ecc_flag);
 
 //	printf("writing. ");    
 	pages = (len + chunkpage - 1)/chunkpage;
@@ -950,25 +535,25 @@ else
 	start_page = page % PAGES_A_BLOCK;	//页在块中的相对起始地址
 	if(start_page){
 		b_pages = (PAGES_A_BLOCK - start_page);
-	}
-	if(b_pages > 0){
-		//读取需要写入的页在对应块中的该块的数据，暂存
-		ret = read_pages(NAND_TMP, page - start_page, start_page, 2,0); //page - start_page = 以块为单位块中的第一个页地址
-		if(ret){return ret;}
-		erase_block(PAGE_TO_BLOCK(page));//擦除该块
-		ret = write_pages(NAND_TMP, page - start_page, start_page, 2,0);
-//		printf(". ");
-		if(ret){return ret;}
-	if(pages > b_pages){
-		ret = write_pages(ram, page, b_pages, flag, ecc_flag);
-		pages -= b_pages;
-		page += b_pages;
-		ram += (chunkpage * b_pages);
-	}else if(pages <= b_pages){
-		ret = write_pages(ram,page,pages,flag,ecc_flag);
-		pages = 0;
-	}
-	if(ret){return ret;}
+		if(b_pages > 0){
+			//读取需要写入的页在对应块中的该块的数据，暂存
+			ret = read_pages(NAND_TMP, page - start_page, start_page, 2,0); //page - start_page = 以块为单位块中的第一个页地址
+			if(ret){return ret;}
+			erase_block(PAGE_TO_BLOCK(page));//擦除该块
+			ret = write_pages(NAND_TMP, page - start_page, start_page, 2,0);
+			//		printf(". ");
+			if(ret){return ret;}
+			if(pages > b_pages){
+				ret = write_pages(ram, page, b_pages, flag, ecc_flag);
+				pages -= b_pages;
+				page += b_pages;
+				ram += (chunkpage * b_pages);
+			}else if(pages <= b_pages){
+				ret = write_pages(ram,page,pages,flag,ecc_flag);
+				pages = 0;
+			}
+			if(ret){return ret;}
+		}
 	}
 
 	if(pages){
