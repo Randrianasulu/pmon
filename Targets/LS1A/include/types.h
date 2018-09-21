@@ -2,9 +2,9 @@
 #ifndef _TYPES_
 #define _TYPES_
 
-typedef unsigned int u32;
-typedef unsigned short u16;
-typedef unsigned char u8;
+//typedef unsigned int u32;
+//typedef unsigned short u16;
+//typedef unsigned char u8;
 
 #define K1BASE 0xa0000000
 #define KSEG1(addr) ((void *)(K1BASE | (u32)(addr)))

@@ -2,6 +2,7 @@
 #include <include/types.h>
 #include <stdio.h>
 #include <types.h>
+#include <linux/types.h>
 
 #define SPI_REG_BASE 0x1fe80000
 #define SPI_BASE     0xbfe80000

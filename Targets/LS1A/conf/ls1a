@@ -74,9 +74,9 @@ select		cmd_shell		# Shell commands, vers, help, eval
 # Platform options
 #
 select		mod_uart_ns16550	# Standard UART driver
-option		APB_CLK=25000000
-option 		CPU_MULT=9
-option 		DDR_MULT=4
+option		APB_CLK=33000000
+option 		CPU_MULT=10
+option 		DDR_MULT=5
 option		CONS_BAUD=B115200
 select		ext2
 select 		yaffsfs
@@ -115,7 +115,7 @@ option		AUTOLOAD
 #option		CONFIG_PCI0_HUGE_MEM	
 #option		CONFIG_PCI0_GAINT_MEM	
 option		CONFIG_CACHE_64K_4WAY
-#option 	    NVRAM_IN_FLASH	
+option 	    NVRAM_IN_FLASH	
 #option		FLASH_READ_ONLY
 
 #
@@ -204,7 +204,7 @@ select raw_ether
 #option		X640x768
 #option		X640x800
 #option		X800x480
-option		X800x600
+#option		X800x600
 #option		X800x640
 #option		X832x600
 #option		X832x608
@@ -212,15 +212,15 @@ option		X800x600
 #option		X1024x600
 #option		X1024x640
 #option		X1152x764
-#option		X1024x768
+option		X1024x768
 #option		X1280x800
 #option		X1440x900
 #option 		CONFIG_VIDEO_12BPP
 #option 		CONFIG_VIDEO_15BPP
 option  CONFIG_VIDEO_LOGO
 option	CONFIG_VIDEO_BMP_LOGO
-option 	CONFIG_VIDEO_16BPP
-#option 	CONFIG_VIDEO_32BPP
+#option 	CONFIG_VIDEO_16BPP
+option 	CONFIG_VIDEO_32BPP
 option 	USE_PCI
 select		cmd_call		# Call a function command
 select		ide

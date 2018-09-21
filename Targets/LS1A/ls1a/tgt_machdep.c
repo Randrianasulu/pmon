@@ -64,6 +64,7 @@
 #include <target/lcd.h>
 
 #include <pmon.h>
+#include <linux/types.h>
 
 #include "mod_x86emu_int10.h"
 #include "mod_x86emu.h"
