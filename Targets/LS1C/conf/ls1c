@@ -270,3 +270,4 @@ select      camera
 select      sdio
 #option		CONFIG_CHINESE
 option RMII
+option BOOT_ECCNAND
