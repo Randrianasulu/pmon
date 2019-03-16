@@ -1854,8 +1854,8 @@ void video_hw_bitblt(int bpp, int sx, int sy, int dx, int dy, int w, int h)
 
 	if ( xdir < 0 ) { sx += w-1; dx += w-1; }
 	if ( ydir < 0 ) { sy += h-1; dy += h-1; }
-
-	val = (radeon_get_dstbpp(bpp) << 8) | RADEON_GMC_CLR_CMP_CNTL_DIS;
+	/* we got it in bytes, not bits per pixel */
+	val = (radeon_get_dstbpp(bpp*8) << 8) | RADEON_GMC_CLR_CMP_CNTL_DIS;
 	radeon_fifo_wait(3);
 	MMOUTL(RADEON_DP_GUI_MASTER_CNTL,
 			val
@@ -1875,5 +1875,6 @@ void video_hw_bitblt(int bpp, int sx, int sy, int dx, int dy, int w, int h)
 
 	radeon_engine_idle();
 }
+
 
 #endif /* RADEON 7000 */
